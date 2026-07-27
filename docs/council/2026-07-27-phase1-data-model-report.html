@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LLM Council — MVMNT Phase 1 Data Model</title>
+<style>
+  :root{
+    --bg:#f7f5f2; --surface:#fff; --ink:#1b1f2a; --muted:#5c6272; --line:#e3ded7;
+    --coral:#ff5a36; --green:#3ddc84; --yellow:#ffc93c; --navy:#1b1f2a;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.6 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:860px;margin:0 auto;padding:48px 24px 80px}
+  header{border-bottom:3px solid var(--navy);padding-bottom:24px;margin-bottom:36px}
+  .eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--coral);
+    font-weight:700;margin:0 0 10px}
+  h1{font-size:32px;line-height:1.2;margin:0 0 10px;letter-spacing:-.02em}
+  .sub{color:var(--muted);margin:0;font-size:15px}
+  h2{font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);
+    margin:44px 0 16px;font-weight:700}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:12px;
+    padding:22px 24px;margin-bottom:14px}
+  .card h3{margin:0 0 8px;font-size:17px;letter-spacing:-.01em}
+  .card p{margin:0;color:var(--muted);font-size:15px}
+  .card p + p{margin-top:10px}
+  .verdict{background:var(--navy);color:#fff;border:none;padding:28px}
+  .verdict h3{color:#fff;font-size:19px}
+  .verdict p{color:#c9cdd8}
+  .verdict strong{color:#fff}
+  code{font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;
+    background:rgba(27,31,42,.07);padding:1px 5px;border-radius:4px}
+  .verdict code{background:rgba(255,255,255,.14);color:#fff}
+  .agree{border-left:4px solid var(--green)}
+  .clash{border-left:4px solid var(--yellow)}
+  .blind{border-left:4px solid var(--coral)}
+  table{width:100%;border-collapse:collapse;font-size:14px;background:var(--surface);
+    border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  th{text-align:left;background:#efece7;padding:11px 14px;font-size:12px;
+    letter-spacing:.06em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+  td{padding:11px 14px;border-top:1px solid var(--line);vertical-align:top}
+  td:last-child{color:var(--muted);white-space:nowrap;font-size:13px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px}
+  .adv{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;text-align:center}
+  .adv .name{font-weight:700;font-size:14px;margin-bottom:6px}
+  .adv .score{font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:700}
+  .win{color:#1f9d57} .out{color:var(--coral)} .mid{color:var(--muted)}
+  .adv.winner{border-color:var(--green);border-width:2px;background:#f2fdf7}
+  .adv.loser{border-color:var(--coral);border-width:2px;background:#fff5f2}
+  details{background:var(--surface);border:1px solid var(--line);border-radius:12px;
+    padding:0;margin-bottom:10px;overflow:hidden}
+  summary{cursor:pointer;padding:16px 20px;font-weight:600;font-size:15px;list-style:none;
+    display:flex;justify-content:space-between;align-items:center;gap:12px}
+  summary::-webkit-details-marker{display:none}
+  summary::after{content:"+";color:var(--muted);font-size:20px;font-weight:400;flex-shrink:0}
+  details[open] summary::after{content:"−"}
+  details[open] summary{border-bottom:1px solid var(--line)}
+  .body{padding:18px 20px;font-size:15px;color:#33384a}
+  .body p{margin:0 0 12px} .body p:last-child{margin-bottom:0}
+  .tag{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);
+    font-weight:700;background:#efece7;padding:3px 8px;border-radius:20px}
+  footer{margin-top:56px;padding-top:20px;border-top:1px solid var(--line);
+    color:var(--muted);font-size:13px}
+  @media (max-width:600px){ .wrap{padding:32px 18px 60px} h1{font-size:25px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <p class="eyebrow">LLM Council · Verdict</p>
+  <h1>MVMNT Phase 1 — data model &amp; check-in security</h1>
+  <p class="sub">Convened 27 July 2026, before the first migration. Required by App Spec §0 for
+  data-model and security-sensitive decisions. 5 advisors · 5 anonymised peer reviews.</p>
+</header>
+
+<h2>The question</h2>
+<div class="card">
+  <p>Three decisions, pressure-tested before writing Phase 1 migrations for a run-club app
+  (React&nbsp;Native/Expo + Supabase). ~300 people weekly, one event reached 2,500. Solo builder,
+  UK/GDPR.</p>
+  <p><strong>1.</strong> Schema shape — nullable timestamps instead of booleans, <code>is_in</code>
+  as a <code>GENERATED</code> column, notifications split across two tables.
+  <strong>2.</strong> GPS geofence as the sole check-in factor, no QR — known to be spoofable, and
+  check-ins become leaderboard points in Phase&nbsp;2.
+  <strong>3.</strong> Nullable capacity with waitlist auto-promotion — what is concurrency-safe?</p>
+</div>
+
+<h2>How the council landed</h2>
+<div class="grid">
+  <div class="adv winner"><div class="name">Contrarian</div><div class="score win">Strongest · 5/5</div></div>
+  <div class="adv"><div class="name">First Principles</div><div class="score mid">Runner-up · 3 cites</div></div>
+  <div class="adv"><div class="name">Outsider</div><div class="score mid">1 idea adopted</div></div>
+  <div class="adv"><div class="name">Executor</div><div class="score mid">Sequencing only</div></div>
+  <div class="adv loser"><div class="name">Expansionist</div><div class="score out">Blind spot · 4/5</div></div>
+</div>
+<div class="card">
+  <p>Unusually clean signal: <strong>all five reviewers independently picked the Contrarian as
+  strongest</strong>, and four of five picked the Expansionist as having the biggest blind spot —
+  without knowing who wrote what.</p>
+</div>
+
+<h2>Where the council agrees</h2>
+<div class="card agree">
+  <h3>The generated column was the wrong thing to worry about</h3>
+  <p><code>is_in</code> as <code>GENERATED … STORED</code> buys nothing a partial index doesn't, and
+  the expression is awkward to change later. Replaced with a view — same single source of truth,
+  but free to redefine when Phase 2 changes what "in" means.</p>
+</div>
+<div class="card agree">
+  <h3>The real irreversible bug: a mutable single-row state machine</h3>
+  <p>Three advisors reached this independently from different angles. Withdraw-then-rejoin
+  overwrites history — and worse, if promotion touches <code>signed_up_at</code>, it overwrites the
+  waitlist's own FIFO key and the queue silently reorders. Fix: an immutable
+  <code>queued_at</code>, set once, never updated, plus an append-only event log beside the
+  current-state row.</p>
+</div>
+<div class="card agree">
+  <h3>Store the check-in claim, not the verdict</h3>
+  <p>Capture <code>reported_lat/lng</code>, <code>accuracy_m</code>, <code>distance_m</code>,
+  <code>client_ts</code>, <code>server_ts</code>, <code>method</code>. Phase 2's leaderboard
+  inherits Phase 1 data — you cannot re-adjudicate fraud you never recorded.</p>
+</div>
+<div class="card agree">
+  <h3>The notification split was right, but unsafe</h3>
+  <p>Two tables is correct normalisation, not over-engineering — one event fans out to N devices.
+  But with no idempotency key, a single cron retry double-pushes 2,500 people. Needs
+  <code>UNIQUE(run_id, type)</code> on events and <code>UNIQUE(event_id, token)</code> on
+  deliveries.</p>
+</div>
+<div class="card agree">
+  <h3>False negatives, not cheaters, are the live risk</h3>
+  <p>Denied permission, phone in a locker, urban GPS drift. The admin manual check-in override is
+  the highest-value and cheapest mitigation. GPS forensics is a solution to a problem nobody has had
+  yet.</p>
+</div>
+
+<h2>Where the council clashes</h2>
+<div class="card clash">
+  <h3>A <code>club_id</code> tenant key, now or never</h3>
+  <p>The Expansionist argues this is the one column genuinely expensive to retrofit — it means
+  rewriting every RLS policy and backfilling live data. That claim is technically correct. Four of
+  five reviewers rejected it anyway as building for a company that doesn't exist.</p>
+  <p><strong>Verdict: sided with the reviewers</strong> — but recorded as a deliberate deferral, not
+  an oversight. If a second club is ever seriously proposed, that is the trigger to revisit, before
+  there is production data rather than after.</p>
+</div>
+<div class="card clash">
+  <h3>Silent auto-check-in vs. a prompt</h3>
+  <p>The Outsider was the only advisor to look at this as a member rather than an engineer: silent
+  detection removes the receipt, and when it fails you find out via a wrong leaderboard and an
+  argument with an organiser about something neither of you can see.</p>
+  <p><strong>Verdict: sided with the Outsider.</strong> Geofence stays, but it prompts — "looks like
+  you're here, check in?" — rather than deciding silently. Costs nothing, removes the most likely
+  source of complaints.</p>
+</div>
+
+<h2>Blind spots only peer review caught</h2>
+<div class="card blind">
+  <h3>Every advisor wanted more location data. None mentioned GDPR.</h3>
+  <p>Four of five reviewers flagged it; zero of five advisors raised it. Lawful basis, retention
+  window and an Article 17 erasure path have to be settled <em>before</em> the schema — an
+  append-only log of location claims is precisely the thing that becomes hard to erase later.</p>
+</div>
+<div class="card blind">
+  <h3>The mass start breaks check-in operationally</h3>
+  <p>Hundreds of simultaneous RPCs on congested mobile networks. Offline queue-and-sync with
+  <code>client_ts</code> reconciliation is required, not optional — which makes the admin override
+  load-bearing rather than a nicety.</p>
+</div>
+<div class="card blind">
+  <h3>Check-in has no check-out</h3>
+  <p>Three advisors called it a "safety register." It cannot tell you who is still out on the route.
+  Out of Phase 1 scope — but it doesn't do what the word implies.</p>
+</div>
+
+<h2>The recommendation</h2>
+<div class="card verdict">
+  <h3>Build the schema, with ten changes from the original proposal</h3>
+  <p>The shape was sound. The corrections are concentrated in one place — the attendance row — and
+  in the absence of idempotency keys on the notification path.</p>
+</div>
+<div class="scroll">
+<table>
+  <thead><tr><th>Change</th><th>Origin</th></tr></thead>
+  <tbody>
+    <tr><td><code>is_in</code> becomes a view + partial index, not a <code>GENERATED</code> column</td><td>Contrarian · 5/5</td></tr>
+    <tr><td>Immutable <code>queued_at</code> as the waitlist FIFO key, never mutated by promotion</td><td>Contrarian</td></tr>
+    <tr><td>Append-only <code>run_attendance_events</code> beside the current-state row</td><td>3 advisors</td></tr>
+    <tr><td>Check-in evidence columns (coords, accuracy, distance, client/server time, method)</td><td>3 advisors</td></tr>
+    <tr><td><code>UNIQUE(run_id, type)</code> on events; <code>UNIQUE(event_id, token)</code> on deliveries</td><td>Contrarian</td></tr>
+    <tr><td><code>push_tokens</code> upsert reassigns <code>user_id</code> on conflict</td><td>Contrarian</td></tr>
+    <tr><td><code>SELECT … FOR UPDATE</code> on the run row in <strong>both</strong> join and withdraw</td><td>Contrarian · First Principles</td></tr>
+    <tr><td>Admin manual check-in and remove-check-in, in Phase 1</td><td>Contrarian · Outsider</td></tr>
+    <tr><td>Geofence prompts rather than silently deciding</td><td>Outsider</td></tr>
+    <tr><td>Location retention + erasure path defined in the same migration</td><td>Peer review · 4/5</td></tr>
+  </tbody>
+</table>
+</div>
+<div class="card" style="margin-top:14px">
+  <p><strong>Rejected:</strong> <code>club_id</code> multi-tenancy, the check-in proximity graph,
+  a generalised event pipe, and unclaimed profiles — all Expansionist, all deferred with reasons
+  recorded in the ADR rather than dropped silently.</p>
+</div>
+
+<h2>The one thing to do first</h2>
+<div class="card verdict">
+  <h3>Write the retention and erasure policy for check-in location data — before the first migration</h3>
+  <p>It is the only decision on the list that becomes materially harder to reverse the moment real
+  attendance data exists.</p>
+</div>
+
+<h2>Full advisor responses</h2>
+
+<details>
+<summary><span>The Contrarian <span class="tag">strongest · 5/5</span></span></summary>
+<div class="body">
+<p><strong>Decision 1 — the generated column is a distraction; the real bug is elsewhere.</strong>
+<code>is_in</code> STORED buys you nothing a partial index doesn't. Meanwhile it ships in every
+Realtime payload and PostgREST select, and you cannot readily alter a generated expression — only
+drop and re-add. Drop it.</p>
+<p>The expensive mistake is nullable timestamps as a state machine. Withdraw-then-rejoin forces you
+to <code>SET withdrawn_at = NULL</code>, erasing history — and worse, it destroys waitlist ordering.
+What determines FIFO position: <code>waitlisted_at</code> or <code>signed_up_at</code>? If promotion
+sets <code>signed_up_at = now()</code>, you've overwritten your own queue key. Add an immutable
+<code>queued_at</code> set once at first join, never touched.</p>
+<p>Second real bug: <code>notification_events</code> has no idempotency key. Without one, a single
+cron retry double-pushes 2,500 people. Also: <code>push_tokens.expo_token UNIQUE</code> requires
+<code>ON CONFLICT … DO UPDATE SET user_id</code>. Handed-down phones otherwise send someone else's
+notifications to the wrong account — a GDPR incident, not a bug.</p>
+<p><strong>Decision 2</strong> — you're optimising against cheaters and ignoring false negatives:
+denied permission, indoor meeting points, urban drift. Build the admin manual override first; it's
+the only mitigation that matters.</p>
+<p><strong>Decision 3</strong> — <code>SELECT capacity FROM runs WHERE id = p_run FOR UPDATE</code>
+at the top of the join <em>and</em> withdraw functions. Count-then-insert is unsafe under READ
+COMMITTED without it. Same lock, same order, both paths. Don't use a trigger.</p>
+</div>
+</details>
+
+<details>
+<summary><span>The First Principles Thinker <span class="tag">runner-up</span></span></summary>
+<div class="body">
+<p><strong>You're asking "how do we stop GPS spoofing" when the actual question is "what is a
+check-in a record of?"</strong></p>
+<p>At a 300-person run everyone can see who turned up. Ground truth is social, not technical. In
+Phase 1 a check-in buys you a headcount and a safety register — spoofing that is worthless. Spoofing
+only becomes worth doing in Phase 2, when points exist. So don't build anti-fraud now; build
+evidence you can re-adjudicate later. Store the claim, not the verdict. When points arrive you can
+retroactively discount weak check-ins. That is the migration decision, not QR-vs-geofence.</p>
+<p>The expensive irreversibility isn't <code>is_in</code>. It's <code>UNIQUE(run_id, user_id)</code>
+plus mutable nullable timestamps. Attendance is already an event log; you've written half of one and
+thrown away the half that matters. Keep the current-state row — it's right for 300 people — and add
+an append-only event table. Cheap now, unrecoverable later.</p>
+<p>Two notification tables: not over-engineering — one event fans out to N devices; that's
+normalisation, not architecture.</p>
+<p><strong>Capacity:</strong> stop counting rows to decide. Serialising on the run row with
+<code>FOR UPDATE</code> is the simplest thing that is actually correct.</p>
+</div>
+</details>
+
+<details>
+<summary><span>The Outsider <span class="tag">1 idea adopted</span></span></summary>
+<div class="body">
+<p><strong>The auto check-in is the part that makes no sense to me.</strong> You're building a
+system where I arrive at a run and… nothing happens? No moment. Meanwhile the app silently decides
+whether I "counted." When it fails — phone in a locker, battery saver, GPS drifting 200m in a city —
+I have no idea until the leaderboard is wrong, and then I'm arguing with an organiser about a thing
+neither of us can see. A tap-to-check-in button is not friction. It's the <em>receipt</em>. Give
+them the automatic detection as a prompt, not as a verdict.</p>
+<p><strong>On cheating: you're solving it at the wrong layer.</strong> 300 people who see each other
+weekly already know who ran. The real anti-cheat is that Dave wasn't there and everyone noticed.</p>
+<p><strong>The waiting list will produce your first angry member.</strong> If a spot opens at 11pm
+and I'm auto-promoted, I wake up committed to a run I forgot I wanted. Do I lose the spot if I don't
+show? Is there a penalty? Auto-promote is a social contract, not a feature.</p>
+<p><strong>What you're assuming:</strong> that people sign up as individuals. They don't. They come
+with a friend, they bring someone new, they show up without signing up.</p>
+</div>
+</details>
+
+<details>
+<summary><span>The Expansionist <span class="tag">biggest blind spot · 4/5</span></span></summary>
+<div class="body">
+<p><strong>The one column that isn't cheap later: <code>club_id</code>.</strong> "Add it later" is
+true for loyalty points. It is false for a tenant key, because retrofitting means rewriting every
+RLS policy and backfilling a live dataset. Put a nullable <code>club_id</code> on runs and profiles
+now and you've kept the option to be infrastructure for fifty clubs instead of an app for one.</p>
+<p><strong>Check-in is a spatiotemporal event and you're throwing away the payload.</strong> Store
+coords and accuracy. That seeds proof-of-attendance disputes, start-point heatmaps, and a proximity
+graph — who checked in within 30 seconds and 15 metres of whom — as a warm start for the QR friend
+system and a pre-filter for face-matching.</p>
+<p><strong>Your deliveries table already is the sponsor impression schema.</strong> Generalise it
+once and impressions, taps, pokes and check-ins all land in one pipe.</p>
+<p><strong>Unclaimed profiles.</strong> At 2,500 people most aren't in the app. Let admins check in
+a phone number that a real account claims later.</p>
+<p style="color:var(--coral)"><em>Reviewers' objection: this answers a Phase 1 scoping question with
+a Series A pitch, and treats a GDPR-governed location dataset as an asset to mine — proximity
+inference and biometric pre-filtering are special-category processing under Art. 9, and unclaimed
+profiles means creating records for people who never consented.</em></p>
+</div>
+</details>
+
+<details>
+<summary><span>The Executor <span class="tag">sequencing</span></span></summary>
+<div class="body">
+<p><strong>Week 0, before any app code:</strong> <code>supabase init</code> +
+<code>supabase start</code> locally. Everything in <code>supabase/migrations/*.sql</code>, never the
+dashboard SQL editor. A seed script with 30 fake profiles and 5 runs — one starting in 10 minutes,
+one that ended yesterday, one at capacity with 3 waitlisted. You will run
+<code>supabase db reset</code> fifty times; if seeding isn't one command you will start avoiding
+tests.</p>
+<p><strong>Build order:</strong> schema + RLS → auth → run list/detail → sign-up/withdraw RPC →
+waitlist promotion → check-in RPC → admin editor → notifications last.</p>
+<p><strong>What eats days with nothing to show:</strong> RLS policies — budget 2–3 days and write
+assertion tests, because you cannot test RLS by clicking around. Also Expo prebuild + dev-client on
+two platforms: do it while the app is empty, not after 5,000 lines.</p>
+<p><strong>Fake without regret:</strong> push — write the events and a dispatch function that logs
+deliveries; the Expo call is 15 lines added later. Prove correctness by querying the deliveries
+table.</p>
+<p><strong>Where you get stuck:</strong> GPS. The simulator lies. Add a dev flag that lets you type
+coordinates, otherwise you're driving to a park to test one function.</p>
+</div>
+</details>
+
+<h2>Peer review highlights</h2>
+<details>
+<summary><span>What the reviewers said <span class="tag">5 reviews</span></span></summary>
+<div class="body">
+<p><strong>On the Contrarian (5/5 strongest):</strong> "the only response that finds falsifiable
+bugs rather than opinions." The <code>queued_at</code> catch was singled out repeatedly as the
+sharpest finding — a silent data-loss bug nobody else named. Also the only advisor to insist the
+lock goes on <em>both</em> join and withdraw paths.</p>
+<p><strong>On the Expansionist (4/5 biggest blind spot):</strong> "answers a Phase 1 scoping question
+with a Series A pitch," "designs for a company that doesn't exist," and — most pointedly — "treats a
+GDPR-governed location dataset as an asset to mine, which is exactly the privacy-by-default
+principle inverted." Reviewers consistently conceded <code>club_id</code> as its one defensible
+point.</p>
+<p><strong>What all five advisors missed:</strong> every reviewer converged on GDPR. Retention,
+lawful basis for precise location, and Article 17 erasure versus append-only logs. One reviewer
+added the operational point that a mass start means hundreds of simultaneous RPCs on congested
+networks, requiring offline queue-and-sync. Another noted check-in has no check-out, so it is not
+the safety register three advisors called it.</p>
+<p><em>One reviewer claimed the schema had no roles table — a misread, <code>profiles.role</code>
+was in the proposal. Noted and dismissed; the rest of that review stands.</em></p>
+</div>
+</details>
+
+<footer>
+  Generated 27 July 2026 · MVMNT Phase 1 · 5 advisors, 5 anonymised peer reviews, chairman synthesis.<br>
+  Full transcript: <code>docs/council/2026-07-27-phase1-data-model-transcript.md</code><br>
+  Methodology adapted from Andrej Karpathy's LLM Council.
+</footer>
+
+</div>
+</body>
+</html>

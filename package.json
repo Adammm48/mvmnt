@@ -1,0 +1,27 @@
+{
+  "name": "mvmnt",
+  "private": true,
+  "version": "0.1.0",
+  "description": "MVMNT run club — mobile app, admin console and Supabase backend",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "db:start": "supabase start",
+    "db:stop": "supabase stop",
+    "db:reset": "supabase db reset",
+    "db:diff": "supabase db diff",
+    "db:types": "supabase gen types typescript --local > packages/shared/src/database.types.ts",
+    "db:test": "supabase test db",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run db:test"
+  },
+  "devDependencies": {
+    "supabase": "^2.109.1"
+  }
+}

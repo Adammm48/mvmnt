@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm -v)",
+      "Bash(git -C /Users/adamelbasiony/mvmnt status)",
+      "Bash(echo \"--- local postgres ---\"; ls /opt/homebrew/opt 2>/dev/null | grep -i postgres; which psql postgres initdb pg_ctl 2>&1 | head; echo \"--- brew casks for docker ---\"; ls /Applications 2>/dev/null | grep -iE \"docker|orbstack|podman|rancher\"; echo \"--- colima ---\"; which colima podman 2>&1)",
+      "Bash(brew install *)",
+      "Bash(bash /private/tmp/claude-501/-Users-adamelbasiony-mvmnt/7ba42cbd-ecaf-41bb-b814-3e812f102d45/scratchpad/test.sh)",
+      "Bash(python3 -)",
+      "Bash(bash test.sh)",
+      "Bash(git add *)",
+      "Bash(git -c 'user.name=Adam Elbasiony' -c user.email=skteatea1@gmail.com commit -q -m ' *)"
+    ]
+  }
+}

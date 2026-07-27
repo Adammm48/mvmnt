@@ -1,0 +1,25 @@
+node_modules/
+.DS_Store
+*.log
+
+# Env / secrets — never commit. See .env.example for the shape.
+.env
+.env.*
+!.env.example
+
+# Supabase local stack
+supabase/.branches/
+supabase/.temp/
+
+# Expo / React Native
+apps/mobile/.expo/
+apps/mobile/ios/
+apps/mobile/android/
+apps/mobile/dist/
+
+# Vite / admin build output
+apps/admin/dist/
+apps/*/.vite/
+
+# Generated types are committed on purpose (they are reviewed in PRs),
+# so packages/shared/src/database.types.ts is NOT ignored.
