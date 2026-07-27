@@ -16,7 +16,24 @@
       "Bash(npx supabase *)",
       "Bash(colima stop *)",
       "Bash(docker run *)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(xcodebuild -version)",
+      "Bash(xcrun simctl *)",
+      "Bash(pod --version)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" -X POST http://127.0.0.1:54321/functions/v1/scheduler -H \"Authorization: Bearer not-the-service-key\")",
+      "Bash(curl -s -X POST http://127.0.0.1:54321/functions/v1/scheduler -H 'Authorization: Bearer __TRACKED_VAR__')",
+      "Bash(python3 -m json.tool)",
+      "Bash(npx --yes create-expo-app@latest apps/mobile --template blank-typescript --no-install)",
+      "Bash(python3 -c \"import json;d=json.load\\(open\\('apps/mobile/package.json'\\)\\);print\\(json.dumps\\(d['dependencies'],indent=1\\)\\)\")",
+      "Bash(npx expo *)",
+      "Bash(python3 -c \"import json;d=json.load\\(open\\('package.json'\\)\\);print\\(json.dumps\\(d['dependencies'],indent=1\\)\\)\")",
+      "Bash(xcodebuild -downloadPlatform iOS)",
+      "Bash(npx tsc *)",
+      "Bash(curl -s -o /dev/null http://127.0.0.1:8081/)",
+      "Bash(curl -s -o /dev/null -w \"web dev server: %{http_code}\\\\n\" http://127.0.0.1:8081/)",
+      "Bash(curl -s \"http://127.0.0.1:54324/api/v1/messages?limit=1\")",
+      "Bash(python3 -c ' *)",
+      "Bash(curl -s \"http://127.0.0.1:54324/api/v1/message/2j7oqq5lGvKsYa2prQLlmz\")"
     ]
   }
 }

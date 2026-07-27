@@ -1,0 +1,21 @@
+<!--
+  Sign-in email.
+
+  Sends a CODE, not a link. Supabase's default magic-link template opens a URL
+  in whatever browser the mail app chooses, which then has to hand the session
+  back to the app — fragile on mobile, and it drops the member out of the app
+  at the exact moment they are trying to get in. A six-digit code they type
+  keeps the whole flow inside MVMNT.
+
+  {{ .Token }} is the OTP that verifyOtp() expects.
+-->
+<h2>Your MVMNT sign-in code</h2>
+
+<p style="font-size:32px;letter-spacing:6px;font-weight:700;font-family:-apple-system,Segoe UI,Roboto,sans-serif;">
+  {{ .Token }}
+</p>
+
+<p style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#5C6272;">
+  Enter this code in the app to sign in. It expires shortly and can only be used once.
+  If you did not ask for it, you can ignore this email.
+</p>

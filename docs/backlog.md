@@ -50,11 +50,15 @@ independently. **That was wrong**, and the correction matters for planning:
 - **Health data raises the privacy bar sharply** — special-category under GDPR, sensitive under
   Egyptian PDPL. It needs its own consent, retention rule and deletion path, exactly as location got
   in [ADR 0002](decisions/0002-check-in-location-and-retention.md).
-- **Prefer on-device.** If members only need to *see* their own stats, read from HealthKit/Health
-  Connect and render locally without ever transmitting it. That avoids server-side storage,
-  retention and cross-border transfer questions altogether, and makes both store reviews easier.
-  Syncing health data to Supabase is a materially larger commitment and should be a deliberate
-  decision, not a default — it only becomes necessary if health stats ever feed the leaderboard.
+- **On-device only — decided 2026-07-27.** MVMNT's instruction: *"I only want them to display, not
+  store them for now."* Health data is read from HealthKit/Health Connect and rendered locally, and
+  is **never transmitted to Supabase**. No health columns, no health tables, no server-side
+  retention rule — because there is nothing on the server to retain.
+
+  This is the cheapest possible version of the feature in privacy terms: it sidesteps storage,
+  retention, cross-border transfer and most of both stores' review scrutiny at once. It is also the
+  decision to revisit first if health stats are ever meant to feed the leaderboard, since a
+  server-side leaderboard cannot be computed from data that never leaves the phone.
 - **Read-only, and never the source of truth for a check-in.** Health data is reported by the
   device; it should decorate a member's own profile, not decide attendance or points.
 

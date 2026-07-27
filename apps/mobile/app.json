@@ -1,0 +1,56 @@
+{
+  "expo": {
+    "name": "MVMNT",
+    "slug": "mvmnt",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "mvmnt",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.mvmnt.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "MVMNT uses your location only while you are at a run's meeting point, to check you in. It is never tracked in the background and never shared with other members.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "com.mvmnt.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#1B1F2A",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "permissions": ["ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION"],
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-dev-client",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "MVMNT uses your location only while you are at a run's meeting point, to check you in.",
+          "isIosBackgroundLocationEnabled": false,
+          "isAndroidBackgroundLocationEnabled": false
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#FF5A36"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

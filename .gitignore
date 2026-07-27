@@ -23,3 +23,6 @@ apps/*/.vite/
 
 # Generated types are committed on purpose (they are reviewed in PRs),
 # so packages/shared/src/database.types.ts is NOT ignored.
+
+# Expo web export used only for bundle verification
+apps/mobile/.expo/
