@@ -5,6 +5,8 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth';
 import { Button } from '@/components/Button';
 import { Loading, Notice } from '@/components/Feedback';
+import { RunHero } from '@/components/RunHero';
+import { Celebration } from '@/components/Celebration';
 import { getCurrentFix } from '@/lib/location';
 import { enqueue, hasPendingFor } from '@/lib/checkInQueue';
 import {
@@ -40,6 +42,7 @@ export default function RunDetail() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [celebrate, setCelebrate] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -147,14 +150,15 @@ export default function RunDetail() {
       if (isOffline(checkInError)) {
         await enqueue({ runId: run.id, fix: outcome.fix, queuedAt: new Date().toISOString() });
         setQueuedOffline(true);
-        setSuccess("You're checked in. We'll sync it as soon as you have signal.");
+        setCelebrate("You're checked in");
+        setSuccess("We'll sync it as soon as you have signal.");
         return;
       }
       setError(toMemberMessage(checkInError));
       return;
     }
 
-    setSuccess("You're in. Have a good one.");
+    setCelebrate("You're in!");
     await load();
   }
 
@@ -177,13 +181,12 @@ export default function RunDetail() {
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-      <View style={styles.hero}>
-        <Text style={styles.when}>
-          {formatRunDate(run.starts_at)} · {formatRunTime(run.starts_at)}
-        </Text>
-        <Text style={styles.title}>{run.title}</Text>
+      <RunHero run={run} />
+
+      <View style={styles.body}>
         {run.description ? <Text style={styles.description}>{run.description}</Text> : null}
-      </View>
+
+      {celebrate && <Celebration message={celebrate} />}
 
       {cancelled && (
         <Notice
@@ -217,8 +220,8 @@ export default function RunDetail() {
         otherwise nothing — withdrawing is deliberately secondary so it never
         competes with the encouraging action.
       */}
-      {!cancelled && (
-        <View style={styles.actions}>
+        {!cancelled && (
+          <View style={styles.actions}>
           {checkInOpen && !alreadyIn && (
             <Button
               label="Check in"
@@ -254,8 +257,9 @@ export default function RunDetail() {
                 : 'Sign-up for this run has closed.'}
             </Text>
           )}
-        </View>
-      )}
+          </View>
+        )}
+      </View>
     </ScrollView>
   );
 }
@@ -271,11 +275,9 @@ function Fact({ label, value }: { label: string; value: string }) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.base },
-  content: { padding: spacing.md, gap: spacing.md, paddingBottom: spacing.xxl },
-  hero: { gap: spacing.xs },
-  when: { fontSize: 14, fontWeight: '700', color: colors.action, letterSpacing: 0.4 },
-  title: { fontSize: 30, fontWeight: '800', color: colors.textOnDark },
-  description: { fontSize: 16, color: colors.textOnDarkMuted, lineHeight: 23, marginTop: spacing.xs },
+  content: { paddingBottom: spacing.xxl },
+  body: { padding: spacing.md, gap: spacing.md },
+  description: { fontSize: 16, color: colors.textOnDarkMuted, lineHeight: 23 },
   factRow: { flexDirection: 'row', gap: spacing.md },
   fact: {
     flex: 1,

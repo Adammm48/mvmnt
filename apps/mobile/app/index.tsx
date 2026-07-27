@@ -47,9 +47,12 @@ export default function Home() {
         ListHeaderComponent={
           <View style={styles.header}>
             <View style={styles.headerRow}>
-              <Text style={styles.greeting}>
-                {firstName ? `Hey ${firstName}` : 'Upcoming runs'}
-              </Text>
+              <View>
+                <Text style={styles.greeting}>
+                  {firstName ? `Hey ${firstName}` : 'Welcome'}
+                </Text>
+                <Text style={styles.subGreeting}>{encouragement(items.length)}</Text>
+              </View>
               <Pressable
                 onPress={() => router.push('/profile')}
                 accessibilityRole="button"
@@ -73,8 +76,8 @@ export default function Home() {
         ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
         ListEmptyComponent={
           <EmptyState
-            title="No runs scheduled yet"
-            body="When the organisers publish the next run, it will show up here and you'll get a notification."
+            title="Nothing on the calendar yet"
+            body="The moment the organisers drop the next run, it lands here and we'll ping you. Won't be long."
           />
         }
       />
@@ -82,11 +85,23 @@ export default function Home() {
   );
 }
 
+/**
+ * A warm line under the greeting. App Spec §2 asks for momentum framed
+ * positively — the copy leans on what is coming up rather than counting what
+ * anyone has missed.
+ */
+function encouragement(count: number): string {
+  if (count === 0) return 'Next run drops soon';
+  if (count === 1) return 'One run on the horizon';
+  return `${count} runs coming up`;
+}
+
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.base },
   list: { padding: spacing.md, paddingBottom: spacing.xxl, flexGrow: 1 },
-  header: { marginBottom: spacing.md, gap: spacing.sm },
+  header: { marginBottom: spacing.lg, gap: spacing.sm, paddingTop: spacing.xs },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  greeting: { fontSize: 26, fontWeight: '800', color: colors.textOnDark },
+  greeting: { fontSize: 30, fontWeight: '900', color: colors.textOnDark, letterSpacing: -0.5 },
+  subGreeting: { fontSize: 15, color: colors.textOnDarkMuted, marginTop: 2 },
   profileLink: { fontSize: 15, fontWeight: '600', color: colors.textOnDarkMuted },
 });

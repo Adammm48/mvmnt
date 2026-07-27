@@ -506,6 +506,8 @@ export type Database = {
           cancelled_at: string | null
           capacity: number | null
           check_in_radius_m: number
+          cover_image_url: string | null
+          cover_video_url: string | null
           created_at: string
           created_by: string | null
           description: string | null
@@ -527,6 +529,8 @@ export type Database = {
           cancelled_at?: string | null
           capacity?: number | null
           check_in_radius_m?: number
+          cover_image_url?: string | null
+          cover_video_url?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -548,6 +552,8 @@ export type Database = {
           cancelled_at?: string | null
           capacity?: number | null
           check_in_radius_m?: number
+          cover_image_url?: string | null
+          cover_video_url?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
