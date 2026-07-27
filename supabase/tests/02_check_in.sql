@@ -2,19 +2,19 @@
 -- Geofenced check-in.
 --
 -- Priority flow under Principles §11 — full rigour. Coordinates are around
--- Hyde Park Corner (51.5027, -0.1519); the fixture run uses a 250 m radius.
+-- Zamalek Club Gate (51.5027, -0.1519); the fixture run uses a 250 m radius.
 -- ============================================================================
 begin;
 
 do $$
 declare
   v_admin uuid; v_a uuid; v_b uuid; v_c uuid; v_run uuid;
-  v_lat  double precision := 51.502700;
-  v_lng  double precision := -0.151900;
+  v_lat  double precision := 30.044400;
+  v_lng  double precision := 31.235700;
   -- ~100 m north of the meeting point: comfortably inside.
-  v_near_lat double precision := 51.503600;
+  v_near_lat double precision := 30.045300;
   -- ~2 km north: well outside.
-  v_far_lat  double precision := 51.520700;
+  v_far_lat  double precision := 30.062400;
   v_dist double precision;
   v_f uuid;
 begin
@@ -95,7 +95,7 @@ begin
   -- ---------------------------------------------------------------------
   perform tests.act_as(v_b);
   perform tests.assert_eq(
-    public.check_in(v_run, 51.506000, v_lng, 400),   -- ~370 m out, ±400 m accuracy
+    public.check_in(v_run, 30.047700, v_lng, 400),   -- ~370 m out, ±400 m accuracy
     'checked_in'::public.attendance_state,
     'a poor GPS fix that could plausibly be inside the radius is accepted');
 

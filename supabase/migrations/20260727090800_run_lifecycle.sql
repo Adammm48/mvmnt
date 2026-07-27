@@ -46,11 +46,11 @@ begin
    where id = p_run_id;
 
   -- 19:00 local time the evening before, and two hours before the start.
-  -- Computed in Europe/London so a 07:00 Saturday run reminds at 19:00 Friday
-  -- regardless of where the server or the member's phone is.
-  v_evening_before := ((v_run.starts_at at time zone 'Europe/London')::date
+  -- Computed in the club's timezone so a 07:00 Saturday run reminds at 19:00
+  -- Friday regardless of where the server or the member's phone is.
+  v_evening_before := ((v_run.starts_at at time zone app_private.club_timezone())::date
                        - interval '1 day' + interval '19 hours')
-                      at time zone 'Europe/London';
+                      at time zone app_private.club_timezone();
   v_morning_of     := v_run.starts_at - interval '2 hours';
 
   perform app_private.enqueue_notification(

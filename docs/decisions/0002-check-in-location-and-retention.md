@@ -94,6 +94,43 @@ without losing access to check-in: **a member who declines location can still be
 organiser.** Location is never collected in the background — only in the foreground while a run is
 active, which also avoids the Play Store prominent-disclosure requirement noted in App Spec §12.
 
+### 8. Jurisdiction — corrected 2026-07-27, needs confirmation
+
+App Spec §8 frames the privacy obligations under **UK/EU GDPR**. The club is in **Cairo**
+(confirmed when the timezone was set to `Africa/Cairo`), which makes that framing wrong, or at least
+incomplete. Egypt has its own **Personal Data Protection Law (Law No. 151 of 2020)**.
+
+This does not change any decision above — consent, minimisation, a fixed retention window and a
+working erasure path are the right design under either regime, and the stricter reading is the one
+already built. But three things follow, and none of them is an engineering decision:
+
+1. **GDPR may not be the governing law.** It applies to a Cairo club only if MVMNT offers services
+   to people in the EU/UK or monitors their behaviour. If some members are EU/UK residents, both
+   regimes apply at once. If none are, Egyptian PDPL governs and the ADR's GDPR references are
+   aspirational rather than binding.
+2. **Egyptian PDPL has obligations GDPR does not**, including registration/licensing requirements
+   with the Data Protection Center for entities processing personal data, and explicit rules on
+   **cross-border transfer**.
+3. **Cross-border transfer is a live issue the moment a Supabase region is chosen.** A Supabase
+   project hosted in the EU or US means personal data of Egyptian residents leaves Egypt. That is
+   precisely what the transfer rules cover. **Pick the Supabase region deliberately**, and record
+   why — this is much cheaper to decide before launch than to migrate afterwards.
+
+I am not qualified to advise on Egyptian law, and this is flagged rather than resolved. The
+engineering posture is deliberately the stricter of the two regimes so that confirming the answer
+later cannot require rebuilding anything.
+
+### 9. Under-18 members — no additional guardrails, by decision
+
+App Spec §11 lists this as an open item. Asked directly, MVMNT's answer was that it is "a safe
+environment for everyone", and no minor-specific guardrails were requested. Phase 1 therefore treats
+every member identically.
+
+Recorded rather than assumed, because two consequences follow if minors do in fact attend: consent
+for location processing from a minor generally requires a guardian, and the App Store / Play Store
+age rating and data-safety declarations change. Both are cheap to address now and awkward later.
+**Revisit if the club knowingly signs up under-18s.**
+
 ## Consequences
 
 **Accepted:** a determined member with a mock-location app can fake a check-in in Phase 1, and we

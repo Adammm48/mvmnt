@@ -6,6 +6,7 @@
 -- without hand-crafting data each time.
 --
 -- NOT for production. Passwords are 'password123' for every account.
+-- Meeting points are PLACEHOLDERS pending real ones from MVMNT.
 -- ============================================================================
 
 -- ---------------------------------------------------------------------------
@@ -80,7 +81,7 @@ begin
     meeting_point_lat, meeting_point_lng, distance_meters, pace_groups,
     description, created_by)
   values ('Saturday 6K', now() + interval '20 minutes', now() + interval '110 minutes',
-    'Hyde Park Corner', 51.502700, -0.151900, 6000, array['easy','steady','quick'],
+    'Zamalek Club Gate', 30.044400, 31.235700, 6000, array['easy','steady','quick'],
     'Our weekly 6K. All paces welcome — nobody gets left behind.', v_admin)
   returning id into v_soon;
 
@@ -89,7 +90,7 @@ begin
     meeting_point_lat, meeting_point_lng, distance_meters, capacity,
     pace_groups, description, created_by)
   values ('Track Session', now() + interval '3 days', now() + interval '3 days 1 hour',
-    'Paddington Rec', 51.532200, -0.196500, 5000, 5, array['steady','quick'],
+    'Cairo Stadium Track', 30.070800, 31.312300, 5000, 5, array['steady','quick'],
     'Intervals on the track. Limited places.', v_admin)
   returning id into v_full;
 
@@ -97,7 +98,7 @@ begin
     meeting_point_lat, meeting_point_lng, distance_meters, pace_groups,
     description, created_by)
   values ('Sunday Long Run', now() + interval '8 days', now() + interval '8 days 2 hours',
-    'Battersea Park', 51.479100, -0.155700, 15000, array['easy','steady'],
+    'Al-Azhar Park', 30.040300, 31.263300, 15000, array['easy','steady'],
     'Longer, slower, chattier.', v_admin)
   returning id into v_future;
 
@@ -106,7 +107,7 @@ begin
     meeting_point_lat, meeting_point_lng, distance_meters, status, published_at,
     pace_groups, created_by)
   values ('Last Saturday 6K', now() - interval '7 days', now() - interval '7 days' + interval '90 minutes',
-    'Hyde Park Corner', 51.502700, -0.151900, 6000, 'completed', now() - interval '14 days',
+    'Zamalek Club Gate', 30.044400, 31.235700, 6000, 'completed', now() - interval '14 days',
     array['easy','steady'], v_admin)
   returning id into v_past;
 
@@ -114,7 +115,7 @@ begin
   insert into public.runs (title, starts_at, meeting_point_name,
     meeting_point_lat, meeting_point_lng, pace_groups, created_by)
   values ('Bank Holiday Special (unpublished)', now() + interval '20 days',
-    'Regent''s Park', 51.531200, -0.156100, array['easy'], v_admin)
+    'New Cairo Waterway', 30.010000, 31.420000, array['easy'], v_admin)
   returning id into v_draft;
 
   -- Publishing schedules each run's reminders too.

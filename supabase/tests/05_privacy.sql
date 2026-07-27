@@ -26,9 +26,9 @@ begin
 
   perform tests.act_as(v_a);
   perform public.register_push_token('ExponentPushToken[aaa]', 'ios');
-  perform public.check_in(v_run, 51.502700, -0.151900, 10);
+  perform public.check_in(v_run, 30.044400, 31.235700, 10);
   perform tests.act_as(v_b);
-  perform public.check_in(v_run, 51.502700, -0.151900, 10);
+  perform public.check_in(v_run, 30.044400, 31.235700, 10);
   perform tests.act_as_system();
 
   -- ---------------------------------------------------------------------

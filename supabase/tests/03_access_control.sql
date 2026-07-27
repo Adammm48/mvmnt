@@ -126,7 +126,7 @@ begin
    where id = v_pub;
 
   perform tests.act_as(v_b);
-  perform public.check_in(v_pub, 51.502700, -0.151900, 10);
+  perform public.check_in(v_pub, 30.044400, 31.235700, 10);
 
   perform tests.act_as(v_a);
   perform tests.assert_eq(

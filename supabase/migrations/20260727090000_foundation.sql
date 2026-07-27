@@ -126,3 +126,21 @@ begin
   return new;
 end;
 $$;
+
+-- ---------------------------------------------------------------------------
+-- The club's timezone.
+--
+-- A function rather than a literal repeated across notification copy and
+-- reminder scheduling: those two must never disagree, and a club that moves or
+-- runs a second city should be a one-line change (Principles §2).
+--
+-- Runs happen at a physical meeting point in one place. Times are rendered and
+-- scheduled here, not in the member's device timezone — a member travelling
+-- abroad should still read "07:00", not their local equivalent.
+-- ---------------------------------------------------------------------------
+create or replace function app_private.club_timezone()
+returns text
+language sql
+immutable
+parallel safe
+as $$ select 'Africa/Cairo'::text $$;

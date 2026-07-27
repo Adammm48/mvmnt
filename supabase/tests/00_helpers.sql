@@ -106,7 +106,7 @@ grant usage on schema tests to authenticated;
 grant execute on all functions in schema tests to authenticated;
 
 -- A convenient fixture: a published run starting in two hours at a known point
--- (Hyde Park Corner, London).
+-- (Zamalek Club Gate, London).
 create or replace function tests.make_run(
   p_admin    uuid,
   p_capacity integer default null,
@@ -121,8 +121,8 @@ begin
     meeting_point_lat, meeting_point_lng, capacity, created_by, pace_groups
   )
   values (
-    'Saturday 6K', p_starts, p_starts + interval '90 minutes', 'Hyde Park Corner',
-    51.502700, -0.151900, p_capacity, p_admin, array['easy','steady']
+    'Saturday 6K', p_starts, p_starts + interval '90 minutes', 'Zamalek Club Gate',
+    30.044400, 31.235700, p_capacity, p_admin, array['easy','steady']
   )
   returning id into v_id;
 

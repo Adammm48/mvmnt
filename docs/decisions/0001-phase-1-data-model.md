@@ -110,15 +110,25 @@ people who never consented and cannot be informed).
 `ALTER TABLE … ADD COLUMN` is cheap; carrying unused columns is not (Principles §1). The exception
 was `club_id`, argued above and still declined.
 
-## Open question for the product owner
+## Settled: the waitlist has no teeth
 
-**The waitlist is a social contract, not a feature** (the Outsider's point, and unresolved). If a
-spot opens at 11pm and a member is auto-promoted, they wake up committed to a run they had mentally
-dropped. Do they lose the spot if they do not show? Is there a penalty?
+**The waitlist is a social contract, not a feature** (the Outsider's point). If a spot opens at 11pm
+and a member is auto-promoted, they wake up committed to a run they had mentally dropped. Does the
+spot lapse if they do not show? Is there a penalty?
 
-Phase 1 implements the kindest reading — auto-promote, notify, no penalty, withdraw freely — because
-it is the only version that cannot make someone angry about a rule they never agreed to. Flagged for
-confirmation.
+**Decided 2026-07-27: no penalty.** Auto-promote, notify, and the member may withdraw freely — the
+only version that cannot make someone angry about a rule they never agreed to.
+
+If that is ever revisited, note what a penalty would require: a no-show is only observable via
+check-in, and check-in has a real false-negative rate (denied permission, dead battery, GPS drift —
+see [ADR 0002](0002-check-in-location-and-retention.md)). Penalising no-shows would therefore
+penalise people who did turn up but whose phone failed. That is an argument for keeping it toothless
+beyond mere kindness.
+
+## Settled: "run ended" goes to those who turned up
+
+Confirmed 2026-07-27. The `run_ended` notification is addressed to members who **checked in**, not
+everyone who signed up, so a no-show does not receive "nice work — that's a wrap".
 
 ## Also unaddressed, flagged not solved
 

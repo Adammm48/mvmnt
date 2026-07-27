@@ -11,9 +11,9 @@
 -- mobile app, admin console and delivery worker all read the rendered strings
 -- off notification_events; none of them formats its own.
 --
--- Times render in Europe/London — the club is UK-based, and the run happens at
--- a physical meeting point in one timezone regardless of where the member's
--- phone thinks it is.
+-- Times render in the club's timezone (app_private.club_timezone()); the run
+-- happens at a physical meeting point regardless of where a member's phone
+-- thinks it is.
 -- ---------------------------------------------------------------------------
 create or replace function app_private.render_notification(
   p_type notification_type,
@@ -25,7 +25,7 @@ language plpgsql
 stable
 as $$
 declare
-  local_start timestamp := p_run.starts_at at time zone 'Europe/London';
+  local_start timestamp := p_run.starts_at at time zone app_private.club_timezone();
   time_str    text      := to_char(local_start, 'HH24:MI');
   day_str     text      := to_char(local_start, 'FMDay');
 begin
