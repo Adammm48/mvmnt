@@ -33,7 +33,11 @@
       "Bash(curl -s -o /dev/null -w \"web dev server: %{http_code}\\\\n\" http://127.0.0.1:8081/)",
       "Bash(curl -s \"http://127.0.0.1:54324/api/v1/messages?limit=1\")",
       "Bash(python3 -c ' *)",
-      "Bash(curl -s \"http://127.0.0.1:54324/api/v1/message/2j7oqq5lGvKsYa2prQLlmz\")"
+      "Bash(curl -s \"http://127.0.0.1:54324/api/v1/message/2j7oqq5lGvKsYa2prQLlmz\")",
+      "Bash(npm create *)",
+      "Bash(curl -s -o /dev/null http://127.0.0.1:5173/)",
+      "Bash(curl -s -o /dev/null -w \"admin: %{http_code}\\\\n\" http://127.0.0.1:5173/)",
+      "Bash(curl -s -X POST http://127.0.0.1:54321/auth/v1/otp -H 'apikey: __TRACKED_VAR__' -H 'Content-Type: application/json' -d '{\"email\":\"organiser@mvmnt.test\",\"create_user\":false}' -o /dev/null)"
     ]
   }
 }

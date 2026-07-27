@@ -1,0 +1,75 @@
+import { useEffect, useState } from 'react';
+import type { Session } from '@supabase/supabase-js';
+import { supabase } from './lib/supabase';
+import { SignIn } from './screens/SignIn';
+import { RunList } from './screens/RunList';
+import { RunEditor } from './screens/RunEditor';
+import { RunDay } from './screens/RunDay';
+
+export type View =
+  | { name: 'list' }
+  | { name: 'editor'; runId: string | null }
+  | { name: 'runday'; runId: string };
+
+export default function App() {
+  const [session, setSession] = useState<Session | null>(null);
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  const [view, setView] = useState<View>({ name: 'list' });
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setSession(data.session));
+    const { data } = supabase.auth.onAuthStateChange((_e, next) => setSession(next));
+    return () => data.subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!session) {
+      setIsAdmin(null);
+      return;
+    }
+    // Ask the database, never a local claim. is_admin() is the single source of
+    // truth and the same function every RPC checks (Principles §2). Hiding the
+    // UI is a courtesy; the server is what actually refuses.
+    supabase.rpc('is_admin').then(({ data }) => setIsAdmin(data === true));
+  }, [session]);
+
+  if (!session) return <SignIn />;
+
+  if (isAdmin === null) {
+    return <main className="center-page">Checking your access…</main>;
+  }
+
+  if (!isAdmin) {
+    return (
+      <main className="center-page">
+        <div className="notice error">
+          This account is not an organiser. Ask an existing organiser to give you access.
+        </div>
+        <button onClick={() => supabase.auth.signOut()}>Sign out</button>
+      </main>
+    );
+  }
+
+  return (
+    <>
+      <header className="app-header">
+        <h1>MVMNT · ORGANISER</h1>
+        <div className="who">
+          <span>{session.user.email}</span>
+          <button className="link" onClick={() => supabase.auth.signOut()}>
+            Sign out
+          </button>
+        </div>
+      </header>
+      <main>
+        {view.name === 'list' && <RunList onNavigate={setView} />}
+        {view.name === 'editor' && (
+          <RunEditor runId={view.runId} onDone={() => setView({ name: 'list' })} />
+        )}
+        {view.name === 'runday' && (
+          <RunDay runId={view.runId} onBack={() => setView({ name: 'list' })} />
+        )}
+      </main>
+    </>
+  );
+}
