@@ -33,6 +33,19 @@ begin
   -- ---------------------------------------------------------------------
   v_run := tests.make_run(v_admin, null);
 
+  -- A run nobody has joined reports zeroes across the board. Worth asserting:
+  -- the LEFT JOIN in run_attendance_counts yields an all-NULL row for an empty
+  -- run, which silently counted as a waitlisted member until it was guarded.
+  perform tests.assert_eq(
+    (select going_count::int from public.run_attendance_counts where run_id = v_run), 0,
+    'an empty run has nobody going');
+  perform tests.assert_eq(
+    (select waitlist_count::int from public.run_attendance_counts where run_id = v_run), 0,
+    'an empty run has an empty waitlist, not a phantom member');
+  perform tests.assert_eq(
+    (select checked_in_count::int from public.run_attendance_counts where run_id = v_run), 0,
+    'an empty run has nobody checked in');
+
   perform tests.act_as(v_a);
   v_state := public.join_run(v_run, 'easy');
   perform tests.assert_eq(v_state, 'signed_up'::public.attendance_state,

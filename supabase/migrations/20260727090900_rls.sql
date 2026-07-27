@@ -193,14 +193,55 @@ create policy flags_admin_write on public.feature_flags
   with check (public.is_admin());
 
 -- ---------------------------------------------------------------------------
--- Views
+-- Table grants — an explicit allowlist.
+--
+-- Do NOT assume Supabase has already granted broad privileges on new tables in
+-- `public`. Current versions do not: a table created by a migration reaches
+-- `authenticated` with no SELECT at all, and RLS policies on it are dead
+-- letters because the role cannot reach the table to have them evaluated.
+--
+-- (This was found the hard way. A local harness that mimicked the older,
+-- permissive behaviour passed every access-control test while the real stack
+-- refused to let a member read their own profile.)
+--
+-- Two layers, and both must agree: the GRANT decides whether the role may touch
+-- the table at all, RLS decides which rows. Least privilege means granting only
+-- the verbs each policy above is written to constrain.
+-- ---------------------------------------------------------------------------
+
+-- Read-only for members; every change goes through a validating RPC.
+grant select on public.runs                    to authenticated;
+grant select on public.run_attendance          to authenticated;
+grant select on public.run_attendance_events   to authenticated;
+grant select on public.check_in_evidence       to authenticated;
+grant select on public.notification_events     to authenticated;
+grant select on public.notification_deliveries to authenticated;
+grant select on public.audit_log               to authenticated;
+grant select on public.feature_flags           to authenticated;
+
+-- Members edit their own profile (the role column is guarded by trigger).
+grant select, update on public.profiles        to authenticated;
+
+-- Members may sign a device out; registration goes through register_push_token.
+grant select, delete on public.push_tokens     to authenticated;
+
+-- Admin write paths. RLS narrows these to admins — the grant only opens the
+-- verb, the policy decides who and which rows.
+grant insert, update, delete on public.runs          to authenticated;
+grant insert, update, delete on public.feature_flags to authenticated;
+
+-- Views.
 --
 -- run_attendance_counts intentionally bypasses row-level RLS to publish
 -- aggregate headcounts ("312 people are already in", App Spec §2). It selects
 -- no identifying column, so there is nothing to leak.
--- ---------------------------------------------------------------------------
 grant select on public.run_attendance_counts to authenticated;
 grant select on public.run_attendance_view   to authenticated;
+
+-- service_role is the trusted server identity used by Edge Functions. It
+-- bypasses RLS by design, so its grants are broad — but it is never exposed to
+-- a client, and its key must never be bundled into the app or admin console.
+grant select, insert, update, delete on all tables in schema public to service_role;
 
 -- ---------------------------------------------------------------------------
 -- Function grants

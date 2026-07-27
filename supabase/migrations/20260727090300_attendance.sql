@@ -150,12 +150,18 @@ comment on view public.run_attendance_view is
 -- no member directory to harvest, consistent with the anti-harassment intent
 -- behind the QR-only friend system in §4.4.
 -- ---------------------------------------------------------------------------
+-- The `a.id is not null` guard on the waitlist filter is load-bearing: the LEFT
+-- JOIN yields one all-NULL row for a run nobody has joined, and without the
+-- guard that phantom row satisfies "signed_up_at IS NULL AND withdrawn_at IS
+-- NULL" and every empty run reports a waitlist of one. The other two filters
+-- are safe already because they test a column for NOT NULL.
 create view public.run_attendance_counts as
   select
     r.id                                                                          as run_id,
     count(*) filter (where a.signed_up_at is not null and a.withdrawn_at is null)  as going_count,
     count(*) filter (where a.checked_in_at is not null and a.withdrawn_at is null) as checked_in_count,
-    count(*) filter (where a.signed_up_at is null and a.withdrawn_at is null)      as waitlist_count
+    count(*) filter (where a.id is not null
+                       and a.signed_up_at is null and a.withdrawn_at is null)     as waitlist_count
   from public.runs r
   left join public.run_attendance a on a.run_id = r.id
   group by r.id;

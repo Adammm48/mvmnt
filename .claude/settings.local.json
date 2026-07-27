@@ -9,7 +9,14 @@
       "Bash(python3 -)",
       "Bash(bash test.sh)",
       "Bash(git add *)",
-      "Bash(git -c 'user.name=Adam Elbasiony' -c user.email=skteatea1@gmail.com commit -q -m ' *)"
+      "Bash(git -c 'user.name=Adam Elbasiony' -c user.email=skteatea1@gmail.com commit -q -m ' *)",
+      "Bash(colima start *)",
+      "Bash(docker info *)",
+      "Bash(npm install *)",
+      "Bash(npx supabase *)",
+      "Bash(colima stop *)",
+      "Bash(docker run *)",
+      "Bash(npm run *)"
     ]
   }
 }

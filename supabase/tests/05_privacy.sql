@@ -34,8 +34,10 @@ begin
   -- ---------------------------------------------------------------------
   -- Retention: coordinates expire after 30 days, the check-in itself does not.
   -- ---------------------------------------------------------------------
+  -- Scoped to this fixture's run: the suite runs against a seeded database,
+  -- so a global count would be measuring the seed, not the behaviour.
   perform tests.assert_eq(
-    (select count(*)::int from public.check_in_evidence), 2,
+    (select count(*)::int from public.check_in_evidence where run_id = v_run), 2,
     'both check-ins recorded location evidence');
 
   -- Age one of them past the window.
@@ -47,8 +49,9 @@ begin
   v_purged := public.purge_expired_location_data();
 
   perform tests.assert_eq(v_purged, 1, 'the purge removes exactly the expired evidence');
+  -- (1, not 2: the seed's own evidence rows are recent and must survive.)
   perform tests.assert_eq(
-    (select count(*)::int from public.check_in_evidence), 1,
+    (select count(*)::int from public.check_in_evidence where run_id = v_run), 1,
     'evidence inside the retention window is kept');
 
   -- The attendance record itself is untouched — Phase 2 points depend on it.

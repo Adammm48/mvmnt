@@ -14,10 +14,16 @@
 -- Inserting into auth.users directly is the documented way to seed a local
 -- Supabase stack; the on_auth_user_created trigger creates each profile.
 -- ---------------------------------------------------------------------------
+-- The empty-string token columns are not decoration. They are nullable in
+-- Postgres, but GoTrue scans them into non-nullable Go strings, so a NULL makes
+-- every sign-in fail with an opaque "Database error querying schema" 500 that
+-- says nothing about the real cause. Leave them as ''.
 insert into auth.users (
   instance_id, id, aud, role, email, encrypted_password,
   email_confirmed_at, created_at, updated_at,
-  raw_app_meta_data, raw_user_meta_data
+  raw_app_meta_data, raw_user_meta_data,
+  confirmation_token, recovery_token,
+  email_change, email_change_token_new, email_change_token_current
 )
 select
   '00000000-0000-0000-0000-000000000000',
@@ -28,9 +34,23 @@ select
   now(), now(), now(),
   '{"provider":"email","providers":["email"]}'::jsonb,
   jsonb_build_object('full_name',
-    case n when 1 then 'Club Organiser' else 'Runner ' || n end)
+    case n when 1 then 'Club Organiser' else 'Runner ' || n end),
+  '', '', '', '', ''
 from generate_series(1, 30) as n
 on conflict (id) do nothing;
+
+-- Each account needs a matching identity row, or the provider linkage is
+-- missing and sign-in fails even once the tokens above are fixed.
+insert into auth.identities (
+  provider_id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at
+)
+select
+  u.id::text, u.id,
+  jsonb_build_object('sub', u.id::text, 'email', u.email, 'email_verified', true),
+  'email', now(), now(), now()
+from auth.users u
+where u.email like '%@mvmnt.test'
+on conflict (provider, provider_id) do nothing;
 
 -- The first admin. In production this same statement is how the first admin is
 -- created — run once against the project, then admins promote each other.
