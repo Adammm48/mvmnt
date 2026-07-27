@@ -14,21 +14,47 @@ stats too."*
 **Status:** confirmed requirement, scheduled for Phase 5 where App Spec §10 already places it.
 
 **Why it is not being built now:** it is two phases past the current one, and pulling it forward
-would break the build order MVMNT set. It is also gated on things that do not exist yet — an Apple
-Developer account, and an Apple entitlement request that Apple reviews separately from the app
-itself.
+would break the build order MVMNT set.
 
-**What it actually involves** (worth knowing before it is scheduled, because it is routinely
-underestimated):
+### How hard are the permissions? Not very — and iOS is the easy half
+
+An earlier note in this file claimed HealthKit needs a separate Apple entitlement that Apple reviews
+independently. **That was wrong**, and the correction matters for planning:
+
+- **iOS is self-serve.** HealthKit is a standard capability enabled in Xcode and App Store Connect.
+  No application, no approval queue, no waiting. The only real prerequisite is the Apple Developer
+  Program membership already needed for everything else.
+  Required: `NSHealthShareUsageDescription` (and `NSHealthUpdateUsageDescription` if ever writing),
+  worded specifically — a vague purpose string is the common rejection, not the health access
+  itself. App Review applies Guideline 5.1.3: no health data for advertising, no selling it, a
+  privacy policy is mandatory, and HealthKit data must not be stored in iCloud.
+
+- **Android is the one with a real gate.** Health Connect permissions require a **health apps
+  declaration form** in the Play Console, reviewed by Google against a list of approved use cases.
+  Fitness tracking qualifies, but it is a genuine review that can bounce and take days to a couple
+  of weeks. Also needs an in-app permissions rationale screen and a linked privacy policy.
+
+  This is the same asymmetry App Spec §12 already noted for background location: Android is
+  stricter, not looser.
+
+- **The actual blocker is a published privacy policy** at a public URL. Both stores require one for
+  health data, MVMNT does not have one, and it is writing rather than engineering — so it tends to
+  be the thing that holds a release up.
+
+*Store policies move. Re-check the specifics when this is scheduled rather than trusting this note.*
+
+**Other things worth knowing before it is scheduled:**
 
 - **Two integrations, not one.** HealthKit on iOS and Health Connect on Android share no code
   (App Spec §12). Budget it as two small builds.
-- **A separate Apple entitlement.** HealthKit access needs Apple's approval, with a specific,
-  non-blanket permission prompt explaining exactly which data types are read and why
-  (App Spec §8, Engineering Principles §4).
-- **Health data raises the privacy bar sharply** — it is special-category data under GDPR and
-  sensitive under Egyptian PDPL. It needs its own consent, its own retention rule and its own
-  deletion path, exactly as location got in [ADR 0002](decisions/0002-check-in-location-and-retention.md).
+- **Health data raises the privacy bar sharply** — special-category under GDPR, sensitive under
+  Egyptian PDPL. It needs its own consent, retention rule and deletion path, exactly as location got
+  in [ADR 0002](decisions/0002-check-in-location-and-retention.md).
+- **Prefer on-device.** If members only need to *see* their own stats, read from HealthKit/Health
+  Connect and render locally without ever transmitting it. That avoids server-side storage,
+  retention and cross-border transfer questions altogether, and makes both store reviews easier.
+  Syncing health data to Supabase is a materially larger commitment and should be a deliberate
+  decision, not a default — it only becomes necessary if health stats ever feed the leaderboard.
 - **Read-only, and never the source of truth for a check-in.** Health data is reported by the
   device; it should decorate a member's own profile, not decide attendance or points.
 
