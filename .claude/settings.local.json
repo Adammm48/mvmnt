@@ -44,7 +44,13 @@
       "Bash(ffmpeg -version)",
       "Bash(python3 scripts/generate-placeholder-media.py)",
       "Bash(curl -s -X POST http://127.0.0.1:54321/auth/v1/otp -H 'apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0' -H 'Content-Type: application/json' -d '{\"email\":\"runner7@mvmnt.test\",\"create_user\":false}' -o /dev/null)",
-      "Bash(curl -s -X DELETE \"http://127.0.0.1:54324/api/v1/messages\" -o /dev/null)"
+      "Bash(curl -s -X DELETE \"http://127.0.0.1:54324/api/v1/messages\" -o /dev/null)",
+      "Bash(curl -s -o /dev/null -w \"admin dev server: %{http_code}\\\\n\" http://127.0.0.1:5173/)",
+      "Bash(nohup npx vite --port 5173)",
+      "Bash(lsof -nP -iTCP:5173 -sTCP:LISTEN)",
+      "Bash(pkill -f \"vite\")",
+      "Bash(nohup npx vite --port 5173 --host 127.0.0.1)",
+      "Bash(curl -s -X POST http://127.0.0.1:54321/auth/v1/otp -H 'apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0' -H 'Content-Type: application/json' -d '{\"email\":\"organiser@mvmnt.test\",\"create_user\":false}' -o /dev/null)"
     ]
   }
 }

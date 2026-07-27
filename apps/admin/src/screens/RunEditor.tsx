@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { CLUB_TIMEZONE, toMemberMessage, type Run } from '@mvmnt/shared';
+import { MediaUpload } from '../components/MediaUpload';
 
 type Props = { runId: string | null; onDone: () => void };
 
@@ -30,6 +31,13 @@ export function RunEditor({ runId, onDone }: Props) {
   const [distance, setDistance] = useState('');
   const [capacity, setCapacity] = useState('');
   const [paceGroups, setPaceGroups] = useState('');
+
+  const reload = async () => {
+    const id = run?.id ?? runId;
+    if (!id) return;
+    const { data } = await supabase.from('runs').select('*').eq('id', id).maybeSingle();
+    setRun(data ?? null);
+  };
 
   useEffect(() => {
     if (!runId) return;
@@ -239,6 +247,29 @@ export function RunEditor({ runId, onDone }: Props) {
             </div>
           </div>
         </div>
+
+        {run && (
+          <>
+            <MediaUpload
+              runId={run.id}
+              column="cover_image_url"
+              label="Cover photo"
+              accept="image/jpeg,image/png,image/webp"
+              hint="Shown behind the run on the home screen and at the top of the run page. Landscape works best."
+              currentUrl={run.cover_image_url}
+              onChanged={reload}
+            />
+            <MediaUpload
+              runId={run.id}
+              column="cover_video_url"
+              label="Cover clip (optional)"
+              accept="video/mp4,video/quicktime"
+              hint="A few seconds, no longer. It plays muted and on a loop, so it must not rely on sound."
+              currentUrl={run.cover_video_url}
+              onChanged={reload}
+            />
+          </>
+        )}
 
         <div className="field">
           <label htmlFor="pace">Pace groups</label>
