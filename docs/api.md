@@ -221,8 +221,8 @@ fails data minimisation.
 
 ## Service-role only
 
-`EXECUTE` is revoked from `anon` and `authenticated`. Called by the scheduler
-Edge Function.
+`EXECUTE` is revoked from `anon` and `authenticated`. Both run automatically —
+see *Scheduling* below — and are also callable by hand for testing.
 
 ### `scheduler_tick() → jsonb`
 
@@ -230,8 +230,9 @@ Advances run statuses and fans out due notifications. Returns
 `{runs_started, runs_ended, events_fanned_out, deliveries_queued}`.
 
 Idempotent throughout and uses `SKIP LOCKED`, so overlapping invocations divide
-the work rather than blocking or double-sending. **Run every minute** — reminders
-are scheduled to the minute, so a coarser interval delays them by its own length.
+the work rather than blocking or double-sending. **Runs every minute** —
+reminders are scheduled to the minute, so a coarser interval delays them by its
+own length.
 
 A member must never be able to call this, or they could force the club's entire
 notification fan-out on demand.
@@ -239,7 +240,41 @@ notification fan-out on demand.
 ### `purge_expired_location_data() → integer`
 
 Deletes `check_in_evidence` older than 30 days (ADR 0002 §5) and returns the row
-count. The check-in itself survives; only the coordinates go. Run daily.
+count. The check-in itself survives; only the coordinates go. **Runs daily** at
+03:15 UTC.
+
+---
+
+## Scheduling
+
+Both functions above are driven by `pg_cron`, set up in migration
+`…030000_schedule_the_scheduler.sql`:
+
+| Job | Schedule | Runs |
+|---|---|---|
+| `mvmnt-scheduler-tick` | `* * * * *` | `scheduler_tick()` |
+| `mvmnt-purge-location` | `15 3 * * *` | `purge_expired_location_data()` |
+
+They are scheduled as pure SQL, so there is no secret to store and nothing to
+authenticate against. To check they are alive:
+
+```sql
+select jobname, schedule, active from cron.job;
+select jobname, status, return_message, start_time
+from cron.job_run_details r join cron.job j using (jobid)
+order by start_time desc limit 10;
+```
+
+**What this does NOT cover: actually sending a push.** That needs an outbound
+HTTP call to Expo, so it belongs to the scheduler Edge Function, which is
+scheduled separately once `push_delivery` is switched on and APNs/FCM
+credentials exist. Until then delivery rows accumulate as `pending`, which is
+the honest state — queued, because sending is not configured. The commented
+setup (pg_net + Vault for the service role key) is at the bottom of that
+migration.
+
+**Never inline the service role key into a cron command.** It would sit in
+`cron.job` in plain text, readable by anyone who can read that table. Use Vault.
 
 ---
 
