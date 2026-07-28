@@ -56,6 +56,18 @@ export async function hasPendingFor(runId: string): Promise<boolean> {
 }
 
 /**
+ * Drop a queued check-in for one run.
+ *
+ * Needed when a member withdraws after checking in offline: without this the
+ * queued entry replays on the next foreground and silently checks them back
+ * into a run they just pulled out of.
+ */
+export async function removePendingFor(runId: string): Promise<void> {
+  const items = await read();
+  await write(items.filter((i) => i.runId !== runId));
+}
+
+/**
  * Replay everything queued. Safe to call on every app foreground: check_in() is
  * idempotent, so a replay that already succeeded changes nothing.
  *

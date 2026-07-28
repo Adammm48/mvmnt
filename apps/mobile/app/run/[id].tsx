@@ -8,7 +8,7 @@ import { Loading, Notice } from '@/components/Feedback';
 import { RunHero } from '@/components/RunHero';
 import { Celebration } from '@/components/Celebration';
 import { getCurrentFix } from '@/lib/location';
-import { enqueue, hasPendingFor } from '@/lib/checkInQueue';
+import { enqueue, hasPendingFor, removePendingFor } from '@/lib/checkInQueue';
 import {
   colors,
   radius,
@@ -112,6 +112,20 @@ export default function RunDetail() {
       setError(toMemberMessage(withdrawError));
       return;
     }
+
+    // Drop any check-in queued while offline. Without this it replays on the
+    // next foreground and quietly checks the member back into the run they
+    // just pulled out of.
+    await removePendingFor(id);
+    setQueuedOffline(false);
+
+    // Someone leaving the waitlist never held a place, so telling them they
+    // freed one is simply untrue.
+    setSuccess(
+      myState === 'waitlisted'
+        ? "You're off the waitlist."
+        : "You're out. Your place is free for someone else.",
+    );
     await load();
   }
 
@@ -190,6 +204,22 @@ export default function RunDetail() {
   const alreadyIn = myState === 'checked_in' || queuedOffline;
   const attending = myState === 'signed_up' || myState === 'waitlisted';
 
+  // Only a capped run can be full; capacity null means unlimited.
+  const runIsFull =
+    run.capacity !== null && (counts?.going_count ?? 0) >= run.capacity;
+
+  // Mirrors withdraw_from_run()'s own rule (starts_at > now), so the button is
+  // offered exactly when the server would accept it — never showing an action
+  // that is going to be refused, and never hiding one that would succeed.
+  const notStarted = new Date(run.starts_at) > new Date();
+  const canWithdraw = notStarted && (attending || alreadyIn);
+  const withdrawLabel =
+    myState === 'waitlisted'
+      ? 'Leave the waitlist'
+      : alreadyIn
+        ? "Actually, I can't make it"
+        : "I can't make it";
+
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
       <RunHero run={run} />
@@ -226,10 +256,16 @@ export default function RunDetail() {
       </View>
 
       {/*
-        One primary action per screen (App Spec §2). Which one it is depends on
-        where the member is in the journey: check in on the day, otherwise join,
-        otherwise nothing — withdrawing is deliberately secondary so it never
-        competes with the encouraging action.
+        One primary action per screen (App Spec §2): check in on the day,
+        otherwise join. Withdrawing is always secondary so it never competes
+        with the encouraging action — but it must still be REACHABLE.
+
+        App Spec §4.1 grants withdrawal "at any time before the run starts",
+        which includes the hour when check-in is already open. Gating it on
+        !checkInOpen stranded anyone who realised at 06:30 they could not make
+        the 07:00 run: the server would have accepted the withdrawal, the
+        screen simply never offered it. That matters most on a capped run,
+        where the freed place should pass to someone on the waitlist.
       */}
         {!cancelled && (
           <View style={styles.actions}>
@@ -249,19 +285,33 @@ export default function RunDetail() {
           )}
 
           {!checkInOpen && isJoinable(run) && !attending && (
-            <Button label="Join this run" onPress={join} loading={busy} />
-          )}
-
-          {!checkInOpen && attending && (
+            // Say which it is BEFORE the tap. Offering "Join this run" on a
+            // full run and only revealing the waitlist afterwards is a small
+            // bait-and-switch — the member should know what they are agreeing
+            // to. The server still decides; this only reports what it will do.
             <Button
-              label={myState === 'waitlisted' ? 'Leave the waitlist' : "I can't make it"}
-              variant="secondary"
-              onPress={withdraw}
+              label={runIsFull ? 'Join the waitlist' : 'Join this run'}
+              onPress={join}
               loading={busy}
+              accessibilityHint={
+                runIsFull
+                  ? 'This run is full. You will be added to the waitlist and moved up automatically if someone drops out.'
+                  : undefined
+              }
             />
           )}
 
-          {!checkInOpen && !isJoinable(run) && !attending && (
+          {canWithdraw && (
+            <Button
+              label={withdrawLabel}
+              variant="secondary"
+              onPress={withdraw}
+              loading={busy}
+              accessibilityHint="Frees your place so someone on the waitlist can take it"
+            />
+          )}
+
+          {!checkInOpen && !isJoinable(run) && !attending && !alreadyIn && (
             <Text style={styles.closedNote}>
               {run.status === 'completed'
                 ? 'This run has finished.'

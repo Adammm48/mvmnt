@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
@@ -7,6 +7,7 @@ import { Button } from '@/components/Button';
 import { Notice } from '@/components/Feedback';
 import { registerForPush } from '@/lib/push';
 import { pendingCount } from '@/lib/checkInQueue';
+import { confirmDestructive } from '@/lib/confirm';
 import { colors, radius, spacing, toMemberMessage, MIN_TOUCH_TARGET } from '@mvmnt/shared';
 
 export default function ProfileScreen() {
@@ -62,32 +63,27 @@ export default function ProfileScreen() {
    * erase_member() destroys personal data and anonymises past attendance so
    * historical headcounts stay correct — see ADR 0002 §6.
    */
-  function confirmDelete() {
-    Alert.alert(
-      'Delete your account?',
-      'This removes your profile, your devices and any location data we hold. Your past attendance stays in the club’s totals, but is no longer linked to you. This cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            setBusy(true);
-            const { error: deleteError } = await supabase.rpc('erase_member', {
-              p_user_id: session!.user.id,
-            });
-            setBusy(false);
+  async function confirmDelete() {
+    const confirmed = await confirmDestructive({
+      title: 'Delete your account?',
+      message:
+        'This removes your profile, your devices and any location data we hold. Your past attendance stays in the club’s totals, but is no longer linked to you. This cannot be undone.',
+      confirmLabel: 'Delete',
+    });
+    if (!confirmed) return;
 
-            if (deleteError) {
-              setError(toMemberMessage(deleteError));
-              return;
-            }
-            await signOut();
-            router.replace('/sign-in');
-          },
-        },
-      ],
-    );
+    setBusy(true);
+    const { error: deleteError } = await supabase.rpc('erase_member', {
+      p_user_id: session!.user.id,
+    });
+    setBusy(false);
+
+    if (deleteError) {
+      setError(toMemberMessage(deleteError));
+      return;
+    }
+    await signOut();
+    router.replace('/sign-in');
   }
 
   return (
