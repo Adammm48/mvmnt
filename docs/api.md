@@ -291,6 +291,27 @@ this run`.
 Moderation for App Spec §7: kill a reported member's code without touching their
 account or their existing friendships. Audited.
 
+### `admin_members(p_search text = null, p_limit integer = 50) → rows` *(organiser)*
+
+The members directory: name, email, points, tier, runs attended, streak, last
+run, when they joined, whether they are on the leaderboard, whether they have a
+live friend code, and how many friends they have. Searches name and email;
+capped at 200.
+
+**This is the only thing in MVMNT that lists the whole membership, and it is
+organiser-only.** `profiles` RLS is unchanged — a member still reads exactly one
+row, their own — and the function refuses anyone `is_admin()` says no to.
+[`03_access_control.sql`](../supabase/tests/03_access_control.sql) asserts both
+halves: that an organiser can list and search it, and that a member gets an
+error for either.
+
+Email comes from `auth.users`, which is not reachable through PostgREST at all.
+It is here because it is how an organiser tells two members with the same name
+apart, and the only way to reply to a complaint.
+
+Reads are not audited — logging every keystroke of a search would bury the
+writes that matter. The two actions below are.
+
 ### `admin_adjust_points(p_user_id uuid, p_points integer, p_note text) → void` *(organiser)*
 
 Settles a points dispute without hand-editing a ledger. Recorded as an

@@ -55,6 +55,20 @@ body {
 .app-header .who { font-size: 13px; color: #a8aebf; display: flex; gap: 14px; align-items: center; }
 .app-header .who .link { color: #d6dae4; }
 
+/* Two sections, so the current one has to be legible at a glance rather than
+   inferred from what is on screen. margin-right: auto pushes the account block
+   to the far edge and leaves the tabs beside the wordmark. */
+.app-nav { display: flex; gap: 4px; margin-right: auto; }
+.app-nav .link {
+  color: #a8aebf;
+  font-size: 14px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  min-height: 0;
+}
+.app-nav .link:hover:not(:disabled) { color: #fff; background: rgba(255, 255, 255, 0.08); }
+.app-nav .link.current { color: #fff; background: rgba(255, 255, 255, 0.14); }
+
 main { max-width: 820px; margin: 0 auto; padding: 28px 20px 140px; }
 
 /* --- typography --------------------------------------------------------- */

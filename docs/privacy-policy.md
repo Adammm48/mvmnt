@@ -131,10 +131,15 @@ that is screenshotted and forwarded is useless. Either of you can remove the
 other at any time, from your side alone, and the other person is not told.
 
 **Organisers can see:** who has signed up and who has checked in, so they can
-run the event and account for everyone. They can also check people in manually,
+run the event and account for everyone; and a list of club members with their
+name, email, points and when they last ran, so they can answer a question about
+someone who is not on today's run. They can also check people in manually,
 correct someone's points with a written reason, and switch off a member's friend
-code if it is reported as being misused. Each of those is recorded in an audit
-log.
+code if it is reported as being misused. Each of those actions is recorded in an
+audit log.
+
+Members have no equivalent list. There is no way for one member to look another
+one up.
 
 **Nobody else.** We do not sell, rent or trade your data.
 

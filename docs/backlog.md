@@ -98,12 +98,13 @@ since the geofence radius is measured from these coordinates.
   physically scanning a code, and unfriending is silent and one-sided. Worth
   watching once real people use it; a per-recipient daily cap is the obvious next
   lever if it becomes a complaint.
-- **A members screen for organisers.** Points corrections and disabling a friend
-  code currently hang off the run-day attendee list, because that is where a
-  complaint actually reaches an organiser. A dedicated members directory would be
-  more convenient and would also be the one screen in the app that lets someone
-  browse the whole membership — which is the thing App Spec §4.4 spent the entire
-  friends design avoiding. Deliberately not built.
+- **Promoting somebody to organiser** still needs SQL. The role guard already
+  permits an existing admin to do it, and the members directory is now the
+  obvious place for the button — but role escalation is the most
+  security-sensitive write in the schema, and Section 0 of the spec says that
+  kind of change goes to a council first. Not built yet, and worth doing
+  properly rather than quickly: the club currently has exactly one organiser
+  account, and no in-app way to make a second.
 - **Tie-breaking on the board.** Rank ties share a position, which is correct and
   which the UI now shows honestly (no medal for a shared place). A secondary sort
   — most recent check-in, longest streak — would break more of them, but every

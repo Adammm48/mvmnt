@@ -118,6 +118,12 @@ a single in/out flag for one upcoming run). Neither can reach a run-by-run
 history, which is the thing that would turn either into the attendance log the
 club asked to hide.
 
+Organisers do get a searchable directory, in the console only, because they can
+already assemble one by hand from the run-day lists — withholding the convenient
+version would have cost usefulness without buying privacy. It is a third
+`SECURITY DEFINER` function that refuses anyone who is not an admin; the members'
+own `profiles` policy is untouched and still returns exactly one row.
+
 **Being added as a friend requires being there.** The code behind the QR lives
 three minutes and burns on first scan, so a screenshot forwarded to somebody who
 was not standing there is dead on arrival. That property is invisible in the UI,

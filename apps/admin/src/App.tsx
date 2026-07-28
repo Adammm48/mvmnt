@@ -5,12 +5,14 @@ import { SignIn } from './screens/SignIn';
 import { RunList } from './screens/RunList';
 import { RunEditor } from './screens/RunEditor';
 import { RunDay } from './screens/RunDay';
+import { Members } from './screens/Members';
 import { ToastProvider } from './components/Toast';
 
 export type View =
   | { name: 'list' }
   | { name: 'editor'; runId: string | null }
-  | { name: 'runday'; runId: string };
+  | { name: 'runday'; runId: string }
+  | { name: 'members' };
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -55,6 +57,20 @@ export default function App() {
     <ToastProvider>
       <header className="app-header">
         <h1>MVMNT · ORGANISER</h1>
+        <nav className="app-nav">
+          <button
+            className={`link ${view.name === 'members' ? '' : 'current'}`}
+            onClick={() => setView({ name: 'list' })}
+          >
+            Runs
+          </button>
+          <button
+            className={`link ${view.name === 'members' ? 'current' : ''}`}
+            onClick={() => setView({ name: 'members' })}
+          >
+            Members
+          </button>
+        </nav>
         <div className="who">
           <span>{session.user.email}</span>
           <button className="link" onClick={() => supabase.auth.signOut()}>
@@ -70,6 +86,7 @@ export default function App() {
         {view.name === 'runday' && (
           <RunDay runId={view.runId} onBack={() => setView({ name: 'list' })} />
         )}
+        {view.name === 'members' && <Members />}
       </main>
     </ToastProvider>
   );

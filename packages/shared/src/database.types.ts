@@ -962,6 +962,25 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: undefined
       }
+      admin_members: {
+        Args: { p_limit?: number; p_search?: string }
+        Returns: {
+          avatar_url: string
+          display_name: string
+          email: string
+          friend_code_active: boolean
+          friend_count: number
+          joined_at: string
+          last_run_at: string
+          leaderboard_opt_out: boolean
+          points: number
+          role: Database["public"]["Enums"]["member_role"]
+          runs_attended: number
+          streak_weeks: number
+          tier: Database["public"]["Enums"]["member_tier"]
+          user_id: string
+        }[]
+      }
       admin_remove_check_in: {
         Args: { p_run_id: string; p_user_id: string }
         Returns: undefined

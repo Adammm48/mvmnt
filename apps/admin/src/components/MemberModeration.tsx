@@ -16,10 +16,17 @@ import { useToast } from './Toast';
 export function MemberModeration({
   userId,
   displayName,
+  /**
+   * Whether they have a live friend code right now. Optional: the run-day list
+   * does not know, and "unknown" is a better default than a confident wrong
+   * answer — the RPC revokes whatever exists either way.
+   */
+  codeActive,
   onDone,
 }: {
   userId: string;
   displayName: string;
+  codeActive?: boolean;
   onDone: () => void;
 }) {
   const toast = useToast();
@@ -95,6 +102,8 @@ export function MemberModeration({
         <div className="hint">
           If they have reported that someone is adding them without consent, turning the code off
           stops any code already in circulation.
+          {codeActive === false &&
+            ' They have no live code at the moment — codes expire after three minutes on their own, so there may be nothing to turn off.'}
         </div>
         <button className="danger" onClick={disableCode} disabled={busy} style={{ marginTop: 8 }}>
           Disable their friend code

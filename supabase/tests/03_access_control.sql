@@ -149,6 +149,40 @@ begin
     (select count(*)::int from public.runs where id = v_draft), 1,
     'an admin can see draft runs');
 
+  -- ---------------------------------------------------------------------
+  -- The members directory is the organiser's, and only the organiser's.
+  --
+  -- It is the one thing in the app that lists the whole membership, so the
+  -- test that a member cannot reach it matters more than the test that an
+  -- organiser can. EXECUTE is granted to `authenticated` — the grant is the
+  -- outer fence and the is_admin() check inside is what actually decides, so
+  -- this asserts the check, not the grant.
+  -- ---------------------------------------------------------------------
+  perform tests.assert(
+    (select count(*) from public.admin_members()) >= 3,
+    'an organiser can list the membership');
+
+  perform tests.assert(
+    exists (select 1 from public.admin_members('ama') where display_name = 'ama'),
+    'and search it by name');
+
+  perform tests.assert(
+    exists (select 1 from public.admin_members('ben@example.test') where display_name = 'ben'),
+    'and by email, which is how two members with the same name are told apart');
+
+  perform tests.act_as(v_a);
+  perform tests.assert_rejects(
+    'select * from public.admin_members()',
+    'a member cannot list the membership — this is the directory §4.4 exists to prevent');
+  perform tests.assert_rejects(
+    'select * from public.admin_members(''ben'')',
+    'nor search it, which would be the same disclosure one name at a time');
+
+  -- The directory must not have quietly relaxed the underlying table.
+  perform tests.assert_eq(
+    (select count(*)::int from public.profiles), 1,
+    'and still reads exactly one profile directly — their own');
+
   perform tests.act_as_system();
   raise notice 'PASS 03_access_control';
 end $$;
