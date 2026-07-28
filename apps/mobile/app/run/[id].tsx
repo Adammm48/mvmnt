@@ -16,8 +16,7 @@ import {
   formatRunDate,
   formatRunTime,
   formatDistance,
-  formatAttendance,
-  formatSpotsLeft,
+  formatCapacityStatus,
   describeAttendanceState,
   isCheckInWindowOpen,
   isJoinable,
@@ -198,7 +197,10 @@ export default function RunDetail() {
   }
 
   const distance = formatDistance(run.distance_meters);
-  const spots = formatSpotsLeft(run, counts);
+  // No numbers shown to members — see formatCapacityStatus(). runIsFull below
+  // still reads the real count, but only to decide a label ("join" vs "join
+  // the waitlist"), never to render one.
+  const capacityStatus = formatCapacityStatus(run, counts);
   const cancelled = run.status === 'cancelled';
   const checkInOpen = isCheckInWindowOpen(run);
   const alreadyIn = myState === 'checked_in' || queuedOffline;
@@ -248,8 +250,7 @@ export default function RunDetail() {
       )}
 
       <View style={styles.social}>
-        <Text style={styles.socialCount}>{formatAttendance(counts)}</Text>
-        {spots && <Text style={styles.spots}>{spots}</Text>}
+        {capacityStatus && <Text style={styles.spots}>{capacityStatus}</Text>}
         <Text style={styles.yourStatus}>
           {queuedOffline ? "You're in — syncing" : describeAttendanceState(myState)}
         </Text>
@@ -356,8 +357,7 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     gap: spacing.xs,
   },
-  socialCount: { fontSize: 22, fontWeight: '800', color: colors.textOnDark, fontVariant: ['tabular-nums'] },
-  spots: { fontSize: 14, color: colors.highlight, fontWeight: '600' },
+  spots: { fontSize: 15, color: colors.highlight, fontWeight: '700' },
   yourStatus: { fontSize: 14, color: colors.textOnDarkMuted },
   actions: { gap: spacing.sm, marginTop: spacing.sm },
   checkedIn: {

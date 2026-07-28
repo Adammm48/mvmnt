@@ -7,7 +7,7 @@ import {
   formatRunDate,
   formatRunTime,
   formatDistance,
-  formatAttendance,
+  formatCapacityStatus,
   type Run,
   type RunCounts,
   type AttendanceState,
@@ -21,24 +21,24 @@ type Props = {
 };
 
 /**
- * The run card carries the decision to join, so it is doing persuasion, not
- * just display: a photo of the place, the time in warm coral, and the number of
- * people already in.
+ * The run card carries the decision to join: a photo of the place, the time
+ * in warm coral, and — deliberately — no numbers about who else is coming.
  *
- * App Spec §2 on social proof — lean into "312 people are already in" rather
- * than hiding a low number, because the bandwagon effect measurably increases
- * sign-ups.
+ * Product decision, overriding App Spec §2's original social-proof design
+ * ("312 people are already in"): members never see how many have joined or
+ * how many places are left. See formatCapacityStatus().
  */
 export function RunCard({ run, counts, myState, onPress }: Props) {
   const distance = formatDistance(run.distance_meters);
   const cancelled = run.status === 'cancelled';
+  const capacityStatus = formatCapacityStatus(run, counts);
 
   const a11yLabel = [
     run.title,
     `${formatRunDate(run.starts_at)} at ${formatRunTime(run.starts_at)}`,
     run.meeting_point_name,
     distance ?? '',
-    formatAttendance(counts),
+    capacityStatus ?? '',
     myState ? statusText(myState) : '',
   ]
     .filter(Boolean)
@@ -73,10 +73,19 @@ export function RunCard({ run, counts, myState, onPress }: Props) {
             Cancelled{run.cancellation_reason ? ` — ${run.cancellation_reason}` : ''}
           </Text>
         ) : (
-          <View style={styles.attendanceRow}>
-            <View style={styles.dot} />
-            <Text style={styles.attendance}>{formatAttendance(counts)}</Text>
-          </View>
+          // Unlimited capacity (the common case) has no scarcity to signal, so
+          // nothing renders here at all — no count, no filler line.
+          capacityStatus && (
+            <View style={styles.attendanceRow}>
+              <View
+                style={[
+                  styles.dot,
+                  capacityStatus === 'Waitlist open' && styles.dotWaitlist,
+                ]}
+              />
+              <Text style={styles.attendance}>{capacityStatus}</Text>
+            </View>
+          )
         )}
       </View>
     </>
@@ -171,6 +180,7 @@ const styles = StyleSheet.create({
   meta: { fontSize: 14, color: 'rgba(255,255,255,0.85)', fontWeight: '500' },
   attendanceRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: spacing.xs },
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.success },
+  dotWaitlist: { backgroundColor: colors.highlight },
   attendance: { fontSize: 15, fontWeight: '700', color: '#fff' },
   cancelled: { fontSize: 14, fontWeight: '700', color: '#FF9E93', marginTop: spacing.xs },
   pill: { paddingHorizontal: spacing.sm + 2, paddingVertical: 5, borderRadius: radius.pill },

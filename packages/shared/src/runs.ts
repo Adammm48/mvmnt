@@ -54,30 +54,25 @@ export function formatDistance(meters: number | null): string | null {
 }
 
 /**
- * Social proof, framed positively.
+ * What a member sees about how full a run is — deliberately no numbers.
  *
- * App Spec §2 is explicit: lean into "312 people are already in" rather than
- * hiding a low early number, because the bandwagon effect genuinely increases
- * sign-ups. So a low count is stated plainly and warmly rather than suppressed —
- * "Be the first one in" is an invitation, not an admission of emptiness.
+ * Overrides the original App Spec §2 social-proof design ("312 people are
+ * already in"), which leaned on real counts for a bandwagon effect. Product
+ * decision: members should never see how many have joined or how many places
+ * are left. Only two states are shown, and neither is a count:
+ *
+ *   - unlimited, or capacity not yet reached → nothing at all (no scarcity to
+ *     signal)
+ *   - capacity set and reached              → "Waitlist open", so a member
+ *     knows what tapping Join will actually do before they tap it
+ *
+ * The organiser console is unaffected — it reads run_attendance_counts
+ * directly, because an organiser needs the real numbers to run the event.
  */
-export function formatAttendance(counts: Pick<RunCounts, 'going_count'> | null): string {
-  const going = counts?.going_count ?? 0;
-  if (going === 0) return 'Be the first one in';
-  if (going === 1) return '1 person is in';
-  return `${going} people are in`;
-}
-
-/**
- * Progress framed as distance-to-go rather than shortfall (App Spec §2, §4.2:
- * "3 more runs to Elite", never "you missed 2 runs").
- */
-export function formatSpotsLeft(run: Run, counts: RunCounts | null): string | null {
+export function formatCapacityStatus(run: Run, counts: RunCounts | null): string | null {
   if (run.capacity === null) return null;
-  const left = run.capacity - (counts?.going_count ?? 0);
-  if (left <= 0) return 'Waitlist open';
-  if (left === 1) return 'Last spot';
-  return `${left} spots left`;
+  const going = counts?.going_count ?? 0;
+  return going >= run.capacity ? 'Waitlist open' : 'Limited spots';
 }
 
 /** UI hint only. public.check_in() re-validates the window server-side. */
