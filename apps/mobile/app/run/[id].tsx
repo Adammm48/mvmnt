@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useLocalSearchParams, useNavigation } from 'expo-router';
+import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth';
 import { Button } from '@/components/Button';
@@ -32,6 +32,7 @@ export default function RunDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { session } = useAuth();
   const navigation = useNavigation();
+  const router = useRouter();
 
   const [run, setRun] = useState<Run | null>(null);
   const [counts, setCounts] = useState<RunCounts | null>(null);
@@ -165,9 +166,19 @@ export default function RunDetail() {
   if (loading) return <Loading label="Loading run" />;
 
   if (!run) {
+    // Reachable two ways: a genuinely missing/draft run (bad or stale link —
+    // most often a local dev database that has been reset since the id was
+    // captured, since every reset issues fresh ids), or an admin cancelling the
+    // run out from under an open tab. Either way this must not be a dead end:
+    // there is no guaranteed way back (a deep link has no navigation history),
+    // so an explicit way home is required rather than relying on a back button.
     return (
-      <View style={styles.screen}>
-        <Notice tone="error" message="This run is not available." />
+      <View style={[styles.screen, styles.notFound]}>
+        <Notice
+          tone="error"
+          message="This run isn't available anymore. It may have been removed, or the link is out of date."
+        />
+        <Button label="Back to your runs" onPress={() => router.replace('/')} />
       </View>
     );
   }
@@ -275,6 +286,7 @@ function Fact({ label, value }: { label: string; value: string }) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.base },
+  notFound: { justifyContent: 'center', padding: spacing.md, gap: spacing.md },
   content: { paddingBottom: spacing.xxl },
   body: { padding: spacing.md, gap: spacing.md },
   description: { fontSize: 16, color: colors.textOnDarkMuted, lineHeight: 23 },

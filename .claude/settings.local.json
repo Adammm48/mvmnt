@@ -57,7 +57,15 @@
       "Bash(node scripts/screenshots.mjs)",
       "Bash(npx playwright *)",
       "Bash(node scripts/capture-checkin-gif.mjs)",
-      "Bash(python3 scripts/frames-to-gif.py)"
+      "Bash(python3 scripts/frames-to-gif.py)",
+      "Bash(gh --version)",
+      "Bash(gh auth *)",
+      "Read(//Users/adamelbasiony/.ssh/**)",
+      "Bash(ssh -T git@github.com)",
+      "Bash(kill %1)",
+      "Bash(pkill -f \"gh auth login\")",
+      "Bash(grep -E \"\\(^|/\\)\\\\.env\\($|\\\\.\\)\")",
+      "Bash(git -c user.name=\"Adam Elbasiony\" -c user.email=\"skteatea1@gmail.com\" commit -q -m \"Point README links at the real GitHub username\")"
     ]
   }
 }
