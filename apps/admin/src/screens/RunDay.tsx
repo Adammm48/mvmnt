@@ -10,6 +10,7 @@ import {
   type CheckInMethod,
 } from '@mvmnt/shared';
 import { useToast } from '../components/Toast';
+import { MemberModeration } from '../components/MemberModeration';
 
 type Attendee = {
   id: string;
@@ -37,6 +38,7 @@ export function RunDay({ runId, onBack }: { runId: string; onBack: () => void })
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState('');
+  const [moderating, setModerating] = useState<Attendee | null>(null);
 
   const load = useCallback(async () => {
     setError(null);
@@ -234,6 +236,14 @@ export function RunDay({ runId, onBack }: { runId: string; onBack: () => void })
                           : '—'}
                     </td>
                     <td style={{ textAlign: 'right' }}>
+                      <button
+                        className="link"
+                        onClick={() => setModerating(moderating?.id === a.id ? null : a)}
+                        disabled={!a.user_id}
+                        style={{ marginRight: 4 }}
+                      >
+                        {moderating?.id === a.id ? 'Close' : 'Manage'}
+                      </button>
                       {a.state === 'checked_in' ? (
                         <button
                           className="link"
@@ -256,6 +266,16 @@ export function RunDay({ runId, onBack }: { runId: string; onBack: () => void })
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {moderating?.user_id && (
+          <div style={{ marginTop: 16 }}>
+            <MemberModeration
+              userId={moderating.user_id}
+              displayName={moderating.display_name}
+              onDone={() => setModerating(null)}
+            />
           </div>
         )}
       </div>

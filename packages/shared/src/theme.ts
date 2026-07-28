@@ -70,6 +70,17 @@ export const radius = {
  */
 export const MIN_TOUCH_TARGET = 48;
 
+/**
+ * Declared outside the `as const` object below on purpose.
+ *
+ * A const assertion turns a nested array literal into a readonly tuple, and
+ * React Native's TextStyle wants a mutable FontVariant[]. The mismatch does not
+ * fail at the token — it fails at every StyleSheet.create that spreads one of
+ * these, poisoning the whole stylesheet's inferred type and burying real errors
+ * under a hundred spurious ones. Naming the array keeps its type mutable.
+ */
+const TABULAR_NUMS: 'tabular-nums'[] = ['tabular-nums'];
+
 export const typography = {
   /** Encouragement-facing: rounded and friendly. */
   display: { fontSize: 32, fontWeight: '700', letterSpacing: -0.5 },
@@ -83,8 +94,8 @@ export const typography = {
    * Data — leaderboard numbers, headcounts, distances. Structured rather than
    * rounded so figures read as credible instead of childish (App Spec §2).
    */
-  dataLarge: { fontSize: 28, fontWeight: '700', fontVariant: ['tabular-nums'] },
-  data: { fontSize: 16, fontWeight: '600', fontVariant: ['tabular-nums'] },
+  dataLarge: { fontSize: 28, fontWeight: '700', fontVariant: TABULAR_NUMS },
+  data: { fontSize: 16, fontWeight: '600', fontVariant: TABULAR_NUMS },
 } as const;
 
 /** The club's timezone. Mirrors app_private.club_timezone() in the database. */

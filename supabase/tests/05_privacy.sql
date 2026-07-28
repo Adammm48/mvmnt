@@ -11,6 +11,7 @@ declare
   v_admin uuid; v_a uuid; v_b uuid; v_run uuid; v_old_run uuid;
   v_purged integer;
   v_att uuid;
+  v_token text;
 begin
   perform tests.act_as_system();
   v_admin := tests.make_member('organiser', true);
@@ -87,9 +88,48 @@ begin
     'a member cannot erase another member''s account');
   perform tests.act_as_system();
 
+  -- Give ben a Phase 2 footprint first: a friend, a live code, points and a
+  -- badge. Erasure has to reach all of it, and the only way to know it does is
+  -- to have some of it there when erasure runs.
+  perform tests.act_as(v_b);
+  select token into v_token from public.my_friend_qr();
+  perform tests.act_as(v_a);
+  perform public.add_friend_by_token(v_token);
+  perform tests.act_as_system();
+
+  perform tests.assert_eq(
+    (select count(*)::int from public.friendships
+      where user_low in (v_a, v_b) and user_high in (v_a, v_b)), 1,
+    'ama and ben are friends before the erasure');
+
   perform tests.act_as(v_b);
   perform public.erase_member(v_b);
   perform tests.act_as_system();
+
+  -- ---------------------------------------------------------------------
+  -- Phase 2 data goes with the account.
+  --
+  -- A friendship that outlived one of its two people would leave ama with a
+  -- friend who no longer exists, and — worse — a row still naming ben in a
+  -- table nobody can read but which is nonetheless a record of who he knew.
+  -- ---------------------------------------------------------------------
+  perform tests.assert_eq(
+    (select count(*)::int from public.friendships
+      where user_low = v_b or user_high = v_b), 0,
+    'their friendships are gone — nobody is left holding a friend who no longer exists');
+  perform tests.assert_eq(
+    (select count(*)::int from public.friend_qr_tokens where user_id = v_b), 0,
+    'their friend codes are gone');
+  perform tests.assert_eq(
+    (select count(*)::int from public.member_badges where user_id = v_b), 0,
+    'their badges are gone');
+
+  -- The points ledger follows the attendance rule rather than the friends rule:
+  -- anonymised, not deleted, because it is append-only and the club's own
+  -- totals are derived from it.
+  perform tests.assert(
+    not exists (select 1 from public.point_events where user_id = v_b),
+    'no points event still names them');
 
   -- Personal data is gone.
   perform tests.assert_eq(

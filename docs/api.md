@@ -1,4 +1,4 @@
-# MVMNT API — Phase 1
+# MVMNT API — Phases 1 and 2
 
 Every backend capability, with its purpose, inputs, outputs, permissions and
 errors (Engineering Principles §8).
@@ -169,6 +169,137 @@ and every admin RPC ask this; none decides for itself.
 
 ---
 
+## Loyalty and the leaderboard
+
+Points are earned by checking in, never by signing up — the club's currency is
+attendance, and awarding for intent would make the board a measure of optimism.
+The award happens in a trigger on the check-in transition rather than inside the
+check-in RPCs, so a future third path to checking in cannot forget to award
+(migration 0017).
+
+An award stops counting the moment its check-in is removed or withdrawn. The
+ledger row survives — it is append-only and records what happened — but every
+total re-derives from valid check-ins, so an organiser undoing a mistaken
+check-in silently and correctly takes the points back.
+
+### `points_total(p_user_id uuid = auth.uid(), p_since timestamptz = null) → integer`
+
+### `my_standing(p_window text = 'all_time') → row`
+
+A member's own position: points, rank, total members, percentile, points to the
+next rank, tier, points to the next tier, streak weeks, runs attended.
+
+Works for **everyone**, including members outside the top 100 and members who
+have opted out of the public board. Rank is computed against all members
+regardless of opt-out, so hiding yourself does not shuffle anyone else.
+
+`p_window` is `'all_time'` or `'month'`. Tier, streak and runs attended are
+lifetime facts in both — there is no such thing as a monthly tier.
+
+### `leaderboard(p_window text = 'all_time') → rows`
+
+Top 100 by points: rank, user id, display name, avatar, points, tier, `is_me`.
+
+**The single deliberate exception** to Phase 1's rule that a member can read only
+their own profile, and the reasoning — including the risks the club accepted —
+is in [ADR 0003](decisions/0003-leaderboard-visibility-and-loyalty.md). It exposes
+three fields about another member and nothing else; there is no route from here
+to another member's run-by-run history.
+
+The 100 cap is enforced in SQL rather than by the caller, because a
+client-supplied limit would let someone page through the whole membership.
+Members with `leaderboard_opt_out` are filtered out *after* ranking, so opting
+out hides a member without promoting everyone below them.
+
+### `set_leaderboard_visibility(p_visible boolean) → void`
+
+A member's own visibility, and only their own. Deliberately its own function
+rather than a column update: this is a privacy control, not a preference, and it
+is audited.
+
+### `tier_for_points(integer)` · `points_to_next_tier(integer)` · `runs_attended(uuid)` · `current_streak_weeks(uuid, timestamptz)`
+
+Pure helpers, exposed so the apps display the same numbers the ranking uses.
+`points_to_next_tier` returns **null** at the top rather than zero, so the UI can
+celebrate rather than render a dead target.
+
+---
+
+## Friends and pokes
+
+App Spec §4.4: QR only. No search, no username lookup, no remote add. What
+actually enforces "in person" is not the UI but the token — it lives three
+minutes, burns on first use, and can be killed by the member or an organiser. A
+screenshot forwarded to somebody who was not standing there has expired before
+it arrives.
+
+None of `friend_qr_tokens`, `friendships` or `pokes` is directly readable
+(`pokes` excepted for the two people in it). Every read goes through a
+`SECURITY DEFINER` function, because a member who could select `friendships`
+could map the club's whole social graph — a member directory by another name.
+
+### `my_friend_qr() → (token text, expires_at timestamptz)`
+
+Returns the live token if there is one, mints a 3-minute one otherwise. Reusing
+an unexpired token keeps the code on screen stable while it is being scanned.
+
+### `revoke_my_friend_qr() → void`
+
+Kills every code the member has ever shown (App Spec §8). Existing friendships
+are untouched — this stops future adds, it does not undo past ones. Audited.
+
+### `add_friend_by_token(p_token text) → uuid`
+
+Auto-accepted, per §4.4: there is no request to approve because the approval
+already happened physically. Single-use, so one shoulder-surfed screenshot
+cannot be redeemed repeatedly.
+
+Expired, revoked and never-existed all return the **same** message. A distinct
+"no such code" would let someone probe for valid tokens.
+
+**Errors:** `that code is not valid any more — ask them to show it again`;
+`that is your own code`.
+
+### `remove_friend(p_friend_id uuid) → void`
+
+Unilateral, immediate, and **silent** — the other member is not notified. People
+accept out of politeness, and a removal that pings the other person is one
+nobody socially awkward will ever use. Also drops pokes in both directions and
+withdraws any poke notification not yet sent.
+
+### `my_friends(p_run_id uuid = null) → rows`
+
+Friend id, display name, avatar, their state for **one** upcoming run, when you
+became friends, and whether you have already nudged them about it.
+
+Deliberately carries no statistics. A friends list carrying stats is a
+leaderboard at n=2, and would re-expose exactly the per-run attendance the club
+asked to hide.
+
+### `poke_friend(p_friend_id uuid, p_run_id uuid) → void`
+
+One nudge per friend per run, forever, enforced by a unique constraint. The
+blast radius is exactly the set of people the member chose to scan a code with,
+and unfriending is silent and unilateral.
+
+**Errors:** `you can only nudge someone you have added as a friend`; `you can
+only nudge someone about an upcoming run`; `you have already nudged them about
+this run`.
+
+### `admin_disable_member_qr(p_user_id uuid) → void` *(organiser)*
+
+Moderation for App Spec §7: kill a reported member's code without touching their
+account or their existing friendships. Audited.
+
+### `admin_adjust_points(p_user_id uuid, p_points integer, p_note text) → void` *(organiser)*
+
+Settles a points dispute without hand-editing a ledger. Recorded as an
+`adjustment` so it is visibly a human decision rather than something the rules
+produced. **The note is required** — a correction with no stated reason is
+unauditable six months later.
+
+---
+
 ## Organiser functions
 
 All check `is_admin()` internally. `EXECUTE` is granted to `authenticated` — the
@@ -294,15 +425,29 @@ migration.
 | `notification_deliveries` | Own rows | No |
 | `audit_log` | Admins only | No — append-only |
 | `feature_flags` | All | Admins only |
+| `point_events` | Own rows only | No — via trigger/RPC |
+| `member_badges` | Own rows only | No — via trigger |
+| `badges` | All — the catalogue is not personal data | Admins only |
+| `friendships` | **No** — only via `my_friends()` | No — via RPC |
+| `friend_qr_tokens` | **No** — only via `my_friend_qr()` | No — via RPC |
+| `pokes` | Only ones they sent or received | No — via RPC |
 
 **There is deliberately no member directory.** A member can read exactly one
 profile: their own. App Spec §4.4 makes QR-only friend adding a safety measure
 against unsolicited contact, and that is worth nothing if the API lists everyone.
-`run_attendance_counts` exists so the app can say "312 people are already in"
-without exposing *who* — it publishes aggregates and selects no identifying
-column.
+`run_attendance_counts` exists so the app can render capacity state without
+exposing *who* — it publishes aggregates and selects no identifying column.
 
-Phase 2 should open exactly as much as the friends feature needs, and no more.
+Phase 2 opened two holes in that wall and no more, both through
+`SECURITY DEFINER` functions rather than by relaxing a policy:
+
+- `leaderboard()` — name, avatar and points, for at most 100 people, excluding
+  anyone opted out.
+- `my_friends()` — name, avatar and one in/out flag, for people who physically
+  scanned a code with you.
+
+Neither exposes a run-by-run history, which is the specific thing that would turn
+either feature into the attendance log the club asked to hide.
 
 ---
 
@@ -340,11 +485,21 @@ exactly the wrong default (Principles §4).
 | `run_started` | Signed-up attendees | `scheduler_tick` or `start_run` |
 | `run_ended` | **Checked-in** attendees | `scheduler_tick` (needs `ends_at`) or `end_run` |
 | `waitlist_promoted` | The promoted member | `withdraw_from_run` |
+| `friend_poke` | The nudged friend | `poke_friend` |
+| `badge_earned` | The member who earned it | `award_badges`, via the check-in trigger |
 
 **Copy is rendered in SQL at enqueue time** and stored on the event row, so it
 exists in exactly one place and the delivery worker does no formatting
 (Principles §2). Times render in the club's timezone via
 `app_private.club_timezone()`.
+
+Six of the eight types are fully described by their run. The Phase 2 pair are
+not — a poke needs the sender's name and a badge has no run at all — so
+`render_notification` takes a `jsonb` context rather than growing a parameter
+per type, and `enqueue_notification` accepts a null run when the notification is
+addressed to a single member. Existing dedupe keys are byte-for-byte unchanged:
+a changed key looks like a new event, and every already-sent notification would
+send again.
 
 **Idempotency** is `notification_events.dedupe_key` (unique) plus
 `notification_deliveries (event_id, push_token)` (unique). Without both, one

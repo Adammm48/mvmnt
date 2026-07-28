@@ -21,11 +21,23 @@ const FRIENDLY: Record<string, string> = {
   '23505': 'That has already been done.',
 };
 
-export function toMemberMessage(error: SupabaseishError, fallback = 'Something went wrong. Please try again.'): string {
-  if (!error) return fallback;
-  if (error.code && FRIENDLY[error.code]) return FRIENDLY[error.code]!;
+/**
+ * Accepts `unknown` because half the call sites are `catch` blocks, where TypeScript
+ * types the value as unknown and there is no honest narrowing available — a thrown
+ * value really could be anything. Shifting that check in here means no screen has to
+ * cast, and a screen that casts wrongly is a screen that crashes while reporting an
+ * error, which is the worst moment to crash.
+ */
+export function toMemberMessage(
+  error: unknown,
+  fallback = 'Something went wrong. Please try again.',
+): string {
+  if (!error || typeof error !== 'object') return fallback;
+  const { code, message: raw } = error as NonNullable<SupabaseishError>;
 
-  const message = error.message?.trim();
+  if (code && FRIENDLY[code]) return FRIENDLY[code]!;
+
+  const message = typeof raw === 'string' ? raw.trim() : undefined;
   if (!message) return fallback;
 
   // PostgREST wraps RAISE EXCEPTION text; strip the SQL noise but keep the
@@ -42,7 +54,10 @@ export function toMemberMessage(error: SupabaseishError, fallback = 'Something w
 }
 
 /** True when the failure is a lost connection rather than a rejection. */
-export function isOffline(error: SupabaseishError): boolean {
-  const m = error?.message ?? '';
+export function isOffline(error: unknown): boolean {
+  const m =
+    error && typeof error === 'object'
+      ? ((error as NonNullable<SupabaseishError>).message ?? '')
+      : '';
   return /network|fetch failed|Failed to fetch|timeout|offline/i.test(m);
 }

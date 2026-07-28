@@ -38,8 +38,14 @@ If you have a question about your data, or want it deleted, contact us at
   and — **only at the moment you tap "check in"** — **where you were**.
 - We do **not** track your location at any other time. Not in the background,
   not between runs, not while the app is closed.
-- Other members **cannot** see your profile, your email, or your location. They
-  see a **count** of how many people are coming, never a list of who.
+- Other members **cannot** see your email, your location, or which runs you have
+  been to. They never see a list of who is coming to a run.
+- Two narrow exceptions, both of which you control:
+  - Your **name and points** appear on the club leaderboard. You can turn that
+    off in the app at any time, and you keep your points either way.
+  - **Friends you have added in person, by scanning each other's code,** can see
+    whether you are coming to the next run — nothing else, and you can remove
+    them at any time without them being told.
 - Your check-in coordinates are **permanently deleted after 30 days**,
   automatically.
 - You can **delete your account from inside the app**, at any time, without
@@ -54,7 +60,7 @@ If you have a question about your data, or want it deleted, contact us at
 | What | Why | How long |
 |---|---|---|
 | Email address | It is how you sign in — we email you a 6-digit code. We never store a password. | Until you delete your account |
-| Display name | So organisers know who has signed up, and for the leaderboard in a future release | Until you delete your account |
+| Display name | So organisers know who has signed up, and so you can appear on the club leaderboard — which you can switch off in the app | Until you delete your account |
 | Profile photo *(optional)* | Only if you choose to add one | Until you remove it or delete your account |
 
 ### Your runs
@@ -109,12 +115,26 @@ for advertising.
 
 ## Who can see what
 
-**Other members can see:** how many people are signed up or checked in to a run
-— a number, not a list. They **cannot** see your profile, your email, whether
-*you specifically* are attending, or anything about your location.
+**Other members can see:** your name, your photo if you added one, and your
+points total, on the club leaderboard — and only if you have left that switched
+on. Nothing else. They **cannot** see your email, which runs you have been to,
+whether *you specifically* are coming to a run, or anything about your location.
+They cannot search for you, and there is no member directory.
+
+**Friends you have added can see, in addition:** whether you are coming to the
+next run. That is the whole of it — not your points, not your history, not which
+runs you have attended.
+
+You can only become someone's friend by scanning a code they show you on their
+phone, in person. The code expires after three minutes and works once, so a code
+that is screenshotted and forwarded is useless. Either of you can remove the
+other at any time, from your side alone, and the other person is not told.
 
 **Organisers can see:** who has signed up and who has checked in, so they can
-run the event and account for everyone. They can also check people in manually.
+run the event and account for everyone. They can also check people in manually,
+correct someone's points with a written reason, and switch off a member's friend
+code if it is reported as being misused. Each of those is recorded in an audit
+log.
 
 **Nobody else.** We do not sell, rent or trade your data.
 
@@ -134,6 +154,9 @@ You can, at any time:
 
 - **See what we hold about you** — most of it is visible in the app; ask us for the rest.
 - **Correct it** — you can edit your name in the app.
+- **Object to appearing on the leaderboard** — Profile → *Show my name on the
+  leaderboard*. Switch it off and other members stop seeing you listed; you keep
+  your points, your badges and your own position.
 - **Delete it** — Profile → *Delete my account*. No email, no waiting on a human.
 - **Withdraw consent for location** — in your phone's settings. Check-in then
   falls back to an organiser doing it for you.

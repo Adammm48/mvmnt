@@ -96,6 +96,12 @@ try {
     })
   ).json();
   await shoot(phonePage, `${MOBILE}/run/${runId[0].id}`, 'app-run-detail');
+  await shoot(phonePage, `${MOBILE}/leaderboard`, 'app-leaderboard');
+
+  // The friend code. The QR is live data, so the shot has to be taken from the
+  // running app rather than mocked — which also means the countdown underneath
+  // it is real, and that countdown is the whole safety argument.
+  await shoot(phonePage, `${MOBILE}/friends/code`, 'app-friend-code');
   await phone.close();
 
   // --- the organiser's console -------------------------------------------

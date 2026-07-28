@@ -1,18 +1,29 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useCallback } from 'react';
 import { useAuth } from '@/lib/auth';
 import { useRuns } from '@/lib/useRuns';
+import { supabase } from '@/lib/supabase';
 import { RunCard } from '@/components/RunCard';
 import { EmptyState, Loading, Notice } from '@/components/Feedback';
 import { registerForPush } from '@/lib/push';
-import { colors, spacing, toMemberMessage } from '@mvmnt/shared';
+import {
+  colors,
+  radius,
+  spacing,
+  typography,
+  toMemberMessage,
+  TIER_COLOR,
+  TIER_LABEL,
+  type Standing,
+} from '@mvmnt/shared';
 
 export default function Home() {
   const { session, profile } = useAuth();
   const router = useRouter();
   const { items, loading, refreshing, error, reload } = useRuns(session?.user.id);
+  const [standing, setStanding] = useState<Standing | null>(null);
 
   // Registering on every launch is what keeps a handed-down device pointed at
   // its current owner — register_push_token() reassigns on conflict.
@@ -20,10 +31,14 @@ export default function Home() {
     registerForPush();
   }, []);
 
-  // Coming back from a run detail should show the join that just happened.
+  // Coming back from a run detail should show the join that just happened —
+  // and the points a check-in just earned.
   useFocusEffect(
     useCallback(() => {
       reload();
+      supabase
+        .rpc('my_standing', { p_window: 'all_time' })
+        .then(({ data }) => setStanding((data ?? [])[0] ?? null));
     }, [reload]),
   );
 
@@ -63,6 +78,46 @@ export default function Home() {
               </Pressable>
             </View>
             {error && <Notice tone="error" message={toMemberMessage({ message: error })} />}
+
+            {/*
+              Two ways out of the home screen, and the member's own number on
+              one of them. App Spec §2 asks for momentum to be visible without
+              being demanded — this shows what they have, and never what they
+              have missed.
+            */}
+            <View style={styles.chips}>
+              <Pressable
+                style={styles.chip}
+                onPress={() => router.push('/leaderboard')}
+                accessibilityRole="button"
+                accessibilityLabel="The board"
+              >
+                <Text style={styles.chipTitle}>The board</Text>
+                {standing ? (
+                  <Text style={styles.chipValue}>
+                    {standing.points.toLocaleString()}
+                    <Text style={styles.chipUnit}> pts</Text>
+                  </Text>
+                ) : (
+                  <Text style={styles.chipUnit}>Where you stand</Text>
+                )}
+                {standing && (
+                  <Text style={[styles.chipTier, { color: TIER_COLOR[standing.tier] }]}>
+                    {TIER_LABEL[standing.tier].toUpperCase()}
+                  </Text>
+                )}
+              </Pressable>
+
+              <Pressable
+                style={styles.chip}
+                onPress={() => router.push('/friends')}
+                accessibilityRole="button"
+                accessibilityLabel="Friends"
+              >
+                <Text style={styles.chipTitle}>Friends</Text>
+                <Text style={styles.chipUnit}>See who&apos;s coming</Text>
+              </Pressable>
+            </View>
           </View>
         }
         renderItem={({ item }) => (
@@ -104,4 +159,17 @@ const styles = StyleSheet.create({
   greeting: { fontSize: 30, fontWeight: '900', color: colors.textOnDark, letterSpacing: -0.5 },
   subGreeting: { fontSize: 15, color: colors.textOnDarkMuted, marginTop: 2 },
   profileLink: { fontSize: 15, fontWeight: '600', color: colors.textOnDarkMuted },
+  chips: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xs },
+  chip: {
+    flex: 1,
+    backgroundColor: colors.baseElevated,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    gap: 2,
+    justifyContent: 'center',
+  },
+  chipTitle: { fontSize: 13, fontWeight: '700', color: colors.textOnDarkMuted },
+  chipValue: { ...typography.dataLarge, fontSize: 24, color: colors.textOnDark },
+  chipUnit: { fontSize: 13, fontWeight: '400', color: colors.textOnDarkMuted },
+  chipTier: { fontSize: 10, fontWeight: '800', letterSpacing: 0.6 },
 });

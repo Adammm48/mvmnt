@@ -153,3 +153,86 @@ begin
   end loop;
   perform set_config('request.jwt.claims', '', true);
 end $$;
+
+-- ---------------------------------------------------------------------------
+-- A season of history, so the loyalty features have something to stand on.
+--
+-- Without this the leaderboard is thirty people tied on ten points, every tier
+-- is Starter and no badge has been earned — which renders, but shows none of
+-- the states the screens were built for. This produces a real spread: a few
+-- members at Elite with long streaks, a middle that comes most weeks, and a
+-- tail that turns up occasionally.
+--
+-- Attendance is deterministic rather than random so the same reset always
+-- produces the same board, and a screenshot taken today matches one taken
+-- tomorrow.
+--
+-- Rows are inserted directly, oldest first, rather than through admin_check_in:
+-- the points trigger reads checked_in_at as "now" when it works out the streak,
+-- so a historical check-in has to carry its historical timestamp. Going through
+-- the RPC would stamp every one of them with the present moment and hand
+-- everybody a maximum streak bonus on every run they ever did.
+-- ---------------------------------------------------------------------------
+do $$
+declare
+  v_admin uuid := '00000000-0000-0000-0000-000000000001';
+  v_run   uuid;
+  v_when  timestamptz;
+  v_every integer;
+  v_first integer;
+  w integer;
+  n integer;
+begin
+  -- 60 weeks back to last week, oldest first.
+  for w in reverse 60..1 loop
+    v_when := date_trunc('hour', now()) - (w || ' weeks')::interval;
+
+    insert into public.runs (
+      title, starts_at, ends_at, meeting_point_name,
+      meeting_point_lat, meeting_point_lng, distance_meters,
+      status, published_at, pace_groups, created_by
+    )
+    values (
+      case w % 3
+        when 0 then 'Saturday 6K'
+        when 1 then 'Riverside 8K'
+        else 'Sunday Long Run'
+      end,
+      v_when, v_when + interval '90 minutes', 'Zamalek Club Gate',
+      30.044400, 31.235700,
+      case w % 3 when 0 then 6000 when 1 then 8000 else 15000 end,
+      'completed', v_when - interval '5 days',
+      array['easy','steady'], v_admin
+    )
+    returning id into v_run;
+
+    for n in 2..30 loop
+      -- How often this member turns up. The bands create a board with a top, a
+      -- middle and a tail rather than one flat line.
+      v_every := case
+        when n <= 7  then 1   -- the regulars
+        when n <= 16 then 2
+        when n <= 24 then 3
+        else 5                -- the occasional
+      end;
+
+      -- How long ago they joined the club, in weeks. Cadence alone would put
+      -- everyone in a band on identical points, and a leaderboard of six-way
+      -- ties tests nothing and demonstrates less. Members joining at different
+      -- times is both the realistic reason totals differ and the thing that
+      -- spreads them continuously.
+      v_first := 60 - ((n * 13) % 52);
+
+      continue when w > v_first or w % v_every <> 0;
+
+      insert into public.run_attendance (
+        run_id, user_id, queued_at, signed_up_at, checked_in_at, check_in_method
+      )
+      values (
+        v_run,
+        ('00000000-0000-0000-0000-0000000000' || lpad(n::text, 2, '0'))::uuid,
+        v_when - interval '2 days', v_when - interval '2 days', v_when, 'admin'
+      );
+    end loop;
+  end loop;
+end $$;

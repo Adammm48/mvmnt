@@ -1,14 +1,25 @@
 import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/Button';
 import { Notice } from '@/components/Feedback';
+import { StandingCard } from '@/components/StandingCard';
 import { registerForPush } from '@/lib/push';
 import { pendingCount } from '@/lib/checkInQueue';
 import { confirmDestructive } from '@/lib/confirm';
-import { colors, radius, spacing, toMemberMessage, MIN_TOUCH_TARGET } from '@mvmnt/shared';
+import {
+  colors,
+  radius,
+  spacing,
+  toMemberMessage,
+  MIN_TOUCH_TARGET,
+  type Badge,
+  type Standing,
+} from '@mvmnt/shared';
+
+type EarnedBadge = Badge & { earned_at: string | null };
 
 export default function ProfileScreen() {
   const { session, profile, signOut, refreshProfile } = useAuth();
@@ -20,10 +31,57 @@ export default function ProfileScreen() {
   const [success, setSuccess] = useState<string | null>(null);
   const [queued, setQueued] = useState(0);
   const [pushState, setPushState] = useState<string | null>(null);
+  const [standing, setStanding] = useState<Standing | null>(null);
+  const [badges, setBadges] = useState<EarnedBadge[]>([]);
+  const [onBoard, setOnBoard] = useState(!(profile?.leaderboard_opt_out ?? false));
 
   useEffect(() => {
     pendingCount().then(setQueued);
   }, []);
+
+  useEffect(() => {
+    supabase
+      .rpc('my_standing', { p_window: 'all_time' })
+      .then(({ data }) => setStanding((data ?? [])[0] ?? null));
+
+    // Every badge there is, with the date earned attached where it has been.
+    // Showing the unearned ones is the point — a milestone you cannot see is
+    // not a milestone you are working towards.
+    Promise.all([
+      supabase.from('badges').select('*').order('runs_required'),
+      supabase.from('member_badges').select('badge_key, earned_at'),
+    ]).then(([all, mine]) => {
+      const earned = new Map((mine.data ?? []).map((b) => [b.badge_key, b.earned_at]));
+      setBadges((all.data ?? []).map((b) => ({ ...b, earned_at: earned.get(b.key) ?? null })));
+    });
+  }, []);
+
+  useEffect(() => {
+    setOnBoard(!(profile?.leaderboard_opt_out ?? false));
+  }, [profile?.leaderboard_opt_out]);
+
+  /**
+   * Leaderboard visibility.
+   *
+   * Default on, because the club chose a public board and quietly defaulting
+   * everyone to hidden would undo that decision. The switch exists because
+   * publishing a member's name against how often they attend a known place at a
+   * known time is personal-data processing, and under Egypt's PDPL — and GDPR,
+   * for any member in the EU or UK — a person needs a way to object. See
+   * ADR 0003.
+   */
+  async function setVisibility(visible: boolean) {
+    setOnBoard(visible);
+    const { error: rpcError } = await supabase.rpc('set_leaderboard_visibility', {
+      p_visible: visible,
+    });
+    if (rpcError) {
+      setOnBoard(!visible);
+      setError(toMemberMessage(rpcError));
+      return;
+    }
+    await refreshProfile();
+  }
 
   useEffect(() => {
     if (profile?.display_name) setName(profile.display_name);
@@ -91,9 +149,55 @@ export default function ProfileScreen() {
       {error && <Notice tone="error" message={error} />}
       {success && !error && <Notice tone="success" message={success} />}
 
+      {standing && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Where you are</Text>
+          <StandingCard standing={standing} />
+          <Pressable
+            onPress={() => router.push('/leaderboard')}
+            accessibilityRole="button"
+            hitSlop={8}
+          >
+            <Text style={styles.link}>See the whole board →</Text>
+          </Pressable>
+        </View>
+      )}
+
+      {badges.length > 0 && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Badges</Text>
+          <View style={styles.badgeGrid}>
+            {badges.map((badge) => (
+              <View
+                key={badge.key}
+                style={[styles.badge, badge.earned_at ? styles.badgeEarned : styles.badgeLocked]}
+                accessibilityRole="text"
+                accessibilityLabel={
+                  badge.earned_at
+                    ? `${badge.label}, earned`
+                    : `${badge.label}, ${badge.runs_required} runs to earn`
+                }
+              >
+                {/* A locked badge must not wear the reward colour, or the grid
+                    reads as four things already won. */}
+                <Text style={[styles.badgeMark, !badge.earned_at && styles.badgeMarkLocked]}>
+                  {badge.earned_at ? '★' : '☆'}
+                </Text>
+                <Text
+                  style={[styles.badgeLabel, !badge.earned_at && styles.badgeLabelLocked]}
+                  numberOfLines={2}
+                >
+                  {badge.label}
+                </Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      )}
+
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Your name</Text>
-        <Text style={styles.hint}>This is what other members see on the leaderboard later.</Text>
+        <Text style={styles.hint}>This is what other members see on the board.</Text>
         <TextInput
           style={styles.input}
           value={name}
@@ -125,10 +229,32 @@ export default function ProfileScreen() {
       )}
 
       <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Appearing on the board</Text>
+        <View style={styles.switchRow}>
+          <Text style={styles.switchLabel}>Show my name on the leaderboard</Text>
+          <Switch
+            value={onBoard}
+            onValueChange={setVisibility}
+            accessibilityLabel="Show my name on the leaderboard"
+            trackColor={{ false: '#3A4152', true: colors.success }}
+          />
+        </View>
+        <Text style={styles.hint}>
+          Turn this off and other members will not see you listed. You keep your points, your badges
+          and your own position — you just are not on the public board.
+        </Text>
+      </View>
+
+      <View style={styles.section}>
         <Text style={styles.sectionTitle}>Your data</Text>
         <Text style={styles.hint}>
           MVMNT stores your name, the runs you attend, and — only when you check in — where you were
           at that moment. Location is deleted after 30 days. It is never shared with other members.
+        </Text>
+        <Text style={styles.hint}>
+          Other members can see your name and your points on the leaderboard unless you turn that
+          off above, and the friends you have added in person can see whether you are coming to the
+          next run. Nobody can see which runs you have been to.
         </Text>
       </View>
 
@@ -157,4 +283,30 @@ const styles = StyleSheet.create({
     borderColor: '#3A4152',
   },
   footer: { gap: spacing.sm, marginTop: spacing.lg },
+  link: { fontSize: 14, fontWeight: '700', color: colors.action },
+  switchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    minHeight: MIN_TOUCH_TARGET,
+  },
+  switchLabel: { flex: 1, fontSize: 16, color: colors.textOnDark },
+  badgeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  badge: {
+    flexBasis: '47%',
+    flexGrow: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    padding: spacing.sm,
+  },
+  badgeEarned: { backgroundColor: colors.baseElevated, borderColor: colors.highlight },
+  badgeLocked: { backgroundColor: 'transparent', borderColor: '#333B4D' },
+  badgeMark: { fontSize: 18, color: colors.highlight },
+  badgeMarkLocked: { color: colors.textOnDarkMuted },
+  badgeLabel: { flex: 1, fontSize: 13, fontWeight: '700', color: colors.textOnDark },
+  badgeLabelLocked: { color: colors.textOnDarkMuted, fontWeight: '400' },
 });

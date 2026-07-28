@@ -8,12 +8,13 @@ WhatsApp, Instagram and word of mouth. This replaces that.
 
 [![CI](https://github.com/Adammm48/mvmnt/actions/workflows/ci.yml/badge.svg)](https://github.com/Adammm48/mvmnt/actions/workflows/ci.yml)
 
-> **Status: Phase 1 complete, not yet deployed.** Sign-up, run sign-up,
-> geofenced check-in, the notification pipeline and the organiser console are
-> built and tested. The club is not using it yet — that waits on an Apple
-> Developer account and a privacy policy, not on more code. Phases 2–5
-> (leaderboard, QR friends, sponsors, merch, routes, photo galleries, HealthKit)
-> are specified and deliberately unbuilt. See [docs/backlog.md](docs/backlog.md).
+> **Status: Phases 1 and 2 complete, not yet deployed.** Sign-up, geofenced
+> check-in, the notification pipeline, the organiser console, the loyalty system
+> (points, streaks, tiers, badges), the club leaderboard and the QR-only friends
+> system are built and tested. The club is not using it yet — that waits on an
+> Apple Developer account and a privacy policy, not on more code. Phases 3–5
+> (sponsors, merch, routes, photo galleries, HealthKit) are specified and
+> deliberately unbuilt. See [docs/backlog.md](docs/backlog.md).
 
 ---
 
@@ -26,6 +27,12 @@ WhatsApp, Instagram and word of mouth. This replaces that.
 | The member's app | The run detail |
 |---|---|
 | <img src="docs/screenshots/app-home.png" width="330" alt="Home screen showing upcoming runs as photo cards"> | <img src="docs/screenshots/app-run-detail.png" width="330" alt="Run detail with cover photo, meeting point and check-in"> |
+
+| The board | The friend code |
+|---|---|
+| <img src="docs/screenshots/app-leaderboard.png" width="330" alt="Leaderboard showing the member's own points, tier and streak above the top 100"> | <img src="docs/screenshots/app-friend-code.png" width="330" alt="A friend QR code with a three-minute countdown beneath it"> |
+
+<p align="center"><em>Your own standing sits above the board, because most of the club will never be in the top 100. The countdown under the friend code is the whole safety argument: three minutes, one scan.</em></p>
 
 **The organiser's console** — no developer required, which is the whole point of it.
 
@@ -99,10 +106,23 @@ start means hundreds of simultaneous check-ins and serialising them on one run
 row is exactly the contention to avoid.
 
 **Privacy is a design constraint, not a policy page.** There is no member
-directory: a member can read exactly one profile, their own. The run detail says
-"312 people are in" through an aggregate view that selects no identifying
-column. Check-in coordinates are kept 30 days and then hard-deleted by a
-scheduled job — the retention rule is executable, not just written down.
+directory: a member can read exactly one profile, their own. Capacity renders as
+"Limited spots" through an aggregate view that selects no identifying column.
+Check-in coordinates are kept 30 days and then hard-deleted by a scheduled job —
+the retention rule is executable, not just written down.
+
+Phase 2 opened exactly two windows in that wall, both through
+`SECURITY DEFINER` functions rather than by relaxing a policy: the leaderboard
+(name, avatar, points — and a per-member opt-out), and a friends list (name and
+a single in/out flag for one upcoming run). Neither can reach a run-by-run
+history, which is the thing that would turn either into the attendance log the
+club asked to hide.
+
+**Being added as a friend requires being there.** The code behind the QR lives
+three minutes and burns on first scan, so a screenshot forwarded to somebody who
+was not standing there is dead on arrival. That property is invisible in the UI,
+so [`07_friends.sql`](supabase/tests/07_friends.sql) tests each half of it
+directly — expiry, single use, revocation, and organiser moderation.
 
 ---
 
@@ -131,6 +151,10 @@ docs/            Decision records, API reference, design-review transcript
 - [ADR 0002 — Check-in, location and retention](docs/decisions/0002-check-in-location-and-retention.md) —
   why the geofence *prompts* rather than decides, why organiser check-in is the
   primary mitigation, and the 30-day retention rule
+- [ADR 0003 — The leaderboard and QR friends](docs/decisions/0003-leaderboard-visibility-and-loyalty.md) —
+  a design review argued unanimously against the named public leaderboard; the
+  owner chose it anyway. This records the reasoning, the residual risks, and the
+  opt-out added to answer them
 - [The design review](docs/council/2026-07-27-phase1-data-model-transcript.md) —
   five independent reviews that changed ten schema decisions before code existed
 - [docs/api.md](docs/api.md) — every RPC: purpose, inputs, permissions, errors
@@ -146,9 +170,10 @@ admin CRUD gets a lighter pass.
 npm run db:test
 ```
 
-Five suites over attendance and waitlist ordering, geofenced check-in, every RLS
-policy, notification idempotency, and retention/erasure. They run inside
-transactions and roll back, so they are safe against a seeded database.
+Seven suites over attendance and waitlist ordering, geofenced check-in, every RLS
+policy, notification idempotency, retention and erasure, the points/streak/badge
+rules, and the friend-code safety properties. They run inside transactions and
+roll back, so they are safe against a seeded database.
 
 **RLS cannot be tested by clicking around** — the UI only ever asks for data it
 is supposed to have, so a policy hole is invisible from the front end and

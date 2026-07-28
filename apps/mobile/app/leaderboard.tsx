@@ -1,0 +1,233 @@
+import { useCallback, useEffect, useState } from 'react';
+import { FlatList, Image, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { supabase } from '@/lib/supabase';
+import { StandingCard } from '@/components/StandingCard';
+import { EmptyState, Loading, Notice } from '@/components/Feedback';
+import {
+  colors,
+  radius,
+  spacing,
+  typography,
+  rankBadge,
+  sharedRanks,
+  toMemberMessage,
+  TIER_COLOR,
+  type LeaderboardRow,
+  type LeaderboardWindow,
+  type Standing,
+} from '@mvmnt/shared';
+
+/**
+ * The board.
+ *
+ * This screen is the single place in MVMNT where a member sees another member's
+ * name — every other screen in Phase 1 was built so that was impossible. The
+ * exception is deliberate and owner-decided; the residual privacy risks it
+ * carries are recorded in ADR 0003, and the opt-out that answers them lives on
+ * the profile screen.
+ *
+ * A member's own standing sits above the list rather than only inside it,
+ * because most of the club will never be in the top 100 and the screen has to
+ * be worth opening for them too.
+ */
+export default function LeaderboardScreen() {
+  const [window, setWindow] = useState<LeaderboardWindow>('all_time');
+  const [rows, setRows] = useState<LeaderboardRow[]>([]);
+  const [standing, setStanding] = useState<Standing | null>(null);
+  // Always fetched, because tier, badges progress, runs and streak are lifetime
+  // facts that the month view still has to state correctly.
+  const [lifetime, setLifetime] = useState<Standing | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(
+    async (isRefresh = false) => {
+      if (isRefresh) setRefreshing(true);
+      setError(null);
+
+      const [board, mine, allTime] = await Promise.all([
+        supabase.rpc('leaderboard', { p_window: window }),
+        supabase.rpc('my_standing', { p_window: window }),
+        window === 'all_time'
+          ? Promise.resolve({ data: null, error: null })
+          : supabase.rpc('my_standing', { p_window: 'all_time' }),
+      ]);
+
+      if (board.error || mine.error) {
+        setError(toMemberMessage(board.error ?? mine.error!));
+      } else {
+        setRows(board.data ?? []);
+        setStanding((mine.data ?? [])[0] ?? null);
+        setLifetime((allTime.data ?? [])[0] ?? null);
+      }
+
+      setLoading(false);
+      setRefreshing(false);
+    },
+    [window],
+  );
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  if (loading) return <Loading label="Loading the board" />;
+
+  const tied = sharedRanks(rows);
+
+  return (
+    <FlatList
+      style={styles.screen}
+      data={rows}
+      keyExtractor={(row) => row.user_id}
+      contentContainerStyle={styles.list}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={() => load(true)}
+          tintColor={colors.textOnDarkMuted}
+        />
+      }
+      ListHeaderComponent={
+        <View style={styles.header}>
+          {error && <Notice tone="error" message={error} />}
+          {standing && <StandingCard standing={standing} lifetime={lifetime ?? undefined} />}
+
+          <View style={styles.toggle}>
+            <Segment
+              label="All time"
+              active={window === 'all_time'}
+              onPress={() => setWindow('all_time')}
+            />
+            <Segment
+              label="This month"
+              active={window === 'month'}
+              onPress={() => setWindow('month')}
+            />
+          </View>
+
+          <Text style={styles.caption}>
+            Top 100. Points come from showing up — checking in to a run earns them, and a streak of
+            consecutive weeks adds a little more.
+          </Text>
+        </View>
+      }
+      renderItem={({ item }) => <Row row={item} shared={tied.has(item.rank)} />}
+      ItemSeparatorComponent={() => <View style={styles.separator} />}
+      ListEmptyComponent={
+        <EmptyState
+          title="Nobody on the board yet"
+          body="The first check-in of the season puts someone here. It may as well be you."
+        />
+      }
+    />
+  );
+}
+
+function Segment({
+  label,
+  active,
+  onPress,
+}: {
+  label: string;
+  active: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="tab"
+      accessibilityState={{ selected: active }}
+      style={[styles.segment, active && styles.segmentActive]}
+    >
+      <Text style={[styles.segmentText, active && styles.segmentTextActive]}>{label}</Text>
+    </Pressable>
+  );
+}
+
+function Row({ row, shared }: { row: LeaderboardRow; shared: boolean }) {
+  const medal = !shared && row.rank <= 3;
+
+  return (
+    <View
+      style={[styles.row, row.is_me && styles.rowMe]}
+      accessibilityRole="text"
+      accessibilityLabel={
+        shared
+          ? `Joint number ${row.rank}, ${row.display_name}, ${row.points} points`
+          : `Number ${row.rank}, ${row.display_name}, ${row.points} points`
+      }
+    >
+      <Text style={[styles.rank, medal && styles.rankMedal]}>{rankBadge(row.rank, shared)}</Text>
+
+      {row.avatar_url ? (
+        <Image source={{ uri: row.avatar_url }} style={styles.avatar} />
+      ) : (
+        <View style={[styles.avatar, styles.avatarFallback]}>
+          <Text style={styles.avatarInitial}>{row.display_name.trim().charAt(0).toUpperCase()}</Text>
+        </View>
+      )}
+
+      <View style={styles.nameCol}>
+        <Text style={styles.name} numberOfLines={1}>
+          {row.display_name}
+          {row.is_me ? '  ·  you' : ''}
+        </Text>
+        <Text style={[styles.tier, { color: TIER_COLOR[row.tier] }]}>{row.tier.toUpperCase()}</Text>
+      </View>
+
+      <Text style={styles.points}>{row.points.toLocaleString()}</Text>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: colors.base },
+  list: { padding: spacing.md, paddingBottom: spacing.xxl, flexGrow: 1 },
+  header: { gap: spacing.md, marginBottom: spacing.md },
+  caption: { fontSize: 13, color: colors.textOnDarkMuted, lineHeight: 19 },
+
+  toggle: {
+    flexDirection: 'row',
+    backgroundColor: colors.baseElevated,
+    borderRadius: radius.pill,
+    padding: 4,
+    gap: 4,
+  },
+  segment: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  segmentActive: { backgroundColor: colors.action },
+  segmentText: { fontSize: 14, fontWeight: '700', color: colors.textOnDarkMuted },
+  segmentTextActive: { color: colors.textOnAction },
+
+  separator: { height: 1, backgroundColor: '#2C3244', marginLeft: 56 },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radius.md,
+  },
+  rowMe: { backgroundColor: colors.baseElevated },
+  rank: {
+    ...typography.data,
+    width: 28,
+    textAlign: 'center',
+    color: colors.textOnDarkMuted,
+  },
+  rankMedal: { fontSize: 20 },
+  avatar: { width: 36, height: 36, borderRadius: radius.pill, backgroundColor: '#333B4D' },
+  avatarFallback: { alignItems: 'center', justifyContent: 'center' },
+  avatarInitial: { fontSize: 15, fontWeight: '800', color: colors.textOnDark },
+  nameCol: { flex: 1, gap: 1 },
+  name: { fontSize: 15, fontWeight: '600', color: colors.textOnDark },
+  tier: { fontSize: 10, fontWeight: '800', letterSpacing: 0.6 },
+  points: { ...typography.data, color: colors.textOnDark },
+});

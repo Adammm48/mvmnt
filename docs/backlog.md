@@ -85,6 +85,32 @@ since the geofence radius is measured from these coordinates.
 
 ---
 
+## Carried out of Phase 2
+
+- **Scanning on the web.** `expo-camera` reads QR codes reliably on iOS and Android;
+  in a browser it depends on `BarcodeDetector`, which is not everywhere. The scan
+  screen therefore always offers typing the code by hand, and that fallback is what
+  the web demo uses. Not a gap to close so much as a constraint to remember — the
+  club uses the app, not the browser.
+- **Poke volume.** One nudge per friend per run is the cap App Spec §9 recommends,
+  so a member with twenty friends could in principle receive twenty notifications
+  about one run. Bounded by the fact that every one of those friends was added by
+  physically scanning a code, and unfriending is silent and one-sided. Worth
+  watching once real people use it; a per-recipient daily cap is the obvious next
+  lever if it becomes a complaint.
+- **A members screen for organisers.** Points corrections and disabling a friend
+  code currently hang off the run-day attendee list, because that is where a
+  complaint actually reaches an organiser. A dedicated members directory would be
+  more convenient and would also be the one screen in the app that lets someone
+  browse the whole membership — which is the thing App Spec §4.4 spent the entire
+  friends design avoiding. Deliberately not built.
+- **Tie-breaking on the board.** Rank ties share a position, which is correct and
+  which the UI now shows honestly (no medal for a shared place). A secondary sort
+  — most recent check-in, longest streak — would break more of them, but every
+  candidate tiebreak leaks something about *when* somebody ran.
+
+---
+
 ## Open questions carried forward
 
 - **Supabase project region** — see [ADR 0002 §8](decisions/0002-check-in-location-and-retention.md).

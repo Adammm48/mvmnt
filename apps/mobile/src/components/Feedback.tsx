@@ -48,8 +48,11 @@ const styles = StyleSheet.create({
     padding: spacing.xl,
     gap: spacing.sm,
   },
-  emptyTitle: { fontSize: 18, fontWeight: '700', color: colors.textPrimary, textAlign: 'center' },
-  emptyBody: { fontSize: 15, color: colors.textSecondary, textAlign: 'center', lineHeight: 22 },
+  // Every screen sits on the dark base, so the light-surface text colours render
+  // charcoal on charcoal — the empty state was there but invisible. Same class of
+  // bug as the button variants (see Button.tsx).
+  emptyTitle: { fontSize: 18, fontWeight: '700', color: colors.textOnDark, textAlign: 'center' },
+  emptyBody: { fontSize: 15, color: colors.textOnDarkMuted, textAlign: 'center', lineHeight: 22 },
   notice: {
     padding: spacing.md,
     borderRadius: radius.md,
