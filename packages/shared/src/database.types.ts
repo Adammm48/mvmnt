@@ -72,6 +72,27 @@ export type Database = {
           },
         ]
       }
+      badges: {
+        Row: {
+          key: string
+          label: string
+          runs_required: number
+          sort_order: number
+        }
+        Insert: {
+          key: string
+          label: string
+          runs_required: number
+          sort_order?: number
+        }
+        Update: {
+          key?: string
+          label?: string
+          runs_required?: number
+          sort_order?: number
+        }
+        Relationships: []
+      }
       check_in_evidence: {
         Row: {
           accuracy_m: number | null
@@ -163,6 +184,39 @@ export type Database = {
           {
             foreignKeyName: "feature_flags_updated_by_fkey"
             columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      member_badges: {
+        Row: {
+          badge_key: string
+          earned_at: string
+          user_id: string
+        }
+        Insert: {
+          badge_key: string
+          earned_at?: string
+          user_id: string
+        }
+        Update: {
+          badge_key?: string
+          earned_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_badges_badge_key_fkey"
+            columns: ["badge_key"]
+            isOneToOne: false
+            referencedRelation: "badges"
+            referencedColumns: ["key"]
+          },
+          {
+            foreignKeyName: "member_badges_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -294,12 +348,71 @@ export type Database = {
           },
         ]
       }
+      point_events: {
+        Row: {
+          awarded_at: string
+          created_at: string
+          id: number
+          kind: Database["public"]["Enums"]["point_kind"]
+          note: string | null
+          points: number
+          run_id: string | null
+          source: string
+          user_id: string | null
+        }
+        Insert: {
+          awarded_at?: string
+          created_at?: string
+          id?: never
+          kind: Database["public"]["Enums"]["point_kind"]
+          note?: string | null
+          points: number
+          run_id?: string | null
+          source?: string
+          user_id?: string | null
+        }
+        Update: {
+          awarded_at?: string
+          created_at?: string
+          id?: never
+          kind?: Database["public"]["Enums"]["point_kind"]
+          note?: string | null
+          points?: number
+          run_id?: string | null
+          source?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "point_events_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "run_attendance_counts"
+            referencedColumns: ["run_id"]
+          },
+          {
+            foreignKeyName: "point_events_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "point_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
           created_at: string
           display_name: string
           id: string
+          leaderboard_opt_out: boolean
           role: Database["public"]["Enums"]["member_role"]
           updated_at: string
         }
@@ -308,6 +421,7 @@ export type Database = {
           created_at?: string
           display_name: string
           id: string
+          leaderboard_opt_out?: boolean
           role?: Database["public"]["Enums"]["member_role"]
           updated_at?: string
         }
@@ -316,6 +430,7 @@ export type Database = {
           created_at?: string
           display_name?: string
           id?: string
+          leaderboard_opt_out?: boolean
           role?: Database["public"]["Enums"]["member_role"]
           updated_at?: string
         }
@@ -582,6 +697,42 @@ export type Database = {
       }
     }
     Views: {
+      effective_point_events: {
+        Row: {
+          awarded_at: string | null
+          created_at: string | null
+          id: number | null
+          kind: Database["public"]["Enums"]["point_kind"] | null
+          note: string | null
+          points: number | null
+          run_id: string | null
+          source: string | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "point_events_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "run_attendance_counts"
+            referencedColumns: ["run_id"]
+          },
+          {
+            foreignKeyName: "point_events_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "point_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       run_attendance_counts: {
         Row: {
           checked_in_count: number | null
@@ -670,6 +821,10 @@ export type Database = {
       }
     }
     Functions: {
+      admin_adjust_points: {
+        Args: { p_note: string; p_points: number; p_user_id: string }
+        Returns: undefined
+      }
       admin_check_in: {
         Args: { p_run_id: string; p_user_id: string }
         Returns: Database["public"]["Enums"]["attendance_state"]
@@ -686,6 +841,7 @@ export type Database = {
         }
         Returns: Database["public"]["Enums"]["attendance_state"]
       }
+      backfill_loyalty: { Args: never; Returns: Json }
       cancel_run: {
         Args: { p_reason?: string; p_run_id: string }
         Returns: undefined
@@ -700,6 +856,10 @@ export type Database = {
         }
         Returns: Database["public"]["Enums"]["attendance_state"]
       }
+      current_streak_weeks: {
+        Args: { p_now?: string; p_user_id: string }
+        Returns: number
+      }
       end_run: { Args: { p_run_id: string }; Returns: undefined }
       erase_member: { Args: { p_user_id: string }; Returns: undefined }
       is_admin: { Args: { uid?: string }; Returns: boolean }
@@ -707,14 +867,54 @@ export type Database = {
         Args: { p_pace_group?: string; p_run_id: string }
         Returns: Database["public"]["Enums"]["attendance_state"]
       }
+      leaderboard: {
+        Args: { p_window?: string }
+        Returns: {
+          avatar_url: string
+          display_name: string
+          is_me: boolean
+          points: number
+          rank: number
+          tier: Database["public"]["Enums"]["member_tier"]
+          user_id: string
+        }[]
+      }
+      my_standing: {
+        Args: { p_window?: string }
+        Returns: {
+          percentile: number
+          points: number
+          points_to_next_rank: number
+          points_to_next_tier: number
+          rank: number
+          runs_attended: number
+          streak_weeks: number
+          tier: Database["public"]["Enums"]["member_tier"]
+          total_members: number
+        }[]
+      }
+      points_to_next_tier: { Args: { p_points: number }; Returns: number }
+      points_total: {
+        Args: { p_since?: string; p_user_id: string }
+        Returns: number
+      }
       publish_run: { Args: { p_run_id: string }; Returns: undefined }
       purge_expired_location_data: { Args: never; Returns: number }
       register_push_token: {
         Args: { p_platform: string; p_token: string }
         Returns: undefined
       }
+      runs_attended: { Args: { p_user_id: string }; Returns: number }
       scheduler_tick: { Args: never; Returns: Json }
+      set_leaderboard_visibility: {
+        Args: { p_visible: boolean }
+        Returns: undefined
+      }
       start_run: { Args: { p_run_id: string }; Returns: undefined }
+      tier_for_points: {
+        Args: { p_points: number }
+        Returns: Database["public"]["Enums"]["member_tier"]
+      }
       withdraw_from_run: { Args: { p_run_id: string }; Returns: undefined }
     }
     Enums: {
@@ -730,6 +930,7 @@ export type Database = {
       check_in_method: "geofence" | "qr" | "admin"
       delivery_status: "pending" | "logged" | "sent" | "failed" | "skipped"
       member_role: "member" | "admin"
+      member_tier: "starter" | "core" | "elite"
       notification_audience:
         | "all_members"
         | "run_signed_up"
@@ -742,6 +943,7 @@ export type Database = {
         | "run_started"
         | "run_ended"
         | "waitlist_promoted"
+      point_kind: "check_in" | "streak_bonus" | "adjustment"
       run_status:
         | "draft"
         | "published"
@@ -891,6 +1093,7 @@ export const Constants = {
       check_in_method: ["geofence", "qr", "admin"],
       delivery_status: ["pending", "logged", "sent", "failed", "skipped"],
       member_role: ["member", "admin"],
+      member_tier: ["starter", "core", "elite"],
       notification_audience: [
         "all_members",
         "run_signed_up",
@@ -905,6 +1108,7 @@ export const Constants = {
         "run_ended",
         "waitlist_promoted",
       ],
+      point_kind: ["check_in", "streak_bonus", "adjustment"],
       run_status: [
         "draft",
         "published",
