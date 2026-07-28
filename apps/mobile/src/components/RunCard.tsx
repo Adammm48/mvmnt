@@ -1,4 +1,5 @@
 import { ImageBackground, Pressable, StyleSheet, Text, View } from 'react-native';
+import { CoverFallback } from './CoverFallback';
 import {
   colors,
   radius,
@@ -98,9 +99,11 @@ export function RunCard({ run, counts, myState, onPress }: Props) {
           {body}
         </ImageBackground>
       ) : (
-        // No cover yet: a deep base panel rather than a broken image frame, so
-        // a run without a photo still looks deliberate.
-        <View style={[styles.media, styles.mediaFallback]}>{body}</View>
+        // No cover yet: a gradient keyed to this run rather than a flat panel
+        // the same colour as the page, which reads as a broken image.
+        <CoverFallback seed={run.id} style={styles.media}>
+          {body}
+        </CoverFallback>
       )}
     </Pressable>
   );
@@ -142,7 +145,6 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.92, transform: [{ scale: 0.995 }] },
   media: { height: 220, justifyContent: 'space-between' },
   mediaImage: { borderRadius: radius.lg },
-  mediaFallback: { backgroundColor: colors.baseElevated },
   scrim: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(12,14,20,0.42)' },
   topRow: {
     flexDirection: 'row',

@@ -1,6 +1,7 @@
 import { ImageBackground, StyleSheet, Text, View } from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { colors, formatRunDate, formatRunTime, spacing, type Run } from '@mvmnt/shared';
+import { CoverFallback } from './CoverFallback';
 
 /**
  * The run detail hero.
@@ -59,12 +60,15 @@ export function RunHero({ run }: { run: Run }) {
     );
   }
 
-  return <View style={[styles.hero, styles.fallback]}>{overlay}</View>;
+  return (
+    <CoverFallback seed={run.id} style={styles.hero}>
+      {overlay}
+    </CoverFallback>
+  );
 }
 
 const styles = StyleSheet.create({
   hero: { height: 260, justifyContent: 'flex-end', backgroundColor: colors.baseElevated },
-  fallback: { backgroundColor: colors.baseElevated },
   scrim: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(12,14,20,0.40)' },
   caption: { padding: spacing.md, gap: spacing.sm },
   datePill: {

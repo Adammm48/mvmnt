@@ -20,9 +20,12 @@
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run db:test",
-    "seed:media": "bash scripts/seed-media.sh"
+    "seed:media": "bash scripts/seed-media.sh",
+    "docs:screenshots": "node scripts/screenshots.mjs",
+    "docs:gif": "node scripts/capture-checkin-gif.mjs && python3 scripts/frames-to-gif.py"
   },
   "devDependencies": {
+    "playwright": "^1.62.0",
     "supabase": "^2.109.1"
   }
 }

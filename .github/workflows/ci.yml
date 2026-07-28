@@ -1,0 +1,106 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # The one that matters. Every business rule in this project lives in Postgres
+  # — capacity, waitlist ordering, the check-in geofence, and every RLS policy —
+  # so this job spins up the real Supabase stack, applies all migrations, and
+  # runs the suite against it. A policy hole is invisible from the UI and
+  # obvious here.
+  database:
+    name: Database — migrations, RPCs and RLS
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start Supabase
+        run: supabase start
+
+      - name: Apply migrations and seed
+        run: supabase db reset
+
+      - name: Run database tests
+        run: npm run db:test
+
+      - name: Show delivery pipeline state
+        # Useful when a run fails: proves whether notifications were enqueued
+        # and fanned out, rather than leaving it to guesswork.
+        if: always()
+        run: |
+          supabase db execute --sql "
+            select status, count(*) from notification_deliveries group by status;
+          " || true
+
+  typecheck:
+    name: Typecheck — shared, mobile and admin
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Typecheck every workspace
+        run: npm run typecheck --workspaces --if-present
+
+      - name: Build the admin console
+        run: npm run build --workspace @mvmnt/admin
+
+  # Generated types are committed and reviewed as part of each diff. If someone
+  # changes a migration without regenerating them, the apps typecheck against a
+  # schema that no longer exists — so this fails the build instead of letting it
+  # rot silently.
+  types-in-sync:
+    name: Generated types match the migrations
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - run: supabase start
+
+      - name: Regenerate and compare
+        run: |
+          supabase gen types typescript --local > /tmp/database.types.ts
+          if ! diff -q /tmp/database.types.ts packages/shared/src/database.types.ts; then
+            echo "::error::packages/shared/src/database.types.ts is out of date."
+            echo "Run: npm run db:types"
+            diff /tmp/database.types.ts packages/shared/src/database.types.ts || true
+            exit 1
+          fi
+          echo "Generated types are in sync."

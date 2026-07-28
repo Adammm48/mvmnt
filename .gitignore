@@ -26,3 +26,6 @@ apps/*/.vite/
 
 # Expo web export used only for bundle verification
 apps/mobile/.expo/
+
+# Intermediate frames for the README animation; the GIF itself is committed
+docs/screenshots/.frames/

@@ -8,7 +8,14 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 API="${SUPABASE_URL:-http://127.0.0.1:54321}"
-# Local-only default key. Production uses the real one from the environment.
+
+# NOT A SECRET. This is the fixed demo service key that ships inside every
+# `supabase start` container — it is identical on every developer's machine, is
+# published in Supabase's own documentation, and only ever reaches a database
+# running on localhost. It is inlined so the seed works with no setup.
+#
+# A real key must never appear in this repo. Set SUPABASE_SERVICE_ROLE_KEY in
+# the environment to point this at anything other than the local stack.
 SERVICE="${SUPABASE_SERVICE_ROLE_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU}"
 MEDIA="$ROOT/supabase/seed-media"
 
