@@ -19,6 +19,7 @@ the EGP cost moves with the exchange rate — convert at the rate on the day.
 | | Year 1 | Every year after |
 |---|---|---|
 | **Minimum to launch and run the app** | **~$436** | **~$411** |
+| — plus the AI build tool, if still needed | **+$100–200 once** | — |
 | Realistic with all five phases built | ~$700–1,100+ | ~$700–1,000+ |
 
 For context: the club currently pays **nothing** — it runs on WhatsApp and
@@ -87,19 +88,26 @@ trade. **Start on Free while testing, switch to Pro before real members use it.*
 
 ## 3. Cost of building the app itself
 
-| Item | Cost |
-|---|---|
-| Building the iOS and Android apps | **$0** |
-| Development tools | **$0** |
-| The database, the organiser console, the app | **$0** |
+| Item | Cost | Type |
+|---|---|---|
+| Building the iOS and Android apps | **$0** | — |
+| The database, the organiser console, the app | **$0** | — |
+| **Claude (AI coding assistant)** | **~$100/month, for 1–2 months if needed** | **One-time, temporary** |
 
-Everything used to build this is free or open-source. The apps are built on a
-Mac that already exists, so there is no build-service subscription
-(Expo's paid build service starts around $19–99/month and is **not needed** —
-it is a convenience, not a requirement).
+Everything the app runs on is free or open-source. The apps are built on a Mac
+that already exists, so there is no build-service subscription (Expo's paid
+build service starts around $19–99/month and is **not needed** — it is a
+convenience, not a requirement).
 
-**The real cost of building is time, not money**, and that is being done
-in-house.
+**Claude is the one real line item here.** It is the AI tool being used to
+build the app faster than one person could alone — this document itself was
+produced with it. Budget **up to $200 total** (two months at $100), not a
+recurring cost: it stops once the build work it is doing is done, and is not
+part of what it costs to *run* the app afterwards. If the remaining work
+finishes in one month, the real number is $100, not $200.
+
+**The rest of the cost of building is time, not money**, and that is being
+done in-house.
 
 ---
 
@@ -111,7 +119,12 @@ in-house.
 | Google Play Console | $25 | — |
 | Domain | $12 | $12 |
 | Supabase Pro | $300 | $300 |
-| **Total** | **$436** | **$411/year** |
+| **Subtotal — running the app** | **$436** | **$411/year** |
+| Claude (build tool, temporary, capped) | +$100–200 once | — |
+| **Total, if the build tool is needed** | **~$536–636** | **$411/year** |
+
+The Claude line only applies once, during the build. It is not part of what
+the app costs to operate, and does not recur next year.
 
 That covers everything the app does today: sign-up, run listings, sign-ups and
 waitlists, geofenced check-in, the organiser console, and all notifications.
