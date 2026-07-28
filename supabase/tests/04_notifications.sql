@@ -177,6 +177,40 @@ begin
     (select status from public.runs where id = v_run), 'cancelled'::public.run_status,
     'the run stays visible as cancelled rather than disappearing');
 
+  -- ---------------------------------------------------------------------
+  -- THE BUG: cancelling a DRAFT must not publish it. runs_select_visible
+  -- allows any status other than 'draft' — so setting status='cancelled' on a
+  -- run nobody was ever told about would give it its first-ever appearance to
+  -- members, as "cancelled". A draft was never announced, so cancelling it
+  -- discards it outright instead.
+  -- ---------------------------------------------------------------------
+  v_run := tests.make_run(v_admin, null, now() + interval '3 days', false);  -- not published
+  perform tests.assert_eq(
+    (select status from public.runs where id = v_run), 'draft'::public.run_status,
+    'sanity check: this run is a draft');
+
+  perform tests.act_as(v_admin);
+  perform public.cancel_run(v_run, 'no longer needed');
+  perform tests.act_as_system();
+
+  perform tests.assert_eq(
+    (select count(*)::int from public.runs where id = v_run), 0,
+    'cancelling a draft deletes it rather than marking it cancelled');
+
+  -- A member must never be able to see it — not even transiently, and not
+  -- under any status.
+  perform tests.act_as(v_a);
+  perform tests.assert_eq(
+    (select count(*)::int from public.runs where id = v_run), 0,
+    'a cancelled draft never becomes visible to members');
+  perform tests.act_as_system();
+
+  perform tests.assert(
+    exists (select 1 from public.audit_log
+            where action = 'cancel_run' and entity_id = v_run::text
+              and (metadata ->> 'was_draft')::boolean = true),
+    'discarding a draft is still recorded in the audit log');
+
   raise notice 'PASS 04_notifications';
 end $$;
 

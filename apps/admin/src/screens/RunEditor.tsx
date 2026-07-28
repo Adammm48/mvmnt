@@ -146,8 +146,26 @@ export function RunEditor({ runId, onDone }: Props) {
 
   async function cancel() {
     if (!run) return;
-    const reason = window.prompt('Why is it cancelled? Members will see this.', 'Weather');
-    if (reason === null) return;
+
+    // A published run has already notified the club, so cancelling it fires a
+    // fresh round of notifications and can't be walked back. A draft was never
+    // shown to anyone, so cancel_run() discards it outright rather than giving
+    // it its first-ever appearance to members as "cancelled" — see migration
+    // 0013. The confirmation and the reason prompt reflect that difference.
+    const stillDraft = run.status === 'draft';
+    const confirmed = window.confirm(
+      stillDraft
+        ? `Delete the draft "${run.title}"? It was never published, so nobody will be told — but this can't be undone.`
+        : `Cancel "${run.title}"? Everyone who signed up will be notified straight away. This can't be undone.`,
+    );
+    if (!confirmed) return;
+
+    let reason: string | null = '';
+    if (!stillDraft) {
+      reason = window.prompt('Why is it cancelled? Members will see this.', 'Weather');
+      if (reason === null) return;
+    }
+
     setBusy(true);
     setError(null);
     const { error: cancelError } = await supabase.rpc('cancel_run', {
@@ -157,6 +175,12 @@ export function RunEditor({ runId, onDone }: Props) {
     setBusy(false);
     if (cancelError) {
       toast.error("Couldn't cancel", toMemberMessage(cancelError));
+      return;
+    }
+
+    if (stillDraft) {
+      toast.info('Draft deleted');
+      onDone(); // the run is gone — nothing left here to reload
       return;
     }
     toast.info('Run cancelled', 'Pending reminders for it have been cancelled too.');

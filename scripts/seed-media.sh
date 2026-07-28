@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Upload placeholder cover images to local Storage and attach them to the
-# seeded runs.
+# Upload placeholder cover images (and, where generated, a cover clip) to local
+# Storage and attach them to the seeded runs.
 #
 # Separate from seed.sql because SQL cannot upload a file — Storage is an HTTP
 # API. Run after `supabase db reset`; `npm run db:reset` chains both.
@@ -25,26 +25,26 @@ if [ ! -d "$MEDIA" ]; then
 fi
 
 upload() {
-  local file="$1" name="$2"
+  local file="$1" name="$2" content_type="$3"
   # x-upsert makes re-seeding idempotent instead of failing on the second run.
   curl -s -o /dev/null -X POST "$API/storage/v1/object/run-media/$name" \
     -H "Authorization: Bearer $SERVICE" \
-    -H "Content-Type: image/jpeg" \
+    -H "Content-Type: $content_type" \
     -H "x-upsert: true" \
     --data-binary "@$file"
 }
 
 attach() {
-  local title="$1" name="$2"
+  local title="$1" column="$2" name="$3"
   curl -s -o /dev/null -X PATCH "$API/rest/v1/runs?title=eq.$(printf '%s' "$title" | sed 's/ /%20/g')" \
     -H "Authorization: Bearer $SERVICE" \
     -H "apikey: $SERVICE" \
     -H "Content-Type: application/json" \
     -H "Prefer: return=minimal" \
-    -d "{\"cover_image_url\":\"$API/storage/v1/object/public/run-media/$name\"}"
+    -d "{\"$column\":\"$API/storage/v1/object/public/run-media/$name\"}"
 }
 
-declare -a PAIRS=(
+declare -a IMAGES=(
   "Saturday 6K|saturday-6k.jpg"
   "Last Saturday 6K|saturday-6k.jpg"
   "Track Session|track-session.jpg"
@@ -52,12 +52,21 @@ declare -a PAIRS=(
   "Bank Holiday Special (unpublished)|waterway.jpg"
 )
 
-for pair in "${PAIRS[@]}"; do
+for pair in "${IMAGES[@]}"; do
   title="${pair%%|*}"
   name="${pair##*|}"
   [ -f "$MEDIA/$name" ] || continue
-  upload "$MEDIA/$name" "$name"
-  attach "$title" "$name"
+  upload "$MEDIA/$name" "$name" "image/jpeg"
+  attach "$title" "cover_image_url" "$name"
 done
+
+# One run gets a clip too, so the video path (RunHero) is exercised by the
+# seed itself rather than sitting untested until someone uploads a real one.
+# Only present if generate-placeholder-media.py's optional imageio-ffmpeg step
+# ran — degrades silently to stills-only otherwise.
+if [ -f "$MEDIA/saturday-6k.mp4" ]; then
+  upload "$MEDIA/saturday-6k.mp4" "saturday-6k.mp4" "video/mp4"
+  attach "Saturday 6K" "cover_video_url" "saturday-6k.mp4"
+fi
 
 echo "  seeded run cover images"

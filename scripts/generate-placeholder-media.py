@@ -18,6 +18,7 @@ from __future__ import annotations
 import math
 import pathlib
 import random
+import subprocess
 
 from PIL import Image, ImageDraw, ImageFilter
 
@@ -120,7 +121,66 @@ def build(name: str, top, bottom, accent) -> pathlib.Path:
     return path
 
 
+def build_clip(still: pathlib.Path, name: str, seconds: int = 5, fps: int = 25) -> pathlib.Path | None:
+    """
+    A slow push-in on a still, encoded as real h264/mp4.
+
+    Needs `imageio-ffmpeg` (a real, complete ffmpeg binary it downloads on first
+    use). The ffmpeg bundled with Playwright is NOT a substitute — it is a
+    stripped build with no image decoders and cannot do this, which is why this
+    is a separate optional step rather than part of `build()` above.
+
+    This exists because RunHero's video path went uncaught for a while with no
+    clip anywhere in the seed data to exercise it against. A real clip here is
+    what makes `npm run db:reset` demonstrate the video path out of the box.
+    """
+    try:
+        import imageio_ffmpeg
+    except ImportError:
+        return None
+
+    import numpy as np
+
+    src = Image.open(still).convert("RGB")
+    out_w, out_h = 960, 640
+    n = fps * seconds
+    path = OUT / f"{name}.mp4"
+
+    proc = subprocess.Popen(
+        [
+            imageio_ffmpeg.get_ffmpeg_exe(), "-y",
+            "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{out_w}x{out_h}", "-r", str(fps),
+            "-i", "pipe:0",
+            "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "24", "-movflags", "+faststart",
+            str(path),
+        ],
+        stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
+    )
+    for i in range(n):
+        zoom = 1.0 + 0.15 * (i / (n - 1))
+        crop_w, crop_h = int(src.width / zoom), int(src.height / zoom)
+        left = (src.width - crop_w) // 2
+        top_px = int((src.height - crop_h) * 0.4)
+        frame = src.crop((left, top_px, left + crop_w, top_px + crop_h)).resize(
+            (out_w, out_h), Image.LANCZOS
+        )
+        proc.stdin.write(np.asarray(frame).tobytes())
+    proc.stdin.close()
+    stderr = proc.stderr.read()
+    if proc.wait() != 0:
+        print(f"  (clip generation failed for {name}: {stderr.decode()[-300:]})")
+        return None
+    return path
+
+
 if __name__ == "__main__":
     for scene in SCENES:
         path = build(*scene)
         print(f"{path.name}  {path.stat().st_size // 1024}KB")
+
+    # One clip is enough to prove the path works — the rest stay stills.
+    clip = build_clip(OUT / "saturday-6k.jpg", "saturday-6k")
+    if clip:
+        print(f"{clip.name}  {clip.stat().st_size // 1024}KB")
+    else:
+        print("  (skipped cover clip: pip install imageio-ffmpeg to enable it)")

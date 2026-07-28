@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { ImageBackground, StyleSheet, Text, View } from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { colors, formatRunDate, formatRunTime, spacing, type Run } from '@mvmnt/shared';
@@ -15,11 +16,19 @@ import { CoverFallback } from './CoverFallback';
  * to be behind a control the member chooses to press.
  */
 export function RunHero({ run }: { run: Run }) {
+  // loop/muted are setup-only and safe inside the creation callback. play()
+  // is not: called here it fires before VideoView has mounted an underlying
+  // element to play, and nothing retries it — the clip decodes perfectly
+  // (readyState 4, no error) but sits frozen on frame 0 forever. Calling
+  // play() from an effect instead guarantees the view exists first.
   const player = useVideoPlayer(run.cover_video_url ?? null, (p) => {
     p.loop = true;
     p.muted = true;
-    if (run.cover_video_url) p.play();
   });
+
+  useEffect(() => {
+    if (run.cover_video_url) player.play();
+  }, [player, run.cover_video_url]);
 
   const overlay = (
     <>
@@ -46,6 +55,10 @@ export function RunHero({ run }: { run: Run }) {
           // take over the screen and hide the check-in button underneath.
           nativeControls={false}
           allowsPictureInPicture={false}
+          // Without this, Safari on iOS refuses inline playback altogether —
+          // it either forces fullscreen or blocks autoplay outright. Easy to
+          // miss because nothing errors; the clip just never appears.
+          playsInline
         />
         {overlay}
       </View>
