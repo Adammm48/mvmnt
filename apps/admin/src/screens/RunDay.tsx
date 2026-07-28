@@ -9,6 +9,7 @@ import {
   type AttendanceState,
   type CheckInMethod,
 } from '@mvmnt/shared';
+import { useToast } from '../components/Toast';
 
 type Attendee = {
   id: string;
@@ -28,13 +29,13 @@ type Attendee = {
  * turned up but whose phone did not cooperate.
  */
 export function RunDay({ runId, onBack }: { runId: string; onBack: () => void }) {
+  const toast = useToast();
   const [run, setRun] = useState<Run | null>(null);
   const [counts, setCounts] = useState<RunCounts | null>(null);
   const [attendees, setAttendees] = useState<Attendee[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
   const [filter, setFilter] = useState('');
 
   const load = useCallback(async () => {
@@ -78,7 +79,6 @@ export function RunDay({ runId, onBack }: { runId: string; onBack: () => void })
     if (!attendee.user_id) return;
     setBusyId(attendee.id);
     setError(null);
-    setSuccess(null);
 
     const { error: rpcError } = await supabase.rpc('admin_check_in', {
       p_run_id: runId,
@@ -87,10 +87,10 @@ export function RunDay({ runId, onBack }: { runId: string; onBack: () => void })
     setBusyId(null);
 
     if (rpcError) {
-      setError(toMemberMessage(rpcError));
+      toast.error("Couldn't check them in", toMemberMessage(rpcError));
       return;
     }
-    setSuccess(`${attendee.display_name} checked in.`);
+    toast.success(`${attendee.display_name} is in`);
     await load();
   }
 
@@ -98,7 +98,6 @@ export function RunDay({ runId, onBack }: { runId: string; onBack: () => void })
     if (!attendee.user_id) return;
     setBusyId(attendee.id);
     setError(null);
-    setSuccess(null);
 
     const { error: rpcError } = await supabase.rpc('admin_remove_check_in', {
       p_run_id: runId,
@@ -107,22 +106,22 @@ export function RunDay({ runId, onBack }: { runId: string; onBack: () => void })
     setBusyId(null);
 
     if (rpcError) {
-      setError(toMemberMessage(rpcError));
+      toast.error("Couldn't undo that", toMemberMessage(rpcError));
       return;
     }
-    setSuccess(`${attendee.display_name}'s check-in removed.`);
+    toast.info(`${attendee.display_name}'s check-in removed`);
     await load();
   }
 
   async function lifecycle(action: 'start_run' | 'end_run') {
     setError(null);
-    setSuccess(null);
     const { error: rpcError } = await supabase.rpc(action, { p_run_id: runId });
     if (rpcError) {
-      setError(toMemberMessage(rpcError));
+      toast.error("That didn't work", toMemberMessage(rpcError));
       return;
     }
-    setSuccess(action === 'start_run' ? 'Run started — attendees notified.' : 'Run ended.');
+    if (action === 'start_run') toast.success('Run started', 'Everyone signed up has been told.');
+    else toast.success('Run ended', 'Everyone who checked in gets the wrap-up.');
     await load();
   }
 
@@ -151,7 +150,6 @@ export function RunDay({ runId, onBack }: { runId: string; onBack: () => void })
       </div>
 
       {error && <div className="notice error" style={{ marginTop: 14 }}>{error}</div>}
-      {success && !error && <div className="notice success" style={{ marginTop: 14 }}>{success}</div>}
 
       <div className="card" style={{ marginTop: 14 }}>
         <div className="row">

@@ -276,3 +276,106 @@ tr:hover td { background: #faf9f7; }
 
 .empty { text-align: center; padding: 48px 20px; color: var(--muted); }
 .center-page { max-width: 400px; margin: 72px auto; padding: 0 20px; }
+
+/* --- toasts --------------------------------------------------------------
+ * Fixed to the corner so a confirmation is seen wherever the operator is
+ * scrolled to. Publishing notifies the whole club — that deserves to feel
+ * like something happened.
+ */
+
+.toast-stack {
+  position: fixed;
+  top: 78px;
+  right: 20px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(380px, calc(100vw - 40px));
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 14px 14px 16px;
+  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: 0 10px 30px rgba(27, 31, 42, 0.16), 0 2px 6px rgba(27, 31, 42, 0.08);
+  animation: toast-in 260ms cubic-bezier(0.16, 1, 0.3, 1);
+  border-left-width: 5px;
+  border-left-style: solid;
+}
+.toast.leaving { animation: toast-out 220ms ease forwards; }
+
+.toast-success { border-left-color: var(--success); }
+.toast-error { border-left-color: var(--alert); }
+.toast-info { border-left-color: var(--action); }
+
+.toast-icon {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  font-weight: 900;
+  font-size: 14px;
+  color: #fff;
+  margin-top: 1px;
+}
+.toast-success .toast-icon { background: var(--success); animation: toast-pop 320ms cubic-bezier(0.34, 1.56, 0.64, 1) 80ms both; }
+.toast-error .toast-icon { background: var(--alert); }
+.toast-info .toast-icon { background: var(--action); }
+
+.toast-body { flex: 1; min-width: 0; }
+.toast-title { font-weight: 750; font-size: 14.5px; line-height: 1.35; }
+.toast-detail { font-size: 13px; color: var(--muted); margin-top: 3px; line-height: 1.45; }
+
+.toast-close {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  min-height: 0;
+  padding: 0 2px;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--muted);
+  cursor: pointer;
+}
+.toast-close:hover { background: none; color: var(--text); }
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateX(24px) scale(0.97); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
+}
+@keyframes toast-out {
+  to { opacity: 0; transform: translateX(24px) scale(0.97); }
+}
+@keyframes toast-pop {
+  from { transform: scale(0.4); }
+  to { transform: scale(1); }
+}
+
+/* Slide up from the bottom on phones, where the top-right corner is awkward
+   and the thumb is near the bottom anyway. */
+@media (max-width: 640px) {
+  .toast-stack { top: auto; bottom: 16px; right: 16px; left: 16px; width: auto; }
+  @keyframes toast-in {
+    from { opacity: 0; transform: translateY(24px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  @keyframes toast-out {
+    to { opacity: 0; transform: translateY(24px) scale(0.97); }
+  }
+}
+
+/* Motion is decoration; the text and the aria-live announcement carry the
+   meaning, so removing it costs nothing (Principles §5). */
+@media (prefers-reduced-motion: reduce) {
+  .toast, .toast-success .toast-icon { animation: none; }
+  .toast.leaving { animation: none; opacity: 0; }
+}

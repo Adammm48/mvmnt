@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { CLUB_TIMEZONE, toMemberMessage, type Run } from '@mvmnt/shared';
 import { MediaUpload } from '../components/MediaUpload';
 import { MeetingPointPicker } from '../components/MeetingPointPicker';
+import { useToast } from '../components/Toast';
 
 type Props = { runId: string | null; onDone: () => void };
 
@@ -19,11 +20,11 @@ const DEFAULT_LNG = 31.2357;
  * typo.
  */
 export function RunEditor({ runId, onDone }: Props) {
+  const toast = useToast();
   const [run, setRun] = useState<Run | null>(null);
   const [loading, setLoading] = useState(runId !== null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -93,7 +94,6 @@ export function RunEditor({ runId, onDone }: Props) {
   async function save() {
     setBusy(true);
     setError(null);
-    setSuccess(null);
 
     const payload = {
       title: title.trim(),
@@ -120,21 +120,27 @@ export function RunEditor({ runId, onDone }: Props) {
       return;
     }
     if (result.data) applyRun(result.data);
-    setSuccess(id ? 'Saved.' : "Draft saved. Members can't see it until you publish.");
+    if (id) toast.success('Changes saved');
+    else toast.success('Draft saved', "Members can't see it until you publish.");
   }
 
   async function publish() {
     if (!run) return;
     setBusy(true);
     setError(null);
-    setSuccess(null);
     const { error: publishError } = await supabase.rpc('publish_run', { p_run_id: run.id });
     setBusy(false);
     if (publishError) {
+      // Surfaced as a toast as well as inline: a refused publish must never
+      // look like nothing happening, which is exactly how it failed before.
+      toast.error("Couldn't publish", toMemberMessage(publishError));
       setError(toMemberMessage(publishError));
       return;
     }
-    setSuccess('Published. Everyone has been notified and both reminders are scheduled.');
+    toast.success(
+      `${run.title} is live`,
+      'Every member has been notified. Both reminders are scheduled.',
+    );
     await reload();
   }
 
@@ -150,10 +156,10 @@ export function RunEditor({ runId, onDone }: Props) {
     });
     setBusy(false);
     if (cancelError) {
-      setError(toMemberMessage(cancelError));
+      toast.error("Couldn't cancel", toMemberMessage(cancelError));
       return;
     }
-    setSuccess('Cancelled. Pending reminders for it have been cancelled too.');
+    toast.info('Run cancelled', 'Pending reminders for it have been cancelled too.');
     await reload();
   }
 
@@ -179,7 +185,6 @@ export function RunEditor({ runId, onDone }: Props) {
       </div>
 
       {error && <div className="notice error">{error}</div>}
-      {success && !error && <div className="notice success">{success}</div>}
 
       <section className="card">
         <h3 className="section-title">The basics</h3>

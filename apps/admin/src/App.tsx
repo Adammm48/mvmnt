@@ -5,6 +5,7 @@ import { SignIn } from './screens/SignIn';
 import { RunList } from './screens/RunList';
 import { RunEditor } from './screens/RunEditor';
 import { RunDay } from './screens/RunDay';
+import { ToastProvider } from './components/Toast';
 
 export type View =
   | { name: 'list' }
@@ -51,7 +52,7 @@ export default function App() {
   }
 
   return (
-    <>
+    <ToastProvider>
       <header className="app-header">
         <h1>MVMNT · ORGANISER</h1>
         <div className="who">
@@ -70,6 +71,6 @@ export default function App() {
           <RunDay runId={view.runId} onBack={() => setView({ name: 'list' })} />
         )}
       </main>
-    </>
+    </ToastProvider>
   );
 }
