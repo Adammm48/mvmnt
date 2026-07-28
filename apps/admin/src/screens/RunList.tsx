@@ -45,12 +45,10 @@ export function RunList({ onNavigate }: { onNavigate: (v: View) => void }) {
 
   return (
     <>
-      <div className="row" style={{ marginBottom: 20 }}>
+      <div className="page-head">
         <div>
           <h2>Runs</h2>
-          <p className="subtitle" style={{ margin: 0 }}>
-            Create a run, publish it, and check people in on the day.
-          </p>
+          <p className="subtitle">Create a run, publish it, and check people in on the day.</p>
         </div>
         <button className="primary" onClick={() => onNavigate({ name: 'editor', runId: null })}>
           New run
@@ -60,27 +58,41 @@ export function RunList({ onNavigate }: { onNavigate: (v: View) => void }) {
       {error && <div className="notice error">{error}</div>}
 
       {items.length === 0 ? (
-        <div className="card empty">No runs yet. Create the first one.</div>
+        <div className="card empty">
+          <p style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)', margin: '0 0 4px' }}>
+            No runs yet
+          </p>
+          <p style={{ margin: 0 }}>Create the first one and the club will hear about it.</p>
+        </div>
       ) : (
         items.map(({ run, counts }) => (
           <div className="card" key={run.id}>
-            <div className="row">
-              <div>
-                <div className="inline" style={{ marginBottom: 4 }}>
-                  <strong style={{ fontSize: 17 }}>{run.title}</strong>
-                  <span className={`pill ${run.status}`}>{run.status.replace('_', ' ')}</span>
-                </div>
-                <div style={{ color: 'var(--muted)' }}>
-                  {formatRunDate(run.starts_at)} · {formatRunTime(run.starts_at)} ·{' '}
-                  {run.meeting_point_name}
-                </div>
-                <div style={{ marginTop: 6, fontSize: 14 }}>
-                  <strong>{counts?.going_count ?? 0}</strong> going
-                  {run.capacity ? ` of ${run.capacity}` : ''} ·{' '}
-                  <strong>{counts?.checked_in_count ?? 0}</strong> checked in
-                  {(counts?.waitlist_count ?? 0) > 0 && (
-                    <> · <strong>{counts?.waitlist_count}</strong> waiting</>
-                  )}
+            <div className="run-row">
+              <div className="inline" style={{ flex: 1, minWidth: 240, alignItems: 'flex-start' }}>
+                {run.cover_image_url ? (
+                  <img className="run-thumb" src={run.cover_image_url} alt="" />
+                ) : (
+                  <div className="run-thumb" />
+                )}
+                <div>
+                  <div className="inline" style={{ marginBottom: 2 }}>
+                    <span className="run-title">{run.title}</span>
+                    <span className={`pill ${run.status}`}>{run.status.replace('_', ' ')}</span>
+                  </div>
+                  <div className="run-when">
+                    {formatRunDate(run.starts_at)} · {formatRunTime(run.starts_at)} ·{' '}
+                    {run.meeting_point_name}
+                  </div>
+                  <div className="run-counts">
+                    <strong>{counts?.going_count ?? 0}</strong> going
+                    {run.capacity ? ` of ${run.capacity}` : ''}
+                    {(counts?.checked_in_count ?? 0) > 0 && (
+                      <> · <strong>{counts?.checked_in_count}</strong> checked in</>
+                    )}
+                    {(counts?.waitlist_count ?? 0) > 0 && (
+                      <> · <strong>{counts?.waitlist_count}</strong> waiting</>
+                    )}
+                  </div>
                 </div>
               </div>
               <div className="inline">

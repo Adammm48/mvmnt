@@ -2,16 +2,21 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { CLUB_TIMEZONE, toMemberMessage, type Run } from '@mvmnt/shared';
 import { MediaUpload } from '../components/MediaUpload';
+import { MeetingPointPicker } from '../components/MeetingPointPicker';
 
 type Props = { runId: string | null; onDone: () => void };
+
+// Cairo city centre — a sensible starting pin for a new run.
+const DEFAULT_LAT = 30.0444;
+const DEFAULT_LNG = 31.2357;
 
 /**
  * Create and edit a run.
  *
  * Publishing is a separate, explicit act rather than a side effect of saving:
  * publish_run() announces the run to every member and schedules both reminders,
- * so it must not be something an organiser can trigger by accident while
- * fixing a typo.
+ * so it must not be something an organiser triggers by accident while fixing a
+ * typo.
  */
 export function RunEditor({ runId, onDone }: Props) {
   const [run, setRun] = useState<Run | null>(null);
@@ -22,22 +27,19 @@ export function RunEditor({ runId, onDone }: Props) {
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [startsAt, setStartsAt] = useState('');
-  const [endsAt, setEndsAt] = useState('');
+  // Date and time are separate fields. A combined datetime-local is one fiddly
+  // control where the date half is easy to leave wrong without noticing — which
+  // is exactly how a run got created ten days in the past.
+  const [date, setDate] = useState('');
+  const [time, setTime] = useState('07:00');
+  const [endTime, setEndTime] = useState('');
   const [meetingPoint, setMeetingPoint] = useState('');
-  const [lat, setLat] = useState('30.0444');
-  const [lng, setLng] = useState('31.2357');
-  const [radius, setRadius] = useState('250');
+  const [lat, setLat] = useState(DEFAULT_LAT);
+  const [lng, setLng] = useState(DEFAULT_LNG);
+  const [radius, setRadius] = useState(250);
   const [distance, setDistance] = useState('');
   const [capacity, setCapacity] = useState('');
   const [paceGroups, setPaceGroups] = useState('');
-
-  const reload = async () => {
-    const id = run?.id ?? runId;
-    if (!id) return;
-    const { data } = await supabase.from('runs').select('*').eq('id', id).maybeSingle();
-    setRun(data ?? null);
-  };
 
   useEffect(() => {
     if (!runId) return;
@@ -47,23 +49,46 @@ export function RunEditor({ runId, onDone }: Props) {
       .eq('id', runId)
       .maybeSingle()
       .then(({ data }) => {
-        if (data) {
-          setRun(data);
-          setTitle(data.title);
-          setDescription(data.description ?? '');
-          setStartsAt(toLocalInput(data.starts_at));
-          setEndsAt(data.ends_at ? toLocalInput(data.ends_at) : '');
-          setMeetingPoint(data.meeting_point_name);
-          setLat(String(data.meeting_point_lat));
-          setLng(String(data.meeting_point_lng));
-          setRadius(String(data.check_in_radius_m));
-          setDistance(data.distance_meters ? String(data.distance_meters) : '');
-          setCapacity(data.capacity ? String(data.capacity) : '');
-          setPaceGroups(data.pace_groups.join(', '));
-        }
+        if (data) applyRun(data);
         setLoading(false);
       });
   }, [runId]);
+
+  function applyRun(data: Run) {
+    setRun(data);
+    setTitle(data.title);
+    setDescription(data.description ?? '');
+    const start = splitClubDateTime(data.starts_at);
+    setDate(start.date);
+    setTime(start.time);
+    setEndTime(data.ends_at ? splitClubDateTime(data.ends_at).time : '');
+    setMeetingPoint(data.meeting_point_name);
+    setLat(data.meeting_point_lat);
+    setLng(data.meeting_point_lng);
+    setRadius(data.check_in_radius_m);
+    setDistance(data.distance_meters ? String(data.distance_meters) : '');
+    setCapacity(data.capacity ? String(data.capacity) : '');
+    setPaceGroups(data.pace_groups.join(', '));
+  }
+
+  async function reload() {
+    const id = run?.id ?? runId;
+    if (!id) return;
+    const { data } = await supabase.from('runs').select('*').eq('id', id).maybeSingle();
+    if (data) setRun(data);
+  }
+
+  // --- validation, surfaced before anything is attempted ------------------
+  const startsAtIso = date && time ? clubTimeToIso(date, time) : null;
+  const startsInPast = startsAtIso !== null && new Date(startsAtIso) <= new Date();
+  const problems: string[] = [];
+  if (!title.trim()) problems.push('Give the run a title.');
+  if (!date) problems.push('Pick a date.');
+  if (!time) problems.push('Pick a start time.');
+  if (!meetingPoint.trim()) problems.push('Name the meeting point.');
+  if (startsInPast) problems.push('That date and time have already passed — pick a future one.');
+
+  const canSave = problems.length === 0;
 
   async function save() {
     setBusy(true);
@@ -73,22 +98,20 @@ export function RunEditor({ runId, onDone }: Props) {
     const payload = {
       title: title.trim(),
       description: description.trim() || null,
-      starts_at: fromLocalInput(startsAt),
-      ends_at: endsAt ? fromLocalInput(endsAt) : null,
+      starts_at: clubTimeToIso(date, time),
+      ends_at: endTime ? clubTimeToIso(date, endTime) : null,
       meeting_point_name: meetingPoint.trim(),
-      meeting_point_lat: Number(lat),
-      meeting_point_lng: Number(lng),
-      check_in_radius_m: Number(radius),
+      meeting_point_lat: lat,
+      meeting_point_lng: lng,
+      check_in_radius_m: radius,
       distance_meters: distance ? Number(distance) : null,
       capacity: capacity ? Number(capacity) : null,
-      pace_groups: paceGroups
-        .split(',')
-        .map((p) => p.trim())
-        .filter(Boolean),
+      pace_groups: paceGroups.split(',').map((p) => p.trim()).filter(Boolean),
     };
 
-    const result = runId
-      ? await supabase.from('runs').update(payload).eq('id', runId).select().maybeSingle()
+    const id = run?.id ?? runId;
+    const result = id
+      ? await supabase.from('runs').update(payload).eq('id', id).select().maybeSingle()
       : await supabase.from('runs').insert(payload).select().maybeSingle();
 
     setBusy(false);
@@ -96,37 +119,29 @@ export function RunEditor({ runId, onDone }: Props) {
       setError(toMemberMessage(result.error));
       return;
     }
-    setRun(result.data);
-    setSuccess(runId ? 'Saved.' : 'Draft created. Publish it when you are ready.');
-    if (!runId && result.data) {
-      // Stay on the page so the organiser can publish without navigating back.
-      window.history.replaceState(null, '', `?run=${result.data.id}`);
-    }
+    if (result.data) applyRun(result.data);
+    setSuccess(id ? 'Saved.' : "Draft saved. Members can't see it until you publish.");
   }
 
   async function publish() {
     if (!run) return;
     setBusy(true);
     setError(null);
+    setSuccess(null);
     const { error: publishError } = await supabase.rpc('publish_run', { p_run_id: run.id });
     setBusy(false);
     if (publishError) {
       setError(toMemberMessage(publishError));
       return;
     }
-    setSuccess('Published. Every member has been notified, and both reminders are scheduled.');
-    const { data } = await supabase.from('runs').select('*').eq('id', run.id).maybeSingle();
-    setRun(data ?? null);
+    setSuccess('Published. Everyone has been notified and both reminders are scheduled.');
+    await reload();
   }
 
   async function cancel() {
     if (!run) return;
-    const reason = window.prompt(
-      'Why is this run cancelled? Members will see this.',
-      'Weather',
-    );
+    const reason = window.prompt('Why is it cancelled? Members will see this.', 'Weather');
     if (reason === null) return;
-
     setBusy(true);
     setError(null);
     const { error: cancelError } = await supabase.rpc('cancel_run', {
@@ -138,30 +153,45 @@ export function RunEditor({ runId, onDone }: Props) {
       setError(toMemberMessage(cancelError));
       return;
     }
-    setSuccess('Run cancelled. Pending reminders for it have been cancelled too.');
-    const { data } = await supabase.from('runs').select('*').eq('id', run.id).maybeSingle();
-    setRun(data ?? null);
+    setSuccess('Cancelled. Pending reminders for it have been cancelled too.');
+    await reload();
   }
 
   if (loading) return <p>Loading…</p>;
 
+  const isDraft = run === null || run.status === 'draft';
+
   return (
     <>
-      <button className="link" onClick={onDone} style={{ marginBottom: 12 }}>
+      <button className="link back" onClick={onDone}>
         ← All runs
       </button>
-      <h2>{runId ? 'Edit run' : 'New run'}</h2>
-      <p className="subtitle">
-        Times are in {CLUB_TIMEZONE.replace('_', ' ')} — the same timezone members see.
-      </p>
+
+      <div className="page-head">
+        <div>
+          <h2>{run ? run.title || 'Edit run' : 'New run'}</h2>
+          <p className="subtitle">
+            All times are {CLUB_TIMEZONE.split('/')[1]?.replace('_', ' ')} time — the same times
+            members see.
+          </p>
+        </div>
+        {run && <span className={`pill ${run.status}`}>{run.status.replace('_', ' ')}</span>}
+      </div>
 
       {error && <div className="notice error">{error}</div>}
       {success && !error && <div className="notice success">{success}</div>}
 
-      <div className="card">
+      <section className="card">
+        <h3 className="section-title">The basics</h3>
+
         <div className="field">
-          <label htmlFor="title">Title</label>
-          <input id="title" value={title} onChange={(e) => setTitle(e.target.value)} />
+          <label htmlFor="title">What's it called?</label>
+          <input
+            id="title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Saturday 6K"
+          />
         </div>
 
         <div className="field">
@@ -170,106 +200,129 @@ export function RunEditor({ runId, onDone }: Props) {
             id="description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
+            placeholder="Our weekly 6K. All paces welcome — nobody gets left behind."
           />
+          <div className="hint">Shown on the run page. A friendly line or two.</div>
         </div>
+      </section>
+
+      <section className="card">
+        <h3 className="section-title">When</h3>
+
+        <div className="grid3">
+          <div className="field">
+            <label htmlFor="date">Date</label>
+            <input id="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+          </div>
+          <div className="field">
+            <label htmlFor="time">Start time</label>
+            <input id="time" type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+          </div>
+          <div className="field">
+            <label htmlFor="endTime">Finish time</label>
+            <input
+              id="endTime"
+              type="time"
+              value={endTime}
+              onChange={(e) => setEndTime(e.target.value)}
+            />
+            <div className="hint">Optional.</div>
+          </div>
+        </div>
+
+        {startsAtIso && !startsInPast && (
+          <div className="notice info">
+            <strong>{describeStart(startsAtIso)}</strong>
+            <br />
+            Check-in opens an hour before, at {addMinutes(time, -60)}.
+          </div>
+        )}
+        {startsInPast && (
+          <div className="notice error">
+            That date and time have already passed. A run has to start in the future before it can
+            be published.
+          </div>
+        )}
+      </section>
+
+      <section className="card">
+        <h3 className="section-title">Where</h3>
+
+        <div className="field">
+          <label htmlFor="meeting">Meeting point name</label>
+          <input
+            id="meeting"
+            value={meetingPoint}
+            onChange={(e) => setMeetingPoint(e.target.value)}
+            placeholder="Zamalek Club Gate"
+          />
+          <div className="hint">What members will read. Somewhere easy to find.</div>
+        </div>
+
+        <MeetingPointPicker
+          lat={lat}
+          lng={lng}
+          radiusM={radius}
+          onChange={(nextLat, nextLng) => {
+            setLat(nextLat);
+            setLng(nextLng);
+          }}
+        />
+
+        <div className="field">
+          <label htmlFor="radius">Check-in area: {radius}m across</label>
+          <input
+            id="radius"
+            type="range"
+            min={50}
+            max={1000}
+            step={25}
+            value={radius}
+            onChange={(e) => setRadius(Number(e.target.value))}
+          />
+          <div className="hint">
+            250m suits a normal run. Widen it for a big event where the crowd spreads out.
+          </div>
+        </div>
+      </section>
+
+      <section className="card">
+        <h3 className="section-title">The run itself</h3>
 
         <div className="grid2">
           <div className="field">
-            <label htmlFor="starts">Starts</label>
-            <input
-              id="starts"
-              type="datetime-local"
-              value={startsAt}
-              onChange={(e) => setStartsAt(e.target.value)}
-            />
-          </div>
-          <div className="field">
-            <label htmlFor="ends">Ends</label>
-            <input
-              id="ends"
-              type="datetime-local"
-              value={endsAt}
-              onChange={(e) => setEndsAt(e.target.value)}
-            />
+            <label htmlFor="distance">Distance</label>
+            <div className="input-suffix">
+              <input
+                id="distance"
+                type="number"
+                value={distance}
+                onChange={(e) => setDistance(e.target.value)}
+                placeholder="6000"
+              />
+              <span>metres</span>
+            </div>
             <div className="hint">
-              Leave blank to end the run by hand. If set, the run ends automatically and members
-              who checked in get the "that's a wrap" notification.
+              {distance ? `That's ${(Number(distance) / 1000).toFixed(1)}K` : 'Optional.'}
             </div>
           </div>
-        </div>
 
-        <div className="field">
-          <label htmlFor="meeting">Meeting point</label>
-          <input id="meeting" value={meetingPoint} onChange={(e) => setMeetingPoint(e.target.value)} />
-        </div>
-
-        <div className="grid2">
           <div className="field">
-            <label htmlFor="lat">Latitude</label>
-            <input id="lat" value={lat} onChange={(e) => setLat(e.target.value)} />
-          </div>
-          <div className="field">
-            <label htmlFor="lng">Longitude</label>
-            <input id="lng" value={lng} onChange={(e) => setLng(e.target.value)} />
-          </div>
-        </div>
-
-        <div className="field">
-          <label htmlFor="radius">Check-in radius (metres)</label>
-          <input id="radius" type="number" value={radius} onChange={(e) => setRadius(e.target.value)} />
-          <div className="hint">
-            How close someone must be for the app to offer check-in. 250m suits a normal run;
-            widen it for a large event where the crowd spreads out.
-          </div>
-        </div>
-
-        <div className="grid2">
-          <div className="field">
-            <label htmlFor="distance">Distance (metres)</label>
-            <input
-              id="distance"
-              type="number"
-              value={distance}
-              onChange={(e) => setDistance(e.target.value)}
-            />
-          </div>
-          <div className="field">
-            <label htmlFor="capacity">Capacity</label>
+            <label htmlFor="capacity">Limit on numbers</label>
             <input
               id="capacity"
               type="number"
               value={capacity}
               onChange={(e) => setCapacity(e.target.value)}
+              placeholder="No limit"
             />
             <div className="hint">
-              Leave blank for unlimited. If set, anyone beyond it joins a waitlist and is promoted
-              automatically when someone drops out.
+              {capacity
+                ? `After ${capacity} people, everyone else joins a waitlist and moves up automatically if someone drops out.`
+                : 'Leave blank for unlimited — the usual choice.'}
             </div>
           </div>
         </div>
-
-        {run && (
-          <>
-            <MediaUpload
-              runId={run.id}
-              column="cover_image_url"
-              label="Cover photo"
-              accept="image/jpeg,image/png,image/webp"
-              hint="Shown behind the run on the home screen and at the top of the run page. Landscape works best."
-              currentUrl={run.cover_image_url}
-              onChanged={reload}
-            />
-            <MediaUpload
-              runId={run.id}
-              column="cover_video_url"
-              label="Cover clip (optional)"
-              accept="video/mp4,video/quicktime"
-              hint="A few seconds, no longer. It plays muted and on a loop, so it must not rely on sound."
-              currentUrl={run.cover_video_url}
-              onChanged={reload}
-            />
-          </>
-        )}
 
         <div className="field">
           <label htmlFor="pace">Pace groups</label>
@@ -279,17 +332,60 @@ export function RunEditor({ runId, onDone }: Props) {
             onChange={(e) => setPaceGroups(e.target.value)}
             placeholder="easy, steady, quick"
           />
-          <div className="hint">Comma separated.</div>
+          <div className="hint">Separate with commas. Leave blank if you don't split by pace.</div>
         </div>
+      </section>
+
+      {run && (
+        <section className="card">
+          <h3 className="section-title">Photo &amp; video</h3>
+          <p className="hint" style={{ marginTop: 0 }}>
+            This is what makes people want to tap join. A good photo of the spot goes a long way.
+          </p>
+          <MediaUpload
+            runId={run.id}
+            column="cover_image_url"
+            label="Cover photo"
+            accept="image/jpeg,image/png,image/webp"
+            hint="Shown behind the run in the app. Landscape works best."
+            currentUrl={run.cover_image_url}
+            onChanged={reload}
+          />
+          <MediaUpload
+            runId={run.id}
+            column="cover_video_url"
+            label="Cover clip (optional)"
+            accept="video/mp4,video/quicktime"
+            hint="A few seconds. It plays muted and on a loop, so it mustn't rely on sound."
+            currentUrl={run.cover_video_url}
+            onChanged={reload}
+          />
+        </section>
+      )}
+
+      {/*
+        The action bar sticks to the bottom of the viewport, and any problem is
+        stated right next to the button it blocks. Previously the error rendered
+        at the top of a long form while Publish sat at the bottom — so a refused
+        publish looked to the organiser like nothing happening at all.
+      */}
+      <div className="action-bar">
+        {problems.length > 0 && (
+          <div className="action-problems">
+            {problems.map((p) => (
+              <div key={p}>• {p}</div>
+            ))}
+          </div>
+        )}
 
         <div className="inline">
-          <button className="primary" onClick={save} disabled={busy || !title.trim()}>
-            {busy ? 'Saving…' : 'Save'}
+          <button className="primary" onClick={save} disabled={busy || !canSave}>
+            {busy ? 'Saving…' : run ? 'Save changes' : 'Save draft'}
           </button>
 
-          {run?.status === 'draft' && (
-            <button onClick={publish} disabled={busy}>
-              Publish
+          {run && isDraft && (
+            <button onClick={publish} disabled={busy || !canSave}>
+              Publish &amp; notify everyone
             </button>
           )}
 
@@ -298,12 +394,15 @@ export function RunEditor({ runId, onDone }: Props) {
               Cancel run
             </button>
           )}
+
+          <button className="link" onClick={onDone}>
+            Done
+          </button>
         </div>
 
-        {run?.status === 'draft' && (
-          <p className="hint" style={{ marginTop: 12 }}>
-            This run is a draft — members cannot see it yet. Publishing notifies everyone and
-            schedules the reminders.
+        {run && isDraft && (
+          <p className="hint" style={{ margin: '8px 0 0' }}>
+            This is a draft — members can't see it yet.
           </p>
         )}
       </div>
@@ -311,12 +410,28 @@ export function RunEditor({ runId, onDone }: Props) {
   );
 }
 
-/**
- * `datetime-local` has no timezone, and the browser interprets it in the
- * organiser's local zone. The club's timezone is what matters, so these convert
- * explicitly instead of relying on wherever the laptop happens to be.
- */
-function toLocalInput(iso: string): string {
+// --- club-timezone helpers -----------------------------------------------
+//
+// The browser's `date` and `time` inputs carry no timezone. The club's timezone
+// is what matters, so these convert explicitly rather than relying on wherever
+// the organiser's laptop happens to be.
+
+function clubOffsetMinutes(at: Date): number {
+  // Compare the same instant rendered in UTC and in the club's zone.
+  const utc = new Date(at.toLocaleString('en-US', { timeZone: 'UTC' }));
+  const club = new Date(at.toLocaleString('en-US', { timeZone: CLUB_TIMEZONE }));
+  return Math.round((club.getTime() - utc.getTime()) / 60000);
+}
+
+function clubTimeToIso(date: string, time: string): string {
+  const naive = new Date(`${date}T${time}:00Z`);
+  // The offset is computed at the target instant, so a daylight-saving change
+  // is handled rather than assumed away.
+  const offset = clubOffsetMinutes(naive);
+  return new Date(naive.getTime() - offset * 60000).toISOString();
+}
+
+function splitClubDateTime(iso: string): { date: string; time: string } {
   const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone: CLUB_TIMEZONE,
     year: 'numeric',
@@ -327,13 +442,25 @@ function toLocalInput(iso: string): string {
     hour12: false,
   }).formatToParts(new Date(iso));
   const get = (t: string) => parts.find((p) => p.type === t)?.value ?? '00';
-  return `${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}`;
+  return {
+    date: `${get('year')}-${get('month')}-${get('day')}`,
+    time: `${get('hour')}:${get('minute')}`,
+  };
 }
 
-function fromLocalInput(local: string): string {
-  // Find the UTC instant whose club-timezone rendering equals the typed text.
-  const guess = new Date(`${local}:00Z`);
-  const rendered = toLocalInput(guess.toISOString());
-  const drift = new Date(`${local}:00Z`).getTime() - new Date(`${rendered}:00Z`).getTime();
-  return new Date(guess.getTime() + drift).toISOString();
+function describeStart(iso: string): string {
+  return new Date(iso).toLocaleString('en-GB', {
+    timeZone: CLUB_TIMEZONE,
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+function addMinutes(time: string, delta: number): string {
+  const [h, m] = time.split(':').map(Number);
+  const total = ((h ?? 0) * 60 + (m ?? 0) + delta + 1440) % 1440;
+  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
 }

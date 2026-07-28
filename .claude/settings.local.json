@@ -50,7 +50,8 @@
       "Bash(lsof -nP -iTCP:5173 -sTCP:LISTEN)",
       "Bash(pkill -f \"vite\")",
       "Bash(nohup npx vite --port 5173 --host 127.0.0.1)",
-      "Bash(curl -s -X POST http://127.0.0.1:54321/auth/v1/otp -H 'apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0' -H 'Content-Type: application/json' -d '{\"email\":\"organiser@mvmnt.test\",\"create_user\":false}' -o /dev/null)"
+      "Bash(curl -s -X POST http://127.0.0.1:54321/auth/v1/otp -H 'apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0' -H 'Content-Type: application/json' -d '{\"email\":\"organiser@mvmnt.test\",\"create_user\":false}' -o /dev/null)",
+      "Bash(cd /Users/adamelbasiony/mvmnt/apps/admin && npm install leaflet@^1.9.4 && npm install -D @types/leaflet 2>&1 | tail -2; ls ../../node_modules/leaflet/package.json >/dev/null && echo \"leaflet installed\")"
     ]
   }
 }
