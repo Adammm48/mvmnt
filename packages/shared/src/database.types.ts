@@ -190,6 +190,81 @@ export type Database = {
           },
         ]
       }
+      friend_qr_tokens: {
+        Row: {
+          created_at: string
+          expires_at: string
+          revoked_at: string | null
+          token: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          revoked_at?: string | null
+          token: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          revoked_at?: string | null
+          token?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "friend_qr_tokens_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      friendships: {
+        Row: {
+          created_at: string
+          initiated_by: string | null
+          user_high: string
+          user_low: string
+        }
+        Insert: {
+          created_at?: string
+          initiated_by?: string | null
+          user_high: string
+          user_low: string
+        }
+        Update: {
+          created_at?: string
+          initiated_by?: string | null
+          user_high?: string
+          user_low?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "friendships_initiated_by_fkey"
+            columns: ["initiated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "friendships_user_high_fkey"
+            columns: ["user_high"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "friendships_user_low_fkey"
+            columns: ["user_low"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       member_badges: {
         Row: {
           badge_key: string
@@ -400,6 +475,59 @@ export type Database = {
           {
             foreignKeyName: "point_events_user_id_fkey"
             columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pokes: {
+        Row: {
+          created_at: string
+          from_user: string | null
+          id: number
+          run_id: string
+          to_user: string | null
+        }
+        Insert: {
+          created_at?: string
+          from_user?: string | null
+          id?: never
+          run_id: string
+          to_user?: string | null
+        }
+        Update: {
+          created_at?: string
+          from_user?: string | null
+          id?: never
+          run_id?: string
+          to_user?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pokes_from_user_fkey"
+            columns: ["from_user"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pokes_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "run_attendance_counts"
+            referencedColumns: ["run_id"]
+          },
+          {
+            foreignKeyName: "pokes_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pokes_to_user_fkey"
+            columns: ["to_user"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -821,6 +949,7 @@ export type Database = {
       }
     }
     Functions: {
+      add_friend_by_token: { Args: { p_token: string }; Returns: string }
       admin_adjust_points: {
         Args: { p_note: string; p_points: number; p_user_id: string }
         Returns: undefined
@@ -828,6 +957,10 @@ export type Database = {
       admin_check_in: {
         Args: { p_run_id: string; p_user_id: string }
         Returns: Database["public"]["Enums"]["attendance_state"]
+      }
+      admin_disable_member_qr: {
+        Args: { p_user_id: string }
+        Returns: undefined
       }
       admin_remove_check_in: {
         Args: { p_run_id: string; p_user_id: string }
@@ -879,6 +1012,24 @@ export type Database = {
           user_id: string
         }[]
       }
+      my_friend_qr: {
+        Args: never
+        Returns: {
+          expires_at: string
+          token: string
+        }[]
+      }
+      my_friends: {
+        Args: { p_run_id?: string }
+        Returns: {
+          already_poked: boolean
+          avatar_url: string
+          display_name: string
+          friend_id: string
+          friends_since: string
+          state: Database["public"]["Enums"]["attendance_state"]
+        }[]
+      }
       my_standing: {
         Args: { p_window?: string }
         Returns: {
@@ -898,12 +1049,18 @@ export type Database = {
         Args: { p_since?: string; p_user_id: string }
         Returns: number
       }
+      poke_friend: {
+        Args: { p_friend_id: string; p_run_id: string }
+        Returns: undefined
+      }
       publish_run: { Args: { p_run_id: string }; Returns: undefined }
       purge_expired_location_data: { Args: never; Returns: number }
       register_push_token: {
         Args: { p_platform: string; p_token: string }
         Returns: undefined
       }
+      remove_friend: { Args: { p_friend_id: string }; Returns: undefined }
+      revoke_my_friend_qr: { Args: never; Returns: undefined }
       runs_attended: { Args: { p_user_id: string }; Returns: number }
       scheduler_tick: { Args: never; Returns: Json }
       set_leaderboard_visibility: {
@@ -943,6 +1100,8 @@ export type Database = {
         | "run_started"
         | "run_ended"
         | "waitlist_promoted"
+        | "friend_poke"
+        | "badge_earned"
       point_kind: "check_in" | "streak_bonus" | "adjustment"
       run_status:
         | "draft"
@@ -1107,6 +1266,8 @@ export const Constants = {
         "run_started",
         "run_ended",
         "waitlist_promoted",
+        "friend_poke",
+        "badge_earned",
       ],
       point_kind: ["check_in", "streak_bonus", "adjustment"],
       run_status: [
