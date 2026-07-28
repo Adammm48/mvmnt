@@ -6,7 +6,7 @@ MVMNT is a Cairo running club that draws 300+ people to a weekly run — and onc
 put 2,500 on the start line. All of it is currently coordinated through
 WhatsApp, Instagram and word of mouth. This replaces that.
 
-[![CI](https://github.com/REPLACE_ME/mvmnt/actions/workflows/ci.yml/badge.svg)](https://github.com/REPLACE_ME/mvmnt/actions/workflows/ci.yml)
+[![CI](https://github.com/Adammm48/mvmnt/actions/workflows/ci.yml/badge.svg)](https://github.com/Adammm48/mvmnt/actions/workflows/ci.yml)
 
 > **Status: Phase 1 complete, not yet deployed.** Sign-up, run sign-up,
 > geofenced check-in, the notification pipeline and the organiser console are
@@ -224,7 +224,7 @@ recorded rather than sent. The pipeline is real and observable in
 
 ## Credit
 
-Built by [Adam Elbasiony](https://github.com/REPLACE_ME) with Claude as a pair.
+Built by [Adam Elbasiony](https://github.com/Adammm48) with Claude as a pair.
 Commits carry `Co-Authored-By` trailers where that applies — the reasoning behind
 every significant decision is written down in `docs/decisions/` precisely so it
 can be defended rather than merely shipped.
