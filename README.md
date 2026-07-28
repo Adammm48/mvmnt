@@ -201,8 +201,10 @@ check-in without standing at the meeting point. Ignored in release builds.
    D-U-N-S number, which takes 1–2 weeks to verify. Gates Sign in with Apple,
    push, TestFlight and release.
 2. **Firebase project** for Android push; **Google Play Console** for the listing.
-3. **A published privacy policy.** Both stores require one. Writing, not
-   engineering — and usually what holds a release up.
+3. **A published privacy policy.** Both stores require one, at a public URL.
+   A draft describing exactly what the app does is in
+   [docs/privacy-policy.md](docs/privacy-policy.md) — it still needs a
+   qualified review and its placeholders filled in.
 4. **Choose the Supabase region deliberately.** The club is in Cairo, so Egypt's
    PDPL applies and cross-border transfer rules are in play. Far cheaper to
    decide now than to migrate production data later — see ADR 0002 §8.

@@ -49,7 +49,7 @@ declare -a IMAGES=(
   "Last Saturday 6K|saturday-6k.jpg"
   "Track Session|track-session.jpg"
   "Sunday Long Run|long-run.jpg"
-  "Bank Holiday Special (unpublished)|waterway.jpg"
+  "Bank Holiday 10K|waterway.jpg"
 )
 
 for pair in "${IMAGES[@]}"; do

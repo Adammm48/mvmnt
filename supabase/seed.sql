@@ -114,7 +114,7 @@ begin
   -- Draft: must be invisible to members, visible to the admin console.
   insert into public.runs (title, starts_at, meeting_point_name,
     meeting_point_lat, meeting_point_lng, pace_groups, created_by)
-  values ('Bank Holiday Special (unpublished)', now() + interval '20 days',
+  values ('Bank Holiday 10K', now() + interval '20 days',
     'New Cairo Waterway', 30.010000, 31.420000, array['easy'], v_admin)
   returning id into v_draft;
 
