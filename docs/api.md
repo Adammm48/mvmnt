@@ -263,26 +263,37 @@ changing either rule breaks the test rather than silently moving the ladder.
 `points_to_next_tier` returns **null** at the top rather than zero, so the UI can
 celebrate rather than render a dead target.
 
-### Absence — points ease back
+### Absence — nothing is taken away
 
-A ceiling reachable in six months only means something if points can also fall;
-otherwise every regular is Legend by their second season and the top rung
-measures how long ago somebody joined.
+Points only ever go up. Absence decay was built (migration 0025) and then
+**removed** (0046) on the owner's decision after the end-of-build council: a
+member who has drifted away and opens the app to find they have *lost*
+something is being handed a reason not to come back, in a club whose real
+problem is turnout.
 
-- **The first miss is free.** One missed Saturday is a wedding or a cold.
-- **From the second consecutive miss, −10 per run** — exactly what a check-in is
-  worth.
-- **Never below zero.** Somebody returning after months away starts where they
-  left off, not in debt.
-- **Nobody is notified.** A push saying "you have lost 10 points" is the message
-  App Spec §2 exists to prevent. It is visible on their own profile if they look.
+The cost is real and accepted. A six-month ceiling with no way down means a
+regular reaches Legend and stays there, so the tier stops answering "what are
+they doing now" — but the app answers that twice already, in ways that take
+nothing from anybody:
 
-Applied by a trigger on the run reaching `completed`, not from the two functions
-that complete runs — absence has no event of its own, so the run ending is the
-event. Idempotent via the same partial unique index as every other award.
+- the **streak** counts consecutive weeks and resets on its own;
+- the **leaderboard takes a window**, so a monthly board shows who is showing
+  up lately without touching anyone's total.
 
-`consecutive_missed_runs(uuid, timestamptz)` counts against the **club's
-schedule**, not weeks: a fortnight when the club did not run is not a miss.
+A tier is therefore a record of what a member has done. Nobody hands back a
+medal for a quiet winter.
+
+**An organiser adjustment is the only way a total falls** — deliberate,
+attributed to a person, and written to the audit log.
+
+`consecutive_missed_runs(uuid, timestamptz)` survives as a **measurement**,
+counting against the club's schedule rather than weeks (a fortnight when the
+club did not run is not a miss). It is the honest raw material for the
+opposite feature — a "we've missed you" nudge rather than a fine — which is a
+product decision and is not built.
+
+The `absence` point kind stays in the enum: Postgres cannot remove an enum
+value, and any historical rows must keep rendering as "Away from the club".
 
 ### `tier_rewards` · `admin_set_tier_reward(member_tier, text, boolean)` *(organiser)*
 

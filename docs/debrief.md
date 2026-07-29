@@ -38,7 +38,10 @@ Decisions that still shape everything:
 
 Points for showing up, streaks for consecutive weeks, badges, and the five
 tiers you named — **Rookie, Runner, Competitor, Elite, Legend** — reachable
-in six months of Saturdays, with decay after two consecutive missed runs.
+in six months of Saturdays. (Decay — losing points for missed runs — was
+built and then removed on your call after the council: it hands a member who
+has drifted a reason not to come back. Points only go up now; a tier records
+what you have done, and the streak and monthly board carry current form.)
 Crossing a tier opens the chest ("Adam the Great has gifted you…" — the
 reward strings are still yours to fill in). The leaderboard shows the top
 100 with each member's own standing above it, and any member can hide

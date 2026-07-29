@@ -8,7 +8,7 @@ WhatsApp, Instagram and word of mouth. This replaces that.
 
 [![CI](https://github.com/Adammm48/mvmnt/actions/workflows/ci.yml/badge.svg)](https://github.com/Adammm48/mvmnt/actions/workflows/ci.yml)
 
-> **Status: Phases 1–3 complete, not yet deployed.** Sign-up, geofenced
+> **Status: Phases 1–4 complete, not yet deployed.** Sign-up, geofenced
 > check-in, the notification pipeline, the organiser console, the loyalty system
 > (points, streaks, tiers, badges), the club leaderboard, the QR-only friends
 > system, and the merch shop with gifts and sponsor placements are built and
@@ -28,10 +28,11 @@ WhatsApp, Instagram and word of mouth. This replaces that.
 > and [`docs/spec/MVMNT_Engineering_Principles.md`](docs/spec/MVMNT_Engineering_Principles.md),
 > the two documents that set what to build and how. A few things shipped
 > differently from what the spec says, on the owner's explicit instruction after
-> the fact — five loyalty tiers instead of three, and a 60-second single-use
-> friend code instead of a persistent regenerable one. Both are recorded in the
-> commit history and in `docs/backlog.md` rather than silently overriding the
-> spec.
+> the fact — five loyalty tiers instead of three, a 60-second single-use
+> friend code instead of a persistent regenerable one, and no points penalty
+> for missed runs (built, then removed: it hands a member who has drifted a
+> reason not to come back). All are recorded in the commit history and in
+> `docs/backlog.md` rather than silently overriding the spec.
 
 ---
 
@@ -232,7 +233,7 @@ npm run db:test
 
 Ten suites over attendance and waitlist ordering, geofenced check-in, every RLS
 policy, notification idempotency, retention and erasure, the points, streak,
-badge, tier and decay rules, organiser role changes, the friend-code safety
+badge and tier rules, organiser role changes, the friend-code safety
 properties, the shop — stock under concurrency, points that cannot be spent
 twice, sponsor reach that cannot be inflated by a client — the photo
 galleries' bytes gate (an object with no registered row is invisible, not

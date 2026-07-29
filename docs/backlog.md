@@ -14,9 +14,16 @@ rather than silently overriding the document.
 
 - **Loyalty tiers.** App Spec §4.3 specifies three: Starter → Core → Elite. Owner
   instruction, 2026-07-29: five instead — Rookie, Runner, Competitor, Elite,
-  Legend — reachable end to end in six months, with points that can also fall
-  after two consecutive missed runs. See migration `20260729120000_five_tiers.sql`
-  and the commit that introduced decay.
+  Legend — reachable end to end in six months. See migration
+  `20260729120000_five_tiers.sql`. The matching "points fall after two
+  consecutive missed runs" rule was built (`20260729140000_absence_decay.sql`)
+  and then **removed** on the owner's instruction of 2026-07-29, after the
+  end-of-build council argued that penalising absence in a club with a turnout
+  problem costs more members than it motivates. See migration
+  `20260729700000_remove_absence_decay.sql`: nothing deducts points
+  automatically any more, and a tier is now a record of what a member has done
+  rather than a measure of current form — which the streak and the monthly
+  leaderboard window already carry.
 - **Friend codes.** App Spec §4.4 and §8 describe a QR code a member can
   regenerate or invalidate by hand. Owner instruction, 2026-07-29: the code is
   now always 8 characters, expires after 60 seconds, and mints a fresh one

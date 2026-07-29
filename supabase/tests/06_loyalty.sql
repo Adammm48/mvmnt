@@ -321,22 +321,24 @@ begin
     'a second adjustment is allowed and nets correctly');
 
   -- ---------------------------------------------------------------------
-  -- Points ease back when somebody stops coming.
+  -- Missing runs costs nothing (migration 0046).
   --
-  -- The rule that makes a six-month ladder mean anything: without it every
-  -- regular is Legend forever by their second season. It is also the only rule
-  -- in the app that takes something away from a member, so the shape of it
-  -- matters more than the arithmetic — the first miss is free, and nobody can
-  -- be driven below zero.
+  -- Absence decay was built, then removed on the owner's decision after the
+  -- end-of-build council: docking points for missed Saturdays gives a member
+  -- who has drifted a reason not to come back, in a club whose actual problem
+  -- is turnout. This proves the charge is gone rather than merely disabled —
+  -- a dormant trigger and a removed one look identical until one fires.
+  --
+  -- The tier consequence is accepted deliberately: a tier is now a record of
+  -- what a member has done, and "what they are doing now" is carried by the
+  -- streak and by the leaderboard's monthly window, neither of which takes
+  -- anything away from anybody.
   -- ---------------------------------------------------------------------
   v_dec := tests.make_member('dana');
 
-  -- Dana attends one run, then stops.
-  --
-  -- The timings sit inside the last few days on purpose. The seeded database
-  -- carries a year of completed runs, and anchoring this fixture further back
-  -- would count those as misses too — the count is against the club's real
-  -- schedule, which in this database is not empty.
+  -- Dana attends one run, then stops. The timings sit inside the last few days
+  -- on purpose: the seeded database carries a year of completed runs, and
+  -- anchoring further back would drag those in too.
   v_wk := tests.make_run(v_admin, null, v_now + interval '2 hours');
   update public.runs
      set starts_at = v_now - interval '3 days',
@@ -349,38 +351,19 @@ begin
 
   perform tests.assert_eq(public.points_total(v_dec), 10, 'dana earned one run''s points');
 
-  -- The club runs again and she misses it. One miss costs nothing.
+  -- Three consecutive misses — well past where the old rule started charging.
   v_wk := tests.make_run(v_admin, null, v_now + interval '2 hours');
   update public.runs set starts_at = v_now - interval '2 days',
                          ends_at   = v_now - interval '2 days' + interval '1 hour'
    where id = v_wk;
   update public.runs set status = 'completed' where id = v_wk;
 
-  perform tests.assert_eq(
-    public.points_total(v_dec), 10,
-    'missing one run costs nothing — a wedding, a night shift, a cold');
-
-  -- The second consecutive miss is where it starts.
   v_wk := tests.make_run(v_admin, null, v_now + interval '2 hours');
   update public.runs set starts_at = v_now - interval '36 hours',
                          ends_at   = v_now - interval '36 hours' + interval '1 hour'
    where id = v_wk;
   update public.runs set status = 'completed' where id = v_wk;
 
-  perform tests.assert_eq(
-    public.points_total(v_dec), 0,
-    'the second consecutive miss costs a run''s worth');
-  perform tests.assert_eq(
-    (select count(*)::int from public.point_events where user_id = v_dec and kind = 'absence'), 1,
-    'and is recorded in the ledger rather than silently subtracted');
-
-  -- Re-completing the same run must not charge twice.
-  perform app_private.apply_absence_decay(v_wk);
-  perform tests.assert_eq(
-    (select count(*)::int from public.point_events where user_id = v_dec and kind = 'absence'), 1,
-    'the same run cannot charge a member twice — a retried tick is safe');
-
-  -- The floor. Dana is already at zero; missing more must not push her under.
   v_wk := tests.make_run(v_admin, null, v_now + interval '2 hours');
   update public.runs set starts_at = v_now - interval '24 hours',
                          ends_at   = v_now - interval '24 hours' + interval '1 hour'
@@ -388,28 +371,28 @@ begin
   update public.runs set status = 'completed' where id = v_wk;
 
   perform tests.assert_eq(
-    public.points_total(v_dec), 0,
-    'nobody is driven below zero — a member coming back starts where they left off, not in debt');
-
-  -- Somebody who has never attended is not "missing" runs.
-  v_wk := tests.make_run(v_admin, null, v_now + interval '2 hours');
-  update public.runs set starts_at = v_now - interval '12 hours',
-                         ends_at   = v_now - interval '12 hours' + interval '1 hour'
-   where id = v_wk;
-  update public.runs set status = 'completed' where id = v_wk;
-
+    public.points_total(v_dec), 10,
+    'three missed runs in a row cost nothing — what she earned is hers');
   perform tests.assert_eq(
     (select count(*)::int from public.point_events
-      where user_id = v_admin and kind = 'absence'), 0,
-    'a member who has never checked in is not penalised — they have not started, not stopped');
+      where user_id = v_dec and kind = 'absence'), 0,
+    'and no absence charge is written at all');
 
-  -- Absence is not tied to a check-in, so it must survive the validity rule
-  -- that governs run-linked awards. If it did not, every penalty would be
-  -- filtered straight back out and the feature would do nothing.
+  -- The measurement survives the removal: the club can still see who has
+  -- drifted, which is the raw material for a welcome-back nudge rather than
+  -- a fine. It counts the club's schedule, not weeks.
   perform tests.assert_eq(
-    (select count(*)::int from public.effective_point_events
-      where user_id = v_dec and kind = 'absence'), 1,
-    'an absence charge counts even though there is no check-in behind it');
+    public.consecutive_missed_runs(v_dec, v_now), 3,
+    'the club can still measure a drift without charging for it');
+
+  -- An organiser adjustment stays the ONLY way a total goes down, and that one
+  -- is deliberate, attributed and audited.
+  perform tests.act_as(v_admin);
+  perform public.admin_adjust_points(v_dec, -5, 'the only way points come off');
+  perform tests.act_as_system();
+  perform tests.assert_eq(
+    public.points_total(v_dec), 5,
+    'an organiser can still correct a total by hand');
 
   -- ---------------------------------------------------------------------
   -- The hidden badges.
