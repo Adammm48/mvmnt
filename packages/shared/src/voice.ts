@@ -263,14 +263,15 @@ export const SIGNATURE = {
 /**
  * Where to find him.
  *
- * PLACEHOLDERS — these are not real addresses and must be replaced before the
- * app ships. Inventing a plausible-looking URL for somebody's portfolio is how
- * a broken link ends up in front of 300 people, so they are obviously wrong on
- * purpose rather than quietly wrong.
+ * Anything with `placeholder: true` renders as "coming soon" and refuses to
+ * open. Their URLs are empty rather than invented: a plausible-looking address
+ * that 404s in front of three hundred members is worse than one that is
+ * visibly unfinished, and guessing somebody's portfolio URL is exactly how that
+ * happens.
  */
 export const CONTACT_LINKS: { label: string; url: string; placeholder: boolean }[] = [
-  { label: 'Portfolio', url: 'https://REPLACE-ME-portfolio.example', placeholder: true },
-  { label: 'GitHub', url: 'https://github.com/REPLACE-ME', placeholder: true },
-  { label: 'LinkedIn', url: 'https://www.linkedin.com/in/REPLACE-ME', placeholder: true },
-  { label: 'Email', url: 'mailto:REPLACE-ME@example.com', placeholder: true },
+  { label: 'GitHub', url: 'https://github.com/Adammm48', placeholder: false },
+  { label: 'Portfolio', url: '', placeholder: true },
+  { label: 'LinkedIn', url: '', placeholder: true },
+  { label: 'Email', url: '', placeholder: true },
 ];
