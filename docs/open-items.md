@@ -165,20 +165,45 @@ blocker that was not on this list — see below.
 
 ## Blocks the first real Saturday
 
-### An email provider for sign-in codes
+### An email provider for sign-in codes — **use Resend**
 
-**Who:** Adam. **Cost:** roughly $0–20/month.
+**Who:** Adam. **Cost:** free, probably forever.
+**Where:** the SMTP block in [`supabase/config.toml`](../supabase/config.toml)
+is filled in and commented, with the go-live steps.
 
-The whole login path is a 6-digit emailed code, and the only SMTP configured
-anywhere in this repo is the local test double. Supabase's built-in sender is
-rate-limited (2/hour on this config) and unauthenticated senders get
-spam-filtered. 150 members signing in on one Saturday morning hit that wall
-with no second door.
+The whole login path is a 6-digit emailed code, and the only mail sender in
+this repo is Inbucket — a local test double that delivers to nobody. On a
+hosted project with nothing configured, Supabase's built-in sender takes over:
+rate-limited to a couple of messages an hour, from a shared domain. 150
+members signing in on one Saturday morning hit that wall with no second door.
 
-Pick a provider (Resend, Postmark and SendGrid all have free tiers big enough
-for this club), verify the sending domain, and set it on the hosted project.
-The council ranked this above every other open item including the privacy
-policy — it is cheap, it is unavoidable, and nothing else works without it.
+**The comparison, as of July 2026:**
+
+| | Free tier | Then | Verdict for MVMNT |
+|---|---|---|---|
+| **Resend** | 3,000/month, 100/day, 1 domain | $20/mo for 50,000 | **Pick this** |
+| Postmark | 100/month, hard stop | $15/mo for 10,000 | Best-in-class deliverability, but 100/month is unusable — onboarding alone blows through it, so it is $15/mo from day one |
+| SendGrid | **gone** — retired May 2025 | $19.95/mo after a 60-day trial | No longer a free option at all |
+
+**Why Resend wins on this club's actual numbers.** Steady state is small:
+sessions persist, so a member only needs a code when they sign in on a new
+device — realistically well under 200 emails a month for 150 members. Resend's
+3,000/month is not close to a constraint.
+
+The one pinch is the **100/day** cap on the day the club onboards. Two ways
+past it, and the first is free: onboard in waves rather than all at once,
+which the dry-run recommendation means you are doing anyway — or pay $20 for
+the launch month and drop back to free.
+
+Postmark is the better product on pure deliverability and it is worth knowing
+that if codes ever do go to spam at scale. It is not worth $15/month from day
+one for a club whose entire monthly volume fits inside a free tier.
+
+**Before it works, you need the domain** — for the sending address and,
+separately, to publish the privacy policy that both app stores require. One
+purchase, two blockers cleared. The DNS records Resend asks for (SPF, DKIM,
+DMARC) are the difference between arriving and going to spam; they are not
+optional decoration.
 
 ### The hosted Supabase project, in a chosen region
 

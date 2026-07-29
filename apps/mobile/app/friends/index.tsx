@@ -142,13 +142,22 @@ export default function FriendsScreen() {
             no search and no way to be added from a distance.
           </Text>
 
-          {run ? (
-            <Text style={styles.runLine}>
-              For {run.title} · {formatRunDate(run.starts_at)} {formatRunTime(run.starts_at)}
-            </Text>
-          ) : (
-            <Text style={styles.runLine}>No run on the calendar yet.</Text>
-          )}
+          {/*
+            This line labels the in/out column on the cards below it. With no
+            friends there is no column and nothing to label, so it was just
+            announcing a run for no reason — and "No run on the calendar yet"
+            on an empty list read as though the friends feature itself were
+            broken.
+          */}
+          {friends.length > 0 &&
+            (run ? (
+              <Text style={styles.runLine}>
+                Who is coming to {run.title} · {formatRunDate(run.starts_at)}{' '}
+                {formatRunTime(run.starts_at)}
+              </Text>
+            ) : (
+              <Text style={styles.runLine}>No run on the calendar yet.</Text>
+            ))}
         </View>
       }
       renderItem={({ item }) => (

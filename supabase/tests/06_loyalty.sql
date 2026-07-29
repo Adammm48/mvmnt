@@ -395,6 +395,44 @@ begin
     'an organiser can still correct a total by hand');
 
   -- ---------------------------------------------------------------------
+  -- A tier is a lifetime fact, on every board (migration 0047).
+  --
+  -- The monthly board used to recompute the tier from the month's points, so
+  -- a member with a lifetime Elite total and a quiet month was rendered as
+  -- whatever the quiet month was worth — contradicting their own standing
+  -- card four inches above it on the same screen.
+  -- ---------------------------------------------------------------------
+  declare
+    v_tiered uuid; v_life public.member_tier; v_board public.member_tier;
+  begin
+    perform tests.act_as_system();
+    v_tiered := tests.make_member('tessa');
+    -- A big lifetime total, awarded well before this month.
+    insert into public.point_events (user_id, kind, points, source, note, awarded_at)
+    values (v_tiered, 'adjustment', 400, 'live', 'lifetime total',
+            now() - interval '6 months');
+    -- And a small amount inside the current month.
+    insert into public.point_events (user_id, kind, points, source, note)
+    values (v_tiered, 'adjustment', 20, 'live', 'a quiet month');
+
+    perform tests.act_as(v_tiered);
+    select tier into v_life from public.my_standing('month');
+    select tier into v_board
+      from public.leaderboard('month') where is_me limit 1;
+
+    perform tests.assert_eq(v_board, v_life,
+      'the monthly board shows the same tier as the member''s own standing card');
+    perform tests.assert_eq(v_life, 'elite'::public.member_tier,
+      'and it is the lifetime tier, not what this month alone would be worth');
+
+    -- The points column still reflects the window — only the tier is lifetime.
+    perform tests.assert_eq(
+      (select points from public.leaderboard('month') where is_me limit 1), 20,
+      'while the points column still shows the window the board is ranking by');
+  end;
+  perform tests.act_as_system();
+
+  -- ---------------------------------------------------------------------
   -- The hidden badges.
   --
   -- Awarded silently and absent from the catalogue until earned — my_badges()

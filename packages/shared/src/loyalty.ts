@@ -170,7 +170,10 @@ export function describeGapToNextRank(points: number | null): string | null {
  * branching on layout.
  */
 export function rankBadge(rank: number, shared = false): string {
-  if (shared) return `${rank}`;
+  // A tie is marked, not just repeated. Six rows each showing a bare "1" reads
+  // as a broken screen; "=1" is the ordinary way a results board says joint
+  // first, and it tells the member the number is deliberate.
+  if (shared) return `=${rank}`;
   return rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `${rank}`;
 }
 

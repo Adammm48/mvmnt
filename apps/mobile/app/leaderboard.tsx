@@ -66,6 +66,14 @@ export default function LeaderboardScreen() {
 
       if (board.error || mine.error) {
         setError(toMemberMessage(board.error ?? mine.error!));
+      } else if (tiers.error) {
+        // The board itself is fine — only the ladder failed. Show what works
+        // and say what did not, rather than replacing the whole screen with an
+        // error or (as before) silently rendering an empty ladder.
+        setRows(board.data ?? []);
+        setStanding((mine.data ?? [])[0] ?? null);
+        setLifetime((allTime.data ?? [])[0] ?? null);
+        setError("Couldn't load the tier rewards. Pull down to try again.");
       } else {
         setRows(board.data ?? []);
         setStanding((mine.data ?? [])[0] ?? null);
@@ -110,7 +118,18 @@ export default function LeaderboardScreen() {
         }
         ListHeaderComponent={
           <View style={styles.header}>
-            {error && <Notice tone="error" message={error} />}
+            {error && (
+              <View style={styles.errorBlock}>
+                <Notice tone="error" message={error} />
+                {/*
+                  A visible way back. Pull-to-refresh works, but when the board
+                  fails to load there is nothing on screen to pull and no hint
+                  that pulling is the answer — so a transient blip looked like
+                  a dead end.
+                */}
+                <Button label="Try again" variant="secondary" onPress={() => load(true)} />
+              </View>
+            )}
             {standing && <StandingCard standing={standing} lifetime={lifetime ?? undefined} />}
 
             <View style={styles.toggle}>
@@ -231,6 +250,7 @@ function Row({ row, shared }: { row: LeaderboardRow; shared: boolean }) {
 }
 
 const styles = StyleSheet.create({
+  errorBlock: { gap: spacing.sm },
   screen: { flex: 1, backgroundColor: colors.base },
   list: { padding: spacing.md, paddingBottom: spacing.xxl, flexGrow: 1 },
   header: { gap: spacing.md, marginBottom: spacing.md },

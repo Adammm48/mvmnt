@@ -196,6 +196,11 @@ password_requirements = ""
 
 [auth.rate_limit]
 # Number of emails that can be sent per hour. Requires auth.email.smtp to be enabled.
+#
+# 2/hour is Supabase's default and it is a DEVELOPMENT number — it exists to
+# stop a misconfigured project mailbombing anybody. On the hosted project this
+# has to be raised before the club onboards, or the third member to sign in
+# that morning is simply told to try later. See the SMTP block below.
 email_sent = 2
 # Number of SMS messages that can be sent per hour. Requires auth.sms to be enabled.
 sms_sent = 30
@@ -233,15 +238,47 @@ otp_length = 6
 # Number of seconds before the email OTP expires (defaults to 1 hour).
 otp_expiry = 3600
 
-# Use a production-ready SMTP server
+# ---------------------------------------------------------------------------
+# THE PRODUCTION MAIL SENDER — the one thing sign-in cannot work without.
+#
+# Sign-in is a 6-digit emailed code and nothing else. Locally that mail goes to
+# Inbucket (the [local_smtp] block above), which is a test double: it catches
+# mail so a developer can read it, and delivers to nobody. Left as-is on a
+# hosted project, sign-in falls back to Supabase's built-in sender, which is
+# rate-limited to a couple of messages an hour and sends from a shared domain
+# that Gmail is entitled to be suspicious of. 150 members signing in on one
+# Saturday morning hit that wall with no second door.
+#
+# Filled in below for RESEND, chosen because its free tier is the only one of
+# the three that actually fits this club — see docs/open-items.md for the
+# comparison and the arithmetic. Postmark and SendGrid work identically here;
+# only host, user and the key change.
+#
+# TO GO LIVE (hosted project — this file configures local development only):
+#
+#   1. Buy the domain. It is needed twice over: to send mail from, and to
+#      publish the privacy policy at, which both app stores require.
+#   2. Add the domain in Resend and create the DNS records it asks for
+#      (SPF, DKIM, and a DMARC record). Deliverability to Gmail lives or dies
+#      on these — without them the codes land in spam and members conclude the
+#      app is broken.
+#   3. In the Supabase dashboard: Project Settings → Authentication → SMTP,
+#      using the values below and an API key stored as a secret, never here.
+#   4. Raise the auth rate limit above (email_sent) to something the club's
+#      real onboarding will not trip.
+#   5. Send yourself a code, from a phone, on mobile data — then check the spam
+#      folder rather than assuming.
+#
+# The API key NEVER goes in this file. It is a secret, this repo is public.
+# ---------------------------------------------------------------------------
 # [auth.email.smtp]
 # enabled = true
-# host = "smtp.sendgrid.net"
+# host = "smtp.resend.com"
 # port = 587
-# user = "apikey"
-# pass = "env(SENDGRID_API_KEY)"
-# admin_email = "admin@email.com"
-# sender_name = "Admin"
+# user = "resend"
+# pass = "env(RESEND_API_KEY)"
+# admin_email = "runs@REPLACE_WITH_THE_CLUB_DOMAIN"
+# sender_name = "MVMNT"
 
 # Sign-in email sends a 6-digit code rather than a magic link, so the member
 # never leaves the app to sign in. See supabase/templates/magic_link.html.
