@@ -9,6 +9,7 @@ import { RunCard } from '@/components/RunCard';
 import { TierProgressBar } from '@/components/TierProgressBar';
 import { TierChest, type UnclaimedTier } from '@/components/TierChest';
 import { Welcome } from '@/components/Welcome';
+import { clearSync, useLastSync } from '@/lib/syncStatus';
 import { EmptyState, Loading, Notice } from '@/components/Feedback';
 import { registerForPush } from '@/lib/push';
 import {
@@ -30,11 +31,24 @@ export default function Home() {
   const { items, loading, refreshing, error, reload } = useRuns(session?.user.id);
   const [standing, setStanding] = useState<Standing | null>(null);
   const [chest, setChest] = useState<UnclaimedTier | null>(null);
+  const sync = useLastSync();
+
+  // Clears itself after a beat. Good news does not need to be dismissed by
+  // hand, and a banner that outstays the moment becomes part of the furniture.
+  useEffect(() => {
+    if (!sync || sync.failed) return;
+    const timer = setTimeout(clearSync, 9000);
+    return () => clearTimeout(timer);
+  }, [sync]);
 
   // Registering on every launch is what keeps a handed-down device pointed at
   // its current owner — register_push_token() reassigns on conflict.
   useEffect(() => {
-    registerForPush();
+    // Fire and forget by design — this runs on every launch to keep a
+    // handed-down phone pointed at its current owner, and is not a moment to
+    // interrupt anybody. The outcome is not lost, though: the profile screen
+    // reads the same state and says so there, where it is actionable.
+    registerForPush().catch(() => {});
   }, []);
 
   // Coming back from a run detail should show the join that just happened —
@@ -114,6 +128,25 @@ export default function Home() {
             )}
 
             {error && <Notice tone="error" message={toMemberMessage({ message: error })} />}
+
+            {/*
+              The offline queue, finally speaking. A check-in tapped in a dead
+              spot lands minutes or hours later, and the member has no other way
+              to know it worked.
+            */}
+            {sync && (
+              <Notice
+                tone={sync.failed ? 'error' : sync.synced > 0 ? 'success' : 'info'}
+                onDismiss={clearSync}
+                message={
+                  sync.failed
+                    ? 'Could not sync your saved check-ins. They are still saved and will try again.'
+                    : sync.synced > 0
+                      ? `${sync.synced} check-in${sync.synced === 1 ? '' : 's'} synced. You are in.`
+                      : `${sync.remaining} check-in${sync.remaining === 1 ? '' : 's'} still waiting for signal.`
+                }
+              />
+            )}
 
             {/*
               Two ways out of the home screen, and the member's own number on

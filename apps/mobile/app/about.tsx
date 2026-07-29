@@ -21,6 +21,7 @@ export default function AboutScreen() {
   const [taps, setTaps] = useState(0);
   const found = taps >= 7;
   const lastTap = useRef(0);
+  const [linkError, setLinkError] = useState<string | null>(null);
 
   /**
    * Seven taps on the wordmark.
@@ -88,10 +89,18 @@ export default function AboutScreen() {
             style={styles.link}
             accessibilityRole="link"
             accessibilityLabel={link.label}
-            onPress={() => {
+            onPress={async () => {
               // Placeholders are deliberately not opened — sending somebody to a
               // dead address is worse than the button doing nothing.
-              if (!link.placeholder) Linking.openURL(link.url);
+              if (link.placeholder) return;
+              // openURL rejects when nothing can handle the scheme (no mail
+              // client, for instance). Unguarded, that is one more button that
+              // silently does nothing.
+              const opened = await Linking.openURL(link.url).then(
+                () => true,
+                () => false,
+              );
+              if (!opened) setLinkError(`Could not open ${link.label}. The address is ${link.url}`);
             }}
           >
             <Text style={styles.linkLabel}>{link.label}</Text>
@@ -100,6 +109,7 @@ export default function AboutScreen() {
             </Text>
           </Pressable>
         ))}
+        {linkError && <Text style={styles.linkError}>{linkError}</Text>}
         {CONTACT_LINKS.some((l) => l.placeholder) && (
           <Text style={styles.hint}>
             These are not live yet. They will point somewhere real before the club starts using the
@@ -187,6 +197,7 @@ const styles = StyleSheet.create({
   linkLabel: { fontSize: 15, fontWeight: '700', color: colors.textOnDark },
   linkValue: { fontSize: 13, color: colors.textOnDarkMuted },
   hint: { fontSize: 13, color: colors.textOnDarkMuted, lineHeight: 19 },
+  linkError: { fontSize: 13, color: colors.highlight, lineHeight: 19 },
   egg: {
     backgroundColor: colors.baseElevated,
     borderRadius: radius.lg,

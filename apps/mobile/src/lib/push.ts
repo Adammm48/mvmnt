@@ -30,6 +30,25 @@ export type PushRegistration =
   | { ok: true; token: string }
   | { ok: false; reason: 'simulator' | 'denied' | 'unconfigured'; message: string };
 
+/**
+ * What the OS currently thinks, without asking it anything.
+ *
+ * registerForPush() prompts, which makes it the wrong thing to call just to
+ * render a screen — a settings page that triggers a permission dialog on open
+ * is a settings page nobody trusts. This only reads, so the profile can say
+ * "notifications are off" without demanding an answer first.
+ */
+export async function pushStatus(): Promise<'granted' | 'denied' | 'undetermined' | 'unsupported'> {
+  if (!Device.isDevice) return 'unsupported';
+  try {
+    const { status, canAskAgain } = await Notifications.getPermissionsAsync();
+    if (status === 'granted') return 'granted';
+    return canAskAgain ? 'undetermined' : 'denied';
+  } catch {
+    return 'unsupported';
+  }
+}
+
 export async function registerForPush(): Promise<PushRegistration> {
   if (!Device.isDevice) {
     return {

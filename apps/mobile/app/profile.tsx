@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/Button';
 import { Notice } from '@/components/Feedback';
 import { StandingCard } from '@/components/StandingCard';
-import { registerForPush } from '@/lib/push';
+import { pushStatus, registerForPush } from '@/lib/push';
 import { pendingCount } from '@/lib/checkInQueue';
 import { confirmDestructive } from '@/lib/confirm';
 import {
@@ -40,6 +40,17 @@ export default function ProfileScreen() {
 
   useEffect(() => {
     pendingCount().then(setQueued);
+
+    // Read-only. A member who declined notifications months ago had no way to
+    // find that out from inside the app — the only feedback was pressing the
+    // button, and the button looks like it is offering something new.
+    pushStatus().then((status) => {
+      if (status === 'denied') {
+        setPushState('Notifications are switched off for MVMNT in your phone settings.');
+      } else if (status === 'granted') {
+        setPushState('Notifications are on.');
+      }
+    });
   }, []);
 
   useEffect(() => {

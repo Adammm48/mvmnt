@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from '@/lib/auth';
 import { Loading } from '@/components/Feedback';
 import { ConfirmHost } from '@/components/ConfirmHost';
 import { flush } from '@/lib/checkInQueue';
+import { publishSync } from '@/lib/syncStatus';
 import { colors } from '@mvmnt/shared';
 
 function RootNavigator() {
@@ -32,9 +33,19 @@ function RootNavigator() {
   useEffect(() => {
     if (!session) return;
 
-    flush().catch(() => {});
+    // The result is published rather than discarded. `.catch(() => {})` here
+    // meant a member whose queued check-in synced on the drive home was never
+    // told — they spent the week believing they had missed a run they attended.
+    const run = () =>
+      flush()
+        .then((result) => {
+          if (result.synced > 0 || result.remaining > 0) publishSync(result);
+        })
+        .catch(() => publishSync({ synced: 0, remaining: 0, failed: true }));
+
+    run();
     const subscription = AppState.addEventListener('change', (state) => {
-      if (state === 'active') flush().catch(() => {});
+      if (state === 'active') run();
     });
     return () => subscription.remove();
   }, [session]);

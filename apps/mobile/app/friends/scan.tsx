@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import { Platform, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Linking, Platform, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
@@ -112,8 +112,28 @@ export default function ScanScreen() {
             MVMNT uses the camera only to read a friend&apos;s code. Nothing is recorded or uploaded.
           </Text>
           <Button
-            label={permission?.canAskAgain === false ? 'Open settings to allow the camera' : 'Allow camera'}
-            onPress={() => requestPermission()}
+            label={
+              permission?.canAskAgain === false ? 'Open settings to allow the camera' : 'Allow camera'
+            }
+            onPress={async () => {
+              // Once the OS has stopped asking, requestPermission() resolves
+              // immediately with the same denial and nothing happens — so the
+              // button was promising Settings and calling a no-op.
+              if (permission?.canAskAgain === false) {
+                await Linking.openSettings().catch(() =>
+                  setError('Open Settings and allow the camera for MVMNT, then come back.'),
+                );
+                return;
+              }
+              const result = await requestPermission();
+              if (!result.granted) {
+                setError(
+                  result.canAskAgain
+                    ? 'Camera access is needed to scan. You can also type the code below.'
+                    : 'Camera access is off for MVMNT. Turn it on in Settings, or type the code below.',
+                );
+              }
+            }}
           />
         </View>
       )}

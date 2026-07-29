@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { adamSays, colors, radius, spacing, type VoiceSlot } from '@mvmnt/shared';
 
 /**
@@ -49,14 +49,40 @@ export function EmptyState({
 
 type NoticeTone = 'error' | 'info' | 'success';
 
-export function Notice({ tone, message }: { tone: NoticeTone; message: string }) {
+export function Notice({
+  tone,
+  message,
+  /**
+   * Renders a visible close control. Tap-to-dismiss on the notice itself was
+   * tried first and was the wrong idea twice over: nothing indicated it was
+   * pressable, and it did not reliably register anyway.
+   */
+  onDismiss,
+}: {
+  tone: NoticeTone;
+  message: string;
+  onDismiss?: () => void;
+}) {
   return (
     <View
       style={[styles.notice, styles[`${tone}Notice`]]}
       accessibilityRole="alert"
       accessibilityLiveRegion="polite"
     >
-      <Text style={[styles.noticeText, tone === 'error' && styles.errorText]}>{message}</Text>
+      <Text style={[styles.noticeText, tone === 'error' && styles.errorText, onDismiss && styles.noticeTextInset]}>
+        {message}
+      </Text>
+      {onDismiss && (
+        <Pressable
+          onPress={onDismiss}
+          accessibilityRole="button"
+          accessibilityLabel="Dismiss"
+          hitSlop={12}
+          style={styles.noticeClose}
+        >
+          <Text style={styles.noticeCloseText}>×</Text>
+        </Pressable>
+      )}
     </View>
   );
 }
@@ -96,5 +122,8 @@ const styles = StyleSheet.create({
   infoNotice: { backgroundColor: colors.surfaceSunken, borderColor: colors.border },
   successNotice: { backgroundColor: '#E8FBF0', borderColor: '#A9EFC8' },
   noticeText: { fontSize: 15, color: colors.textPrimary, lineHeight: 21 },
+  noticeTextInset: { paddingRight: spacing.lg },
+  noticeClose: { position: 'absolute', top: 6, right: 10, padding: 4 },
+  noticeCloseText: { fontSize: 20, lineHeight: 22, color: colors.textSecondary },
   errorText: { color: '#8A1C12' },
 });
