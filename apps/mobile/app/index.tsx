@@ -11,6 +11,7 @@ import { TierChest, type UnclaimedTier } from '@/components/TierChest';
 import { Welcome } from '@/components/Welcome';
 import { ConsentGate, useConsentNeeded } from '@/components/ConsentGate';
 import { SponsorBanner } from '@/components/SponsorBanner';
+import { FreshPhotos } from '@/components/FreshPhotos';
 import { clearSync, useLastSync } from '@/lib/syncStatus';
 import { EmptyState, Loading, Notice } from '@/components/Feedback';
 import { registerForPush } from '@/lib/push';
@@ -208,6 +209,8 @@ export default function Home() {
                 <Text style={styles.chipUnit}>Spend your points</Text>
               </Pressable>
             </View>
+
+            <FreshPhotos />
 
             {/* Below the club's own content, never above it. */}
             <SponsorBanner />
