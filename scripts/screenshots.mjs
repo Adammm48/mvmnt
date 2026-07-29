@@ -88,6 +88,17 @@ try {
   const phonePage = await phone.newPage();
   await seedSession(phonePage, MOBILE, member);
 
+  // A fresh browser context counts as a first open, so the welcome modal is up
+  // and covering the home screen — which made the README's flagship shot a
+  // picture of a dialog. Dismiss it before anything is captured.
+  await phonePage.goto(MOBILE, { waitUntil: 'networkidle' });
+  await phonePage.waitForTimeout(1500);
+  const welcomeModal = phonePage.getByRole('button', { name: 'Let\u2019s go' });
+  if (await welcomeModal.isVisible().catch(() => false)) {
+    await welcomeModal.click();
+    await phonePage.waitForTimeout(800);
+  }
+
   await shoot(phonePage, MOBILE, 'app-home');
 
   // The *next* run, not just any run with that title. The seed carries a year
