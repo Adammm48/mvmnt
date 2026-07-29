@@ -369,7 +369,10 @@ export default function ProfileScreen() {
       {queued > 0 && (
         <Notice
           tone="info"
-          message={`${queued} check-in${queued === 1 ? '' : 's'} waiting to sync. This happens automatically when you have signal.`}
+          message={
+            `${queued} check-in${queued === 1 ? '' : 's'} waiting to sync. This happens ` +
+            `automatically when you have signal.\n\n${adamSays('error_offline', { noSurprises: true })}`
+          }
         />
       )}
 

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { toMemberMessage, type Database } from '@mvmnt/shared';
+import { toMemberMessage, type Database, SIGNATURE, CONTACT_LINKS } from '@mvmnt/shared';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/Confirm';
 
@@ -157,7 +157,18 @@ export function Sponsors() {
       r.first_seen ?? '—',
       r.last_seen ?? '—',
     ]);
-    const csv = [header, ...rows]
+    // A footer line, because this file leaves the building: it is emailed to
+    // sponsors, who are the businesses most likely to ask who built the thing
+    // producing numbers this clean. Two lines at the bottom of a spreadsheet
+    // nobody has to read.
+    const footer = [
+      [],
+      ['Reach counts distinct members once per day — not impressions.'],
+      [`MVMNT · generated ${new Date().toISOString().slice(0, 10)}`],
+      [`Platform built by ${SIGNATURE.name} · ${CONTACT_LINKS[0]?.url ?? ''}`],
+    ];
+
+    const csv = [header, ...rows, ...footer]
       // Quote everything and double any inner quotes: a sponsor named
       // "Baker, Smith & Co" would otherwise split into two columns.
       .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))

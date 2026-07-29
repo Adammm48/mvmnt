@@ -209,6 +209,7 @@ export default function RunDetail() {
           tone="error"
           message="This run isn't available anymore. It may have been removed, or the link is out of date."
         />
+        <Text style={styles.voiceLine}>{adamSays('error_notfound', { noSurprises: true })}</Text>
         <Button label="Back to your runs" onPress={() => router.replace('/')} />
       </View>
     );
@@ -379,6 +380,14 @@ export default function RunDetail() {
                 : 'Sign-up for this run has closed.'}
             </Text>
           )}
+
+          {/* A finished run somebody was AT deserves a word. The run_finished
+              lines sat in the catalogue with no call site. */}
+          {run.status === 'completed' && alreadyIn && (
+            <Text style={styles.voiceLine}>
+              {adamSays('run_finished', { userId: session?.user.id, stability: 'daily' })}
+            </Text>
+          )}
           </View>
         )}
       </View>
@@ -396,6 +405,12 @@ function Fact({ label, value }: { label: string; value: string }) {
 }
 
 const styles = StyleSheet.create({
+  voiceLine: {
+    fontSize: 13,
+    fontStyle: 'italic',
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
   screen: { flex: 1, backgroundColor: colors.base },
   notFound: { justifyContent: 'center', padding: spacing.md, gap: spacing.md },
   content: { paddingBottom: spacing.xxl },

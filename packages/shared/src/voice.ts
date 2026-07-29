@@ -327,6 +327,27 @@ export const SIGNATURE = {
  * visibly unfinished, and guessing somebody's portfolio URL is exactly how that
  * happens.
  */
+/**
+ * The build, in numbers, for the hidden developer card.
+ *
+ * MEASURED, not invented — a card that overstates its own project is worse
+ * than no card. Recompute before changing any of these:
+ *
+ *   lines:      find apps packages supabase/functions -name '*.ts*' | grep -v node_modules \
+ *                 | grep -v database.types | xargs cat | wc -l   (+ migrations + tests)
+ *   migrations: ls supabase/migrations/*.sql | wc -l
+ *   assertions: grep -c assert supabase/tests/*.sql
+ *
+ * A snapshot taken 2026-07-30. Rounded DOWN so the number stays true as the
+ * code grows, and phrased as "over" for the same reason.
+ */
+export const BUILD_FACTS: { value: string; label: string }[] = [
+  { value: '27,000+', label: 'lines written' },
+  { value: '55', label: 'database migrations' },
+  { value: '410', label: 'tests asserting it works' },
+  { value: '5', label: 'decisions written down' },
+];
+
 export const CONTACT_LINKS: { label: string; url: string; placeholder: boolean }[] = [
   { label: 'GitHub', url: 'https://github.com/Adammm48', placeholder: false },
   { label: 'LinkedIn', url: 'https://linkedin.com/in/adam-elbasiony', placeholder: false },

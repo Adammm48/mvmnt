@@ -221,6 +221,47 @@ try {
     }
     await context.close();
   }
+  // -------------------------------------------------------------------------
+  // 9. The attribution surfaces are still there.
+  //
+  //    The owner is building this unpaid and the return is his name reaching
+  //    people. These are load-bearing, not decoration — a refactor that
+  //    quietly drops the share-card credit removes the entire payment.
+  // -------------------------------------------------------------------------
+  {
+    const { context, page } = await openApp(browser, 'runner7@mvmnt.test');
+
+    await page.goto(`${MOBILE}/about`, { waitUntil: 'networkidle' });
+    await page.waitForTimeout(1800);
+    await seen(page, 'Adam Elbasiony', 'the About page names who built it');
+    await seen(page, /links below reach him|something that needs building/i,
+      'and says he is open to work — the reason this page exists');
+
+    // The share card is the one thing that leaves the app onto social feeds.
+    await page.goto(`${MOBILE}/leaderboard`, { waitUntil: 'networkidle' });
+    await page.waitForTimeout(1800);
+    const share = page.getByRole('button', { name: /Share your standing/i }).first();
+    if (await share.isVisible().catch(() => false)) {
+      await share.click();
+      await page.waitForTimeout(1500);
+      await seen(page, 'Powered by MVMNT', 'the shareable card carries the club');
+      await seen(page, /Built by Adam Elbasiony/, 'and the credit that makes it worth building');
+    }
+
+    // Seven taps. Hidden, never advertised, and the thing people screenshot.
+    await page.goto(MOBILE, { waitUntil: 'networkidle' });
+    await page.waitForTimeout(1800);
+    const mark = page.getByRole('button', { name: 'MVMNT' }).first();
+    if (await mark.isVisible().catch(() => false)) {
+      for (let i = 0; i < 7; i++) {
+        await mark.click({ force: true });
+        await page.waitForTimeout(110);
+      }
+      await seen(page, 'You found Adam.', 'the hidden developer card is still findable');
+      await seen(page, '27,000+', 'and its numbers are the measured ones');
+    }
+    await context.close();
+  }
 } finally {
   await browser.close();
 }

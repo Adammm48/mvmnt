@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router';
 import { colors } from '@mvmnt/shared';
+import { TappableWordmark, useWordmarkEasterEgg } from '@/components/DeveloperCard';
 import {
   BoardIcon,
   HomeIcon,
@@ -24,7 +25,12 @@ import {
  * hang out in — and a five-tab bar is the most a thumb can tell apart.
  */
 export default function TabsLayout() {
+  // Seven taps on the wordmark opens the developer card. Nothing hints at it;
+  // a found thing gets shared, an advertised one gets ignored.
+  const egg = useWordmarkEasterEgg();
+
   return (
+    <>
     <Tabs
       screenOptions={{
         headerStyle: { backgroundColor: colors.base },
@@ -44,6 +50,9 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: 'MVMNT',
+          headerTitle: () => (
+            <TappableWordmark onPress={egg.onWordmarkPress} hint={egg.hint} />
+          ),
           tabBarLabel: 'Home',
           tabBarIcon: ({ color }) => <HomeIcon color={color} />,
         }}
@@ -81,5 +90,7 @@ export default function TabsLayout() {
         }}
       />
     </Tabs>
+      {egg.card}
+    </>
   );
 }

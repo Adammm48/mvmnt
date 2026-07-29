@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Constants from 'expo-constants';
-import { adamSays, colors, radius, spacing, CONTACT_LINKS, SIGNATURE } from '@mvmnt/shared';
+import { adamSays, colors, radius, spacing, BUILD_FACTS, CONTACT_LINKS, SIGNATURE } from '@mvmnt/shared';
 import { RELEASE_NOTES } from '@/lib/releaseNotes';
 
 /**
@@ -82,6 +82,38 @@ export default function AboutScreen() {
         <Text style={styles.body}>{SIGNATURE.hello}</Text>
       </View>
 
+      {/*
+        The part that does the actual work.
+        =================================
+        The owner is building MVMNT unpaid, and the return on it is this: a
+        member who likes the app wonders who made it, and finds a straight
+        answer plus a way to ask. So this says what was built and what he is
+        open to — plainly, once, without a sales voice. The rest of the app
+        keeps the club as the star; a member who never opens this page is
+        never sold anything.
+      */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>What went into it</Text>
+        <View style={styles.facts}>
+          {BUILD_FACTS.map((fact) => (
+            <View key={fact.label} style={styles.fact}>
+              <Text style={styles.factValue}>{fact.value}</Text>
+              <Text style={styles.factLabel}>{fact.label}</Text>
+            </View>
+          ))}
+        </View>
+        <Text style={styles.body}>
+          Two apps and a database: an iPhone and Android app, a console the organisers run the club
+          from with no developer involved, and a set of rules that live in the database so a bug in
+          a screen can never hand out somebody else&rsquo;s data or oversell a run.
+        </Text>
+        <Text style={styles.body}>
+          Adam builds software like this — mobile apps, web tools, and the unglamorous parts
+          underneath that decide whether a thing still works at three hundred people. If you have
+          something that needs building, the links below reach him.
+        </Text>
+      </View>
+
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Get in touch</Text>
         {/* Placeholder links used to render as tappable rows that did
@@ -159,6 +191,15 @@ export default function AboutScreen() {
 }
 
 const styles = StyleSheet.create({
+  facts: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  fact: { minWidth: 92 },
+  factValue: { fontSize: 20, fontWeight: '800', color: colors.textPrimary },
+  factLabel: { fontSize: 11, color: colors.textSecondary },
   screen: { flex: 1, backgroundColor: colors.base },
   content: { padding: spacing.md, gap: spacing.lg, paddingBottom: spacing.xxl },
   hero: { alignItems: 'center', paddingVertical: spacing.lg, gap: 2 },

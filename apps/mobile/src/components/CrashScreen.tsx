@@ -1,6 +1,6 @@
 import { Component, type ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { colors, spacing } from '@mvmnt/shared';
+import { adamSays, colors, spacing } from '@mvmnt/shared';
 import { Button } from './Button';
 
 /**
@@ -44,6 +44,10 @@ export class CrashBoundary extends Component<
           Something broke on our side — not yours. Your points, sign-ups and everything else are
           safe on the server.
         </Text>
+        {/* The one screen where a human line matters most: a member staring
+            at a crash should hear a person, not a stack trace. `noSurprises`
+            keeps the easter eggs out of a genuinely bad moment. */}
+        <Text style={styles.voice}>{adamSays('error_generic', { noSurprises: true })}</Text>
         <Button label="Take me back" onPress={() => this.setState({ error: null })} />
       </View>
     );
@@ -51,6 +55,12 @@ export class CrashBoundary extends Component<
 }
 
 const styles = StyleSheet.create({
+  voice: {
+    fontSize: 13,
+    fontStyle: 'italic',
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
   screen: {
     flex: 1,
     backgroundColor: colors.base,
