@@ -141,6 +141,19 @@ Phase 3 — sponsors, and the merch catalogue itself — can be built without th
 
 ## Owed to the spec
 
+### Load test against the hosted project, if a big event recurs
+
+**Who:** Adam, when (if) another oversized event is planned.
+**Where:** [`docs/load-test.md`](load-test.md) has the local results and the how.
+
+The local stack absorbs the club's real scale — 150 typical, 300 peak — with
+zero errors and sub-half-second bursts, and holds at 6× that as a headroom
+check. Two things the local run cannot prove: the hosted project's Postgres
+under the same burst (run the script against a **staging** project), and
+Expo's push throughput once `push_delivery` is switched on. Neither blocks
+normal Saturdays; both are due before another 2,500-person event.
+
+
 ### The end-of-build whole-system review
 
 **Who:** Adam triggers it; the review itself is a multi-model council run.

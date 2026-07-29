@@ -284,6 +284,7 @@ check-in without standing at the meeting point. Ignored in release builds.
 | `npm run db:reset` | Rebuild from migrations, reseed, re-upload cover images |
 | `npm run db:types` | Regenerate the shared types — run after any migration |
 | `npm run docs:screenshots` | Recapture the README stills from the running apps |
+| `node scripts/load-test.mjs` | Burst-test sign-up, check-in, live positions and fan-out — [results](docs/load-test.md) |
 | `npm run docs:gif` | Recapture the check-in animation |
 | `npm run check:placeholders` | List everything still waiting on a real answer |
 
