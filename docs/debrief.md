@@ -130,6 +130,16 @@ never an inflatable view count and never a name.
   18+ (a minor cannot consent to their own data); under-18s run with the
   club and an organiser checks them in.
 
+## The look, second edition
+
+You produced the club's real mark — MVMNT, black on white — and the app now
+wears it: white base, ink text and buttons, **green only ever means yes**
+(checked in, streak kept, approved), amber only ever celebrates (badges,
+chest, live dots), and the five tier colours re-tuned to stay readable on
+white. A bottom tab bar carries the five rooms — Home, Board, Photos, Shop,
+Profile — with icons drawn in-house, and photos became labelled cards with
+real covers instead of a text link. The console matches.
+
 ## The bug pattern worth remembering
 
 The worst bugs in this build shared one shape: **code that ran without error
