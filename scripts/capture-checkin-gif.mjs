@@ -74,10 +74,21 @@ const hold = async (count) => {
 // 1. Home — the run list.
 await page.goto(MOBILE, { waitUntil: 'networkidle' });
 await page.waitForTimeout(1500);
+
+// A fresh browser context counts as a first open, so the welcome modal is up
+// and quietly swallowing every click. Dismiss it before the gif starts.
+const welcome = page.getByRole('button', { name: 'Let\u2019s go' });
+if (await welcome.isVisible().catch(() => false)) {
+  await welcome.click();
+  await page.waitForTimeout(800);
+}
 await hold(6);
 
 // 2. Open the run that is happening now.
-await page.getByRole('button', { name: /Saturday 6K/ }).first().click();
+// force: the card holds a looping cover clip, and Playwright's stability
+// wait never settles on an element that animates by design.
+await page.getByRole('button', { name: /Saturday 6K/ }).first().click({ force: true });
+await page.getByRole('button', { name: 'Check in', exact: true }).waitFor({ timeout: 15000 });
 await page.waitForTimeout(1200);
 await hold(5);
 
