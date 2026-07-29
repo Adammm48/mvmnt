@@ -122,10 +122,22 @@ export default function ProfileScreen() {
    * historical headcounts stay correct — see ADR 0002 §6.
    */
   async function confirmDelete() {
+    // Deletion is a right and is never blocked — not even for the account that
+    // runs the club. But the founding account is the one thing that cannot be
+    // demoted, which makes it the guaranteed way into the organiser console;
+    // deleting it can leave the club locked out of its own records. Refusing
+    // would be wrong, saying nothing would be worse.
+    const runsTheClub = profile?.is_founder || profile?.role === 'admin';
+
     const confirmed = await confirmDestructive({
       title: 'Delete your account?',
       message:
-        'This removes your profile, your devices and any location data we hold. Your past attendance stays in the club’s totals, but is no longer linked to you. This cannot be undone.',
+        'This removes your profile, your devices and any location data we hold. Your past attendance stays in the club’s totals, but is no longer linked to you. This cannot be undone.' +
+        (profile?.is_founder
+          ? '\n\nThis is the club’s founding organiser account. It is the one account that can always get into the organiser console — delete it and nobody may be able to get back in. Make someone else an organiser first.'
+          : runsTheClub
+            ? '\n\nYou are an organiser. You will lose access to the organiser console, and if you are the only one left the club will have nobody who can run it.'
+            : ''),
       confirmLabel: 'Delete',
     });
     if (!confirmed) return;

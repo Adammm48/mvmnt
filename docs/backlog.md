@@ -98,12 +98,12 @@ since the geofence radius is measured from these coordinates.
   physically scanning a code, and unfriending is silent and one-sided. Worth
   watching once real people use it; a per-recipient daily cap is the obvious next
   lever if it becomes a complaint.
-- **Erasing the founding account** is still allowed, and should be. Deletion is a
-  legal right and cannot be gated behind "but you run the club" — but it is the
-  one action that can leave a club with no protected way into the console. The
-  last-organiser backstop in `admin_set_member_role` covers the aftermath;
-  warning the owner *before* they confirm deletion, from the app, does not exist
-  yet. Small, and worth doing before launch.
+- **Erasing the founding account** is still allowed, and should be — deletion is a
+  legal right and cannot be gated behind "but you run the club". The app now warns
+  before it happens, `scripts/restore-organiser.sql` covers the aftermath, and the
+  last-organiser backstop in `admin_set_member_role` stops the same thing being
+  done by demotion. Nothing outstanding; recorded because the reasoning matters
+  more than the code.
 - **Tie-breaking on the board.** Rank ties share a position, which is correct and
   which the UI now shows honestly (no medal for a shared place). A secondary sort
   — most recent check-in, longest streak — would break more of them, but every
