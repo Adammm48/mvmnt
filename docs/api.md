@@ -794,6 +794,12 @@ send again.
 scheduler retry double-pushes every member — 2,500 duplicate notifications at a
 large event from a single retry.
 
+**The push payload** carries `{ run_id, type }`, and the app routes a tapped
+notification with it: `photos_ready` opens that run's gallery, everything
+else about a run opens the run. The contract is those two fields — anything
+new the app should deep-link to extends the `destination()` map in
+`apps/mobile/src/lib/notificationRouting.ts`, not the payload shape.
+
 Members with no registered device get a `skipped` delivery row rather than
 nothing, so "why didn't I get that?" is answerable from the table
 (Principles §7).
