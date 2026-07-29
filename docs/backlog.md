@@ -137,6 +137,28 @@ since the geofence radius is measured from these coordinates.
 
 ---
 
+## Carried out of Phase 3
+
+- **No payment gateway.** The single largest gap, and it is a business decision
+  rather than an engineering one. Stripe does not serve Egypt-based businesses;
+  Paymob, Fawry and Accept all need quotes, and the answer depends on whether
+  MVMNT is a registered company. Orders stop at `awaiting_payment` and
+  `dev_mark_paid()` — which refuses to run on a database with no seeded test
+  accounts — stands in. Everything else in the flow is real, so wiring a gateway
+  means replacing one function with a webhook.
+- **Sponsor reach is measured conservatively.** One member per placement per day,
+  enforced by a primary key. It is a smaller number than an advertising
+  impression count, and the console says so plainly, because the club will have
+  to defend it in a commercial conversation. If a sponsor ever wants per-hour or
+  per-screen breakdowns, the daily rollup would have to become raw events —
+  worth knowing before promising it.
+- **Gift delivery is a text note.** The recipient leaves an address or a "leave
+  it at the gate" instruction and the club reads it. No addresses are stored
+  structurally, which is deliberate: a structured address field is personal data
+  with a retention question attached, and the club hands these over in person.
+
+---
+
 ## Waiting on the owner
 
 > Run `npm run check:placeholders` for the live list — it reads the source, so
