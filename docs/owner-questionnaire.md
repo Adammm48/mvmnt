@@ -69,6 +69,14 @@ chest should say after **"Adam the Great has gifted you…"**
   __________
 - **D7.** Confirm the 18+ app account rule (under-18s run, organisers check
   them in by hand): yes / no __________
+- **D8.** A **Google Cloud OAuth client** for "Continue with Google" — free,
+  ~15 minutes with your Google account (console.cloud.google.com → create a
+  project → OAuth consent screen → credentials). Hand me the client ID and
+  secret. Apple's sign-in comes bundled with D5; the buttons appear the day
+  both are configured, no app update needed. __________
+- **D9.** A **crash-reporting account** (sentry.io free tier is enough) — so
+  a crash on a member's phone reaches us instead of vanishing. Hand me the
+  project DSN. __________
 
 ## E · Brand and voice
 

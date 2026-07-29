@@ -28,6 +28,15 @@ everything that could be done today has been done (see
 - Set `POLICY_URL` in `packages/shared/src/consent.ts` so the consent screen
   links to it; bump `CONSENT_VERSION` if wording materially changed.
 
+## 3½ · Post-audit account wiring — gated on D5, D8, D9
+- Configure Apple + Google OAuth in Supabase Auth (D5 + D8); flip the
+  `oauth_sign_in` flag from the console — the sign-in buttons appear with no
+  release.
+- Wire the crash service (D9) into `CrashBoundary.componentDidCatch` and the
+  scheduler Edge Function.
+- EAS init: set `extra.eas.projectId` in app.json — push token registration
+  is explicitly guarded on it and says so until then.
+
 ## 4 · The device build — gated on D5 (Apple) + Play Console
 - `eas.json`, bundle ids, signing; app icon and splash from the real mark
   (E1); build the dev client and then release candidates.
@@ -36,7 +45,10 @@ everything that could be done today has been done (see
 - Configure APNs/FCM; flip the `push_delivery` flag; verify a real push
   arrives and deep-links (the pipeline is built and logged, never yet sent).
 - Store listings: screenshots, descriptions, age rating (18+ per D7),
-  privacy questionnaires on both stores; submit for review.
+  privacy questionnaires on both stores; submit for review. Google's data
+  safety form declares: email, name/avatar, precise location (check-in and
+  opt-in live sharing), photos, and biometrics (the find-me selfie) — the
+  audit's enumerated list.
 
 ## 5 · Real data — gated on section A, B, C answers
 - Enter tier rewards (console → Rewards), clear `is_placeholder`.
