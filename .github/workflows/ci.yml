@@ -127,32 +127,46 @@ jobs:
       - name: Apply migrations, seed, and upload the demo media
         run: npm run db:reset
 
-      - name: Start the organisers' console
-        run: npm run dev --workspace @mvmnt/admin &
-
-      - name: Start the app's web build
-        run: npx expo start --web --port 8081 --non-interactive &
-        working-directory: apps/mobile
-
-      # Both servers, on their own terms. Expo's first web bundle takes a
-      # while on a cold runner, and a fixed sleep is the thing that makes a
-      # suite like this flaky.
-      - name: Wait for both servers
+      # Servers and tests in ONE step, deliberately.
+      #
+      # A `&` in its own step does not survive into the next one — each `run:`
+      # is a separate shell, and the first CI attempt failed waiting for
+      # servers that had already been killed. Starting them here keeps them in
+      # this shell's lifetime, and the trap cleans them up whatever happens.
+      - name: Assert every action reports its outcome
         run: |
+          set -uo pipefail
+          npm run dev --workspace @mvmnt/admin > /tmp/admin.log 2>&1 &
+          ADMIN_PID=$!
+          (cd apps/mobile && npx expo start --web --port 8081 --non-interactive > /tmp/expo.log 2>&1) &
+          EXPO_PID=$!
+          trap 'kill $ADMIN_PID $EXPO_PID 2>/dev/null || true' EXIT
+
+          # Both servers on their own terms. Expo's first web bundle is slow on
+          # a cold runner, and a fixed sleep is what makes a suite like this
+          # flaky.
+          up=0
           for i in $(seq 1 60); do
             admin=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:5173 || true)
             app=$(curl -s -o /dev/null -w '%{http_code}' \
               'http://127.0.0.1:8081/node_modules/expo/AppEntry.bundle?platform=web&dev=true' || true)
-            if [ "$admin" = "200" ] && [ "$app" = "200" ]; then
-              echo "both servers up after ${i}0s at most"; exit 0
-            fi
+            if [ "$admin" = "200" ] && [ "$app" = "200" ]; then up=1; break; fi
             sleep 10
           done
-          echo "servers did not come up: admin=$admin app=$app" >&2
-          exit 1
+          if [ "$up" != "1" ]; then
+            echo "servers never came up: admin=$admin app=$app" >&2
+            echo "--- admin log ---"; tail -30 /tmp/admin.log || true
+            echo "--- expo log ---";  tail -30 /tmp/expo.log  || true
+            exit 1
+          fi
 
-      - name: Assert every action reports its outcome
-        run: npm run test:e2e
+          npm run test:e2e
+
+      - name: Server logs, when the suite fails
+        if: failure()
+        run: |
+          echo "--- admin ---"; tail -60 /tmp/admin.log || true
+          echo "--- expo ---";  tail -60 /tmp/expo.log  || true
 
   # Generated types are committed and reviewed as part of each diff. If someone
   # changes a migration without regenerating them, the apps typecheck against a
