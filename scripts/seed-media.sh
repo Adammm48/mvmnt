@@ -72,6 +72,38 @@ fi
 echo "  seeded run cover images"
 
 # ---------------------------------------------------------------------------
+# Product tiles — public club imagery like the run covers, so run-media is
+# the right bucket. Real product photos are the club's to take; these keep
+# the shop from being a grid of grey boxes until then.
+# ---------------------------------------------------------------------------
+attach_product() {
+  local name="$1" object="$2"
+  curl -s -o /dev/null -X PATCH "$API/rest/v1/products?name=eq.$(printf '%s' "$name" | sed 's/ /%20/g')" \
+    -H "Authorization: Bearer $SERVICE" \
+    -H "apikey: $SERVICE" \
+    -H "Content-Type: application/json" \
+    -H "Prefer: return=minimal" \
+    -d "{\"image_url\":\"$API/storage/v1/object/public/run-media/$object\"}"
+}
+
+declare -a PRODUCTS=(
+  "MVMNT Club Tee|product-tee.jpg"
+  "MVMNT Cap|product-cap.jpg"
+  "MVMNT Bottle|product-bottle.jpg"
+  "Winter Running Jacket|product-jacket.jpg"
+)
+
+for pair in "${PRODUCTS[@]}"; do
+  pname="${pair%%|*}"
+  file="${pair##*|}"
+  [ -f "$MEDIA/$file" ] || continue
+  upload "$MEDIA/$file" "$file" "image/jpeg"
+  attach_product "$pname" "$file"
+done
+
+echo "  seeded product tiles"
+
+# ---------------------------------------------------------------------------
 # A published gallery on the most recent finished run, so the member flow —
 # run detail → "See the photos" → the grid — works straight off a reset.
 #

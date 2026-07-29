@@ -188,6 +188,51 @@ GALLERY = [
 ]
 
 
+# Merch placeholders: a flat tile per product in the brand palette, with the
+# item drawn as a simple mark. Abstract like everything else here — the real
+# product photos are the club's to take.
+MERCH = [
+    ("product-tee", (255, 90, 54)),
+    ("product-cap", (27, 31, 42)),
+    ("product-bottle", (61, 220, 132)),
+    ("product-jacket", (38, 74, 106)),
+]
+
+
+def build_product(name: str, colour: tuple[int, int, int]) -> pathlib.Path:
+    size = 800
+    image = Image.new("RGB", (size, size), colour)
+    draw = ImageDraw.Draw(image)
+
+    # A soft diagonal sheen so the tile reads as fabric-ish rather than flat.
+    sheen = Image.new("L", (size, size), 0)
+    sd = ImageDraw.Draw(sheen)
+    for i in range(-size, size, 14):
+        sd.line([(i, size), (i + size, 0)], fill=22, width=6)
+    white = Image.new("RGB", (size, size), (255, 255, 255))
+    image = Image.composite(white, image, sheen.filter(ImageFilter.GaussianBlur(2)))
+    draw = ImageDraw.Draw(image)
+
+    # The wordmark, big and centred — merch is the brand.
+    text = "MVMNT"
+    # Default bitmap font scaled up: crude on purpose, it reads as a print.
+    from PIL import ImageFont
+
+    font = ImageFont.load_default()
+    bbox = draw.textbbox((0, 0), text, font=font)
+    tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
+    scale = int(size * 0.7 / tw)
+    mark = Image.new("RGBA", (tw + 2, th + 2), (0, 0, 0, 0))
+    ImageDraw.Draw(mark).text((1, 1), text, font=font, fill=(247, 245, 242, 235))
+    mark = mark.resize((mark.width * scale, mark.height * scale), Image.NEAREST)
+    image.paste(mark, ((size - mark.width) // 2, (size - mark.height) // 2), mark)
+
+    OUT.mkdir(parents=True, exist_ok=True)
+    path = OUT / f"{name}.jpg"
+    image.save(path, "JPEG", quality=85, optimize=True)
+    return path
+
+
 if __name__ == "__main__":
     for scene in SCENES:
         path = build(*scene)
@@ -195,6 +240,10 @@ if __name__ == "__main__":
 
     for scene in GALLERY:
         path = build(*scene)
+        print(f"{path.name}  {path.stat().st_size // 1024}KB")
+
+    for name, colour in MERCH:
+        path = build_product(name, colour)
         print(f"{path.name}  {path.stat().st_size // 1024}KB")
 
     # One clip is enough to prove the path works — the rest stay stills.
