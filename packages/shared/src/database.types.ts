@@ -1570,6 +1570,7 @@ export type Database = {
           sort_order: number
         }[]
       }
+      my_distance_meters: { Args: never; Returns: number }
       my_friend_qr: {
         Args: never
         Returns: {

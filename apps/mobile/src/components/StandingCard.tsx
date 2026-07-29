@@ -34,9 +34,12 @@ export function StandingCard({
    * one false one.
    */
   lifetime,
+  distanceMeters,
 }: {
   standing: Standing;
   lifetime?: Standing;
+  /** Lifetime metres with the club, when the caller has fetched it. */
+  distanceMeters?: number | null;
 }) {
   const base = lifetime ?? standing;
   const windowed = lifetime !== undefined;
@@ -69,6 +72,9 @@ export function StandingCard({
       <View style={styles.statRow}>
         <Stat value={describeRank(standing)} label={windowed ? 'this month' : 'on the board'} />
         <Stat value={`${base.runs_attended}`} label={base.runs_attended === 1 ? 'run' : 'runs'} />
+        {distanceMeters != null && distanceMeters > 0 && (
+          <Stat value={`${Math.round(distanceMeters / 1000)}K`} label="with the club" />
+        )}
         <Stat value={describeStreakShort(base.streak_weeks)} label="streak" />
       </View>
 

@@ -566,4 +566,46 @@ begin
   raise notice 'PASS 06_loyalty';
 end $$;
 
+-- ---------------------------------------------------------------------------
+-- Kilometres with the club (migration 0044): attendance times stated distance,
+-- own rows only, and only for runs that actually happened.
+-- ---------------------------------------------------------------------------
+do $$
+declare
+  v_admin uuid; v_a uuid; v_b uuid; v_r1 uuid; v_r2 uuid;
+begin
+  perform tests.act_as_system();
+  v_admin := tests.make_member('organiser-d', true);
+  v_a := tests.make_member('dina');
+  v_b := tests.make_member('essam');
+  v_r1 := tests.make_run(v_admin, null, now() + interval '30 minutes');
+  v_r2 := tests.make_run(v_admin, null, now() + interval '30 minutes');
+  update public.runs set distance_meters = 6000 where id = v_r1;
+  update public.runs set distance_meters = 8000 where id = v_r2;
+
+  perform tests.act_as(v_a);
+  perform public.join_run(v_r1);
+  perform public.check_in(v_r1, 30.044400, 31.235700, 10);
+  perform public.join_run(v_r2);
+  perform public.check_in(v_r2, 30.044400, 31.235700, 10);
+  -- essam signed up for one but never arrived.
+  perform tests.act_as(v_b);
+  perform public.join_run(v_r1);
+
+  perform tests.act_as_system();
+  update public.runs set status = 'completed' where id in (v_r1, v_r2);
+
+  perform tests.act_as(v_a);
+  perform tests.assert_eq(
+    public.my_distance_meters()::int, 14000,
+    'distance is the sum of stated distances of runs actually checked in to');
+
+  perform tests.act_as(v_b);
+  perform tests.assert_eq(
+    public.my_distance_meters()::int, 0,
+    'signing up without turning up adds nothing — and you only ever see your own');
+end $$;
+
+
+
 rollback;

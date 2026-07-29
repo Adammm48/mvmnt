@@ -104,6 +104,18 @@ never an inflatable view count and never a name.
   `SECURITY DEFINER` function must pin its search path. A future migration
   that forgets either fails CI instead of shipping a hole.
 
+## Phase 5 — groundwork (the halves that need no accounts)
+
+- **Kilometres with the club** on the profile: attendance × each run's
+  stated distance, own data only, no GPS trace behind it. The honest number
+  a run club means by "you've run 120K with us".
+- **[ADR 0005](decisions/0005-phase-5-health-and-faces.md)** fixes the
+  Phase 5 design before the accounts exist: health data is display-only and
+  never stored server-side (the policy's "we do not collect health data"
+  stays true); face-matching is bought not built, opt-in by selfie,
+  deletable as a unit, and priced at publish time rather than per view.
+  The precise account list it is blocked on is in open-items.
+
 ## The bug pattern worth remembering
 
 The worst bugs in this build shared one shape: **code that ran without error

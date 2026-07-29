@@ -35,6 +35,7 @@ export default function ProfileScreen() {
   const [queued, setQueued] = useState(0);
   const [pushState, setPushState] = useState<string | null>(null);
   const [standing, setStanding] = useState<Standing | null>(null);
+  const [distance, setDistance] = useState<number | null>(null);
   const [badges, setBadges] = useState<EarnedBadge[]>([]);
   const [onBoard, setOnBoard] = useState(!(profile?.leaderboard_opt_out ?? false));
 
@@ -57,6 +58,10 @@ export default function ProfileScreen() {
     supabase
       .rpc('my_standing', { p_window: 'all_time' })
       .then(({ data }) => setStanding((data ?? [])[0] ?? null));
+
+    // Kilometres with the club — attendance times each run's stated distance.
+    // No GPS trace behind it; see migration 0044.
+    supabase.rpc('my_distance_meters').then(({ data }) => setDistance(data ?? null));
 
     // my_badges() returns the visible catalogue plus any hidden badge this
     // member has actually earned. Showing the unearned visible ones is the
@@ -174,7 +179,7 @@ export default function ProfileScreen() {
       {standing && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Where you are</Text>
-          <StandingCard standing={standing} />
+          <StandingCard standing={standing} distanceMeters={distance} />
           <Pressable
             onPress={() => router.push('/leaderboard')}
             accessibilityRole="button"
