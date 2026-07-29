@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase';
 import { RunCard } from '@/components/RunCard';
 import { TierProgressBar } from '@/components/TierProgressBar';
 import { TierChest, type UnclaimedTier } from '@/components/TierChest';
+import { Welcome } from '@/components/Welcome';
 import { EmptyState, Loading, Notice } from '@/components/Feedback';
 import { registerForPush } from '@/lib/push';
 import {
@@ -58,6 +59,7 @@ export default function Home() {
 
   return (
     <View style={styles.screen}>
+      <Welcome />
       {chest && (
         <TierChest
           award={chest}

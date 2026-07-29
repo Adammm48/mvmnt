@@ -48,6 +48,10 @@ export type VoiceSlot =
   | 'friend_added'
   | 'top_three'
   | 'push_permission'
+  | 'seasonal'
+  | 'secret_found'
+  | 'whats_new'
+  | 'birthday'
   | 'easter_egg';
 
 const LINES: Record<VoiceSlot, string[]> = {
@@ -125,6 +129,22 @@ const LINES: Record<VoiceSlot, string[]> = {
   top_three: ['Adam is impressed.', 'Top three. Adam is taking notes.'],
   push_permission: ['Adam promises not to spam you.'],
 
+  // Filled in by seasonalSlot() below — kept as a slot so the picker treats it
+  // like any other and it still varies per member.
+  seasonal: ['Adam recommends dressing for the weather, whatever it is doing.'],
+
+  secret_found: [
+    'Adam noticed.',
+    'Adam saw that. Adam is impressed.',
+    'That one was hidden. Adam is genuinely pleased you found it.',
+  ],
+  whats_new: [
+    'Adam has been cooking…',
+    'Adam finally fixed that bug everyone reported.',
+    'Adam added a thing. Adam hopes you like the thing.',
+  ],
+  birthday: ['Adam hopes you celebrate with a run. 🎂'],
+
   // The rare ones. These are the reason anybody screenshots an app.
   easter_egg: [
     'Adam is wondering how your calves are still working.',
@@ -198,6 +218,22 @@ export function adamSays(slot: VoiceSlot, options: VoiceOptions = {}): string {
 
   const lines = LINES[slot];
   return lines[roll % lines.length]!;
+}
+
+/**
+ * The seasonal line, by the club's calendar.
+ *
+ * Cairo, so the year is hot-and-hotter rather than four even seasons — the
+ * bands are set to what a runner there actually feels, not to a textbook. A
+ * joke about gloves in August is not a joke, it is a bug.
+ */
+export function seasonalLine(now = new Date()): string {
+  const month = Number(now.toLocaleString('en-GB', { timeZone: 'Africa/Cairo', month: 'numeric' }));
+
+  if (month === 12 || month <= 2) return 'Adam recommends gloves. Yes, even here.';
+  if (month >= 6 && month <= 9) return 'Adam recommends sunscreen and starting earlier.';
+  if (month === 3 || month === 4) return 'Adam recommends accepting whatever the wind is doing.';
+  return 'Adam says this is the good part of the year. Use it.';
 }
 
 /** Morning or evening greeting, by the club's clock rather than the device's. */

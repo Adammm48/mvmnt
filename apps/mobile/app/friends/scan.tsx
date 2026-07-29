@@ -11,6 +11,7 @@ import {
   radius,
   spacing,
   toMemberMessage,
+  adamSays,
   MIN_TOUCH_TARGET,
 } from '@mvmnt/shared';
 
@@ -80,6 +81,7 @@ export default function ScanScreen() {
           You will see each other on the friends list before the next run — and you can nudge each
           other about it.
         </Text>
+        <Text style={styles.doneVoice}>{adamSays('friend_added')}</Text>
         <Button label="Back to friends" onPress={() => router.replace('/friends')} />
       </View>
     );
@@ -214,6 +216,12 @@ const styles = StyleSheet.create({
     color: colors.textOnDarkMuted,
     textAlign: 'center',
     lineHeight: 22,
+  },
+  doneVoice: {
+    fontSize: 14,
+    color: colors.success,
+    textAlign: 'center',
+    fontStyle: 'italic',
     marginBottom: spacing.md,
   },
 });

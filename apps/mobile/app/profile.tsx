@@ -14,13 +14,15 @@ import {
   radius,
   spacing,
   toMemberMessage,
+  adamSays,
+  seasonalLine,
   MIN_TOUCH_TARGET,
   SIGNATURE,
-  type Badge,
+  type Database,
   type Standing,
 } from '@mvmnt/shared';
 
-type EarnedBadge = Badge & { earned_at: string | null };
+type EarnedBadge = Database['public']['Functions']['my_badges']['Returns'][number];
 
 export default function ProfileScreen() {
   const { session, profile, signOut, refreshProfile } = useAuth();
@@ -45,16 +47,12 @@ export default function ProfileScreen() {
       .rpc('my_standing', { p_window: 'all_time' })
       .then(({ data }) => setStanding((data ?? [])[0] ?? null));
 
-    // Every badge there is, with the date earned attached where it has been.
-    // Showing the unearned ones is the point — a milestone you cannot see is
-    // not a milestone you are working towards.
-    Promise.all([
-      supabase.from('badges').select('*').order('runs_required'),
-      supabase.from('member_badges').select('badge_key, earned_at'),
-    ]).then(([all, mine]) => {
-      const earned = new Map((mine.data ?? []).map((b) => [b.badge_key, b.earned_at]));
-      setBadges((all.data ?? []).map((b) => ({ ...b, earned_at: earned.get(b.key) ?? null })));
-    });
+    // my_badges() returns the visible catalogue plus any hidden badge this
+    // member has actually earned. Showing the unearned visible ones is the
+    // point — a milestone you cannot see is not one you are working towards —
+    // while an unearned secret is absent entirely, which is what makes it a
+    // surprise rather than a to-do list.
+    supabase.rpc('my_badges').then(({ data }) => setBadges(data ?? []));
   }, []);
 
   useEffect(() => {
@@ -196,12 +194,19 @@ export default function ProfileScreen() {
                 <Text style={[styles.badgeMark, !badge.earned_at && styles.badgeMarkLocked]}>
                   {badge.earned_at ? '★' : '☆'}
                 </Text>
-                <Text
-                  style={[styles.badgeLabel, !badge.earned_at && styles.badgeLabelLocked]}
-                  numberOfLines={2}
-                >
-                  {badge.label}
-                </Text>
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={[styles.badgeLabel, !badge.earned_at && styles.badgeLabelLocked]}
+                    numberOfLines={2}
+                  >
+                    {badge.label}
+                  </Text>
+                  {/* Only ever shown once earned — my_badges() does not return
+                      an unearned secret at all. */}
+                  {badge.is_secret && badge.hint ? (
+                    <Text style={styles.badgeHint}>{badge.hint}</Text>
+                  ) : null}
+                </View>
               </View>
             ))}
           </View>
@@ -230,6 +235,7 @@ export default function ProfileScreen() {
           New runs, a reminder the night before and on the morning, and a nudge if a waitlist spot
           opens up.
         </Text>
+        <Text style={styles.voice}>{adamSays('push_permission', { stability: 'daily' })}</Text>
         <Button label="Turn on notifications" variant="secondary" onPress={enableNotifications} />
         {pushState && <Text style={styles.hint}>{pushState}</Text>}
       </View>
@@ -279,6 +285,8 @@ export default function ProfileScreen() {
       {/* The signature. One line, at the bottom, on the screen a member reaches
           when they are already poking around — memorable without being in the
           way of anybody trying to get to a run. */}
+      <Text style={styles.seasonal}>{seasonalLine()}</Text>
+
       <Pressable
         onPress={() => router.push('/about')}
         accessibilityRole="button"
@@ -309,6 +317,8 @@ const styles = StyleSheet.create({
   },
   footer: { gap: spacing.sm, marginTop: spacing.lg },
   link: { fontSize: 14, fontWeight: '700', color: colors.action },
+  voice: { fontSize: 13, color: colors.textOnDarkMuted, fontStyle: 'italic' },
+  seasonal: { fontSize: 13, color: colors.textOnDarkMuted, fontStyle: 'italic', textAlign: 'center' },
   switchRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -332,6 +342,7 @@ const styles = StyleSheet.create({
   badgeLocked: { backgroundColor: 'transparent', borderColor: '#333B4D' },
   badgeMark: { fontSize: 18, color: colors.highlight },
   badgeMarkLocked: { color: colors.textOnDarkMuted },
+  badgeHint: { fontSize: 11, color: colors.textOnDarkMuted },
   madeBy: { alignItems: 'center', paddingVertical: spacing.lg },
   madeByText: { fontSize: 13, color: colors.textOnDarkMuted, textDecorationLine: 'underline' },
   badgeLabel: { flex: 1, fontSize: 13, fontWeight: '700', color: colors.textOnDark },

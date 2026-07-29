@@ -448,3 +448,12 @@ tr:hover td { background: #faf9f7; }
   .toast, .toast-success .toast-icon { animation: none; }
   .toast.leaving { animation: none; opacity: 0; }
 }
+
+/* One quiet line under everything, on the screen organisers live in. */
+.app-footer {
+  text-align: center;
+  color: var(--muted);
+  font-size: 12px;
+  padding: 0 20px 40px;
+  opacity: 0.75;
+}

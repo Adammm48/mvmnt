@@ -74,18 +74,24 @@ export type Database = {
       }
       badges: {
         Row: {
+          hint: string | null
+          is_secret: boolean
           key: string
           label: string
           runs_required: number
           sort_order: number
         }
         Insert: {
+          hint?: string | null
+          is_secret?: boolean
           key: string
           label: string
           runs_required: number
           sort_order?: number
         }
         Update: {
+          hint?: string | null
+          is_secret?: boolean
           key?: string
           label?: string
           runs_required?: number
@@ -1118,6 +1124,18 @@ export type Database = {
           rank: number
           tier: Database["public"]["Enums"]["member_tier"]
           user_id: string
+        }[]
+      }
+      my_badges: {
+        Args: never
+        Returns: {
+          earned_at: string
+          hint: string
+          is_secret: boolean
+          key: string
+          label: string
+          runs_required: number
+          sort_order: number
         }[]
       }
       my_friend_qr: {

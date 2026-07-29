@@ -89,7 +89,9 @@ begin
   insert into public.runs (title, starts_at, ends_at, meeting_point_name,
     meeting_point_lat, meeting_point_lng, distance_meters, capacity,
     pace_groups, description, created_by)
-  values ('Track Session', now() + interval '3 days', now() + interval '3 days 1 hour',
+  values ('Track Session',
+    (date_trunc('day', now() at time zone 'Africa/Cairo') + interval '3 days' + interval '18 hours') at time zone 'Africa/Cairo',
+    (date_trunc('day', now() at time zone 'Africa/Cairo') + interval '3 days' + interval '19 hours') at time zone 'Africa/Cairo',
     'Cairo Stadium Track', 30.070800, 31.312300, 5000, 5, array['steady','quick'],
     'Intervals on the track. Limited places.', v_admin)
   returning id into v_full;
@@ -97,7 +99,9 @@ begin
   insert into public.runs (title, starts_at, ends_at, meeting_point_name,
     meeting_point_lat, meeting_point_lng, distance_meters, pace_groups,
     description, created_by)
-  values ('Sunday Long Run', now() + interval '8 days', now() + interval '8 days 2 hours',
+  values ('Sunday Long Run',
+    (date_trunc('day', now() at time zone 'Africa/Cairo') + interval '8 days' + interval '9 hours') at time zone 'Africa/Cairo',
+    (date_trunc('day', now() at time zone 'Africa/Cairo') + interval '8 days' + interval '11 hours') at time zone 'Africa/Cairo',
     'Al-Azhar Park', 30.040300, 31.263300, 15000, array['easy','steady'],
     'Longer, slower, chattier.', v_admin)
   returning id into v_future;
@@ -106,7 +110,9 @@ begin
   insert into public.runs (title, starts_at, ends_at, meeting_point_name,
     meeting_point_lat, meeting_point_lng, distance_meters, status, published_at,
     pace_groups, created_by)
-  values ('Last Saturday 6K', now() - interval '7 days', now() - interval '7 days' + interval '90 minutes',
+  values ('Last Saturday 6K',
+    (date_trunc('day', now() at time zone 'Africa/Cairo') - interval '7 days' + interval '9 hours') at time zone 'Africa/Cairo',
+    (date_trunc('day', now() at time zone 'Africa/Cairo') - interval '7 days' + interval '10 hours 30 minutes') at time zone 'Africa/Cairo',
     'Zamalek Club Gate', 30.044400, 31.235700, 6000, 'completed', now() - interval '14 days',
     array['easy','steady'], v_admin)
   returning id into v_past;
@@ -185,7 +191,13 @@ declare
 begin
   -- 60 weeks back to last week, oldest first.
   for w in reverse 60..1 loop
-    v_when := date_trunc('hour', now()) - (w || ' weeks')::interval;
+    -- 09:00 in the club's timezone — the club runs Saturday mornings at 9 or
+    -- 10, not at whatever hour the seed happened to be run. The hour is not
+    -- cosmetic: at 04:00 every seeded member earns the 5am secret badge, which
+    -- makes a badge that is supposed to be rare the most common one in the app.
+    v_when := (date_trunc('day', now() at time zone 'Africa/Cairo')
+               - (w || ' weeks')::interval
+               + interval '9 hours') at time zone 'Africa/Cairo';
 
     insert into public.runs (
       title, starts_at, ends_at, meeting_point_name,

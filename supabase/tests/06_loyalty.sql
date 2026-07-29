@@ -13,7 +13,7 @@ declare
   v_run uuid; v_run2 uuid; v_wk uuid;
   v_pts integer; v_rows integer; v_streak integer;
   v_now timestamptz := now();
-  v_rank integer; v_total integer; v_dec uuid; v_tiered uuid;
+  v_rank integer; v_total integer; v_dec uuid; v_tiered uuid; v_secret uuid;
 begin
   perform tests.act_as_system();
   v_admin := tests.make_member('organiser', true);
@@ -179,8 +179,14 @@ begin
   -- ---------------------------------------------------------------------
   -- Badges.
   -- ---------------------------------------------------------------------
+  -- Scoped to the visible catalogue. The hidden badges in 0028 fire on rules
+  -- like "checked in before 6am", and this fixture's timestamps come from
+  -- now() — so a global count here would pass or fail depending on what time
+  -- of day the suite happened to run.
   perform tests.assert_eq(
-    (select count(*)::int from public.member_badges where user_id = v_c), 0,
+    (select count(*)::int from public.member_badges mb
+      join public.badges b on b.key = mb.badge_key
+     where mb.user_id = v_c and not b.is_secret), 0,
     'no badge before the threshold is reached');
 
   -- Push cleo to 10 attended runs.
@@ -404,6 +410,49 @@ begin
     (select count(*)::int from public.effective_point_events
       where user_id = v_dec and kind = 'absence'), 1,
     'an absence charge counts even though there is no check-in behind it');
+
+  -- ---------------------------------------------------------------------
+  -- The hidden badges.
+  --
+  -- Awarded silently and absent from the catalogue until earned — my_badges()
+  -- must not return one the member has not got, or the surprise becomes a
+  -- to-do list.
+  -- ---------------------------------------------------------------------
+  v_secret := tests.make_member('sam');
+
+  perform tests.act_as(v_secret);
+  perform tests.assert_eq(
+    (select count(*)::int from public.my_badges() where is_secret), 0,
+    'an unearned secret badge is not listed at all');
+  perform tests.assert(
+    (select count(*) from public.my_badges() where not is_secret) >= 4,
+    'while the visible catalogue is fully listed, earned or not');
+  perform tests.act_as_system();
+
+  -- A 5am check-in, stated explicitly rather than relying on the clock.
+  v_wk := tests.make_run(v_admin, null, v_now + interval '2 hours');
+  update public.runs
+     set starts_at = (date_trunc('day', v_now at time zone 'Africa/Cairo')
+                      - interval '1 day' + interval '5 hours') at time zone 'Africa/Cairo',
+         ends_at   = (date_trunc('day', v_now at time zone 'Africa/Cairo')
+                      - interval '1 day' + interval '6 hours') at time zone 'Africa/Cairo',
+         status    = 'completed'
+   where id = v_wk;
+
+  insert into public.run_attendance (run_id, user_id, queued_at, signed_up_at, checked_in_at, check_in_method)
+  select v_wk, v_secret, r.starts_at, r.starts_at, r.starts_at, 'admin'
+  from public.runs r where r.id = v_wk;
+
+  perform tests.assert_eq(
+    (select count(*)::int from public.member_badges
+      where user_id = v_secret and badge_key = 'secret_dawn'), 1,
+    'checking in before 6am quietly earns the 5am club');
+
+  perform tests.act_as(v_secret);
+  perform tests.assert_eq(
+    (select count(*)::int from public.my_badges() where key = 'secret_dawn'), 1,
+    'and it appears on their own profile once earned');
+  perform tests.act_as_system();
 
   -- ---------------------------------------------------------------------
   -- Crossing a tier is recorded once, when it happens.

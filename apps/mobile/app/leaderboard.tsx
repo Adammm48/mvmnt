@@ -1,14 +1,19 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { FlatList, Image, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { supabase } from '@/lib/supabase';
 import { StandingCard } from '@/components/StandingCard';
 import { TierLadder } from '@/components/TierLadder';
+import { ShareCard } from '@/components/ShareCard';
+import { Button } from '@/components/Button';
+import { shareStandingCard } from '@/lib/share';
+import { useAuth } from '@/lib/auth';
 import { EmptyState, Loading, Notice } from '@/components/Feedback';
 import {
   colors,
   radius,
   spacing,
   typography,
+  adamSays,
   rankBadge,
   sharedRanks,
   toMemberMessage,
@@ -33,6 +38,8 @@ import {
  * be worth opening for them too.
  */
 export default function LeaderboardScreen() {
+  const { profile } = useAuth();
+  const cardRef = useRef<View>(null);
   const [window, setWindow] = useState<LeaderboardWindow>('all_time');
   const [rows, setRows] = useState<LeaderboardRow[]>([]);
   const [standing, setStanding] = useState<Standing | null>(null);
@@ -116,6 +123,12 @@ export default function LeaderboardScreen() {
             Top 100. Points come from showing up — checking in to a run earns them, and a streak of
             consecutive weeks adds a little more.
           </Text>
+
+          {/* Only for the podium, and only for the member who is on it. A note
+              congratulating somebody else is not a note for you. */}
+          {standing && standing.rank <= 3 && standing.points > 0 && (
+            <Text style={styles.podium}>{adamSays('top_three', { stability: 'daily' })}</Text>
+          )}
         </View>
       }
       renderItem={({ item }) => <Row row={item} shared={tied.has(item.rank)} />}
@@ -123,11 +136,38 @@ export default function LeaderboardScreen() {
       ListFooterComponent={
         standing ? (
           <View style={styles.ladder}>
+            <View style={styles.shareRow}>
+              <Button
+                label="Share your standing"
+                variant="secondary"
+                onPress={() =>
+                  shareStandingCard(
+                    cardRef,
+                    `${(lifetime ?? standing).points} points and ${(lifetime ?? standing).runs_attended} runs with MVMNT. Powered by MVMNT — built by Adam Elbasiony.`,
+                  )
+                }
+              />
+            </View>
+
             <TierLadder
               current={(lifetime ?? standing).tier}
               points={(lifetime ?? standing).points}
               rewards={rewards}
             />
+
+            {/*
+              Rendered off-screen rather than conditionally, because capturing a
+              view requires it to be laid out. Positioned far off rather than
+              hidden with opacity — a zero-opacity view still captures blank on
+              some Android builds.
+            */}
+            <View style={styles.offscreen} pointerEvents="none">
+              <ShareCard
+                ref={cardRef}
+                standing={lifetime ?? standing}
+                displayName={profile?.display_name ?? 'A runner'}
+              />
+            </View>
           </View>
         ) : null
       }
@@ -204,7 +244,10 @@ const styles = StyleSheet.create({
   list: { padding: spacing.md, paddingBottom: spacing.xxl, flexGrow: 1 },
   header: { gap: spacing.md, marginBottom: spacing.md },
   ladder: { marginTop: spacing.xl },
+  shareRow: { marginBottom: spacing.lg },
+  offscreen: { position: 'absolute', left: -10000, top: 0 },
   caption: { fontSize: 13, color: colors.textOnDarkMuted, lineHeight: 19 },
+  podium: { fontSize: 14, color: colors.highlight, fontStyle: 'italic' },
 
   toggle: {
     flexDirection: 'row',

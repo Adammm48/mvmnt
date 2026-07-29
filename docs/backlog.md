@@ -134,6 +134,21 @@ since the geofence radius is measured from these coordinates.
   page refuses to open them. A plausible-looking address that 404s in front of
   300 members is worse than one that is visibly unfinished. Replace before launch.
 
+- **The rain run.** Of the hidden badges on the wish list, three were derivable
+  from data the club already has — a 5am check-in, 100km of runs, a month
+  without missing — and one was not. "Ran in the rain" needs historical weather
+  for every past run at every meeting point, which is a paid API and a new
+  outbound dependency for a single joke. Worth doing if a weather integration
+  ever arrives for another reason; not worth it on its own.
+- **Birthday wishes.** The catalogue has the line, and there is nowhere to put
+  it: MVMNT does not store a date of birth and should not start collecting one
+  for a greeting. It becomes free the day a profile grows a birthday for some
+  other reason — and if it never does, that is the right outcome.
+- **Merch and photo-matching lines** (`Adam hopes you love it`, `Adam is looking
+  for your photos…`) are written and unwired, because the features are Phase 3
+  and Phase 5. They cost nothing sitting in the catalogue and will be there when
+  the screens are.
+
 ---
 
 ## Open questions carried forward

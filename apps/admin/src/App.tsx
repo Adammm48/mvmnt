@@ -9,6 +9,7 @@ import { Members } from './screens/Members';
 import { Rewards } from './screens/Rewards';
 import { ToastProvider } from './components/Toast';
 import { ConfirmProvider } from './components/Confirm';
+import { SIGNATURE } from '@mvmnt/shared';
 
 export type View =
   | { name: 'list' }
@@ -99,6 +100,9 @@ export default function App() {
           {view.name === 'members' && <Members />}
           {view.name === 'rewards' && <Rewards />}
         </main>
+        {/* The organisers open this every week, and it is the screen a sponsor
+            is most likely to be shown. One line, at the very bottom. */}
+        <footer className="app-footer">{SIGNATURE.footer}</footer>
       </ConfirmProvider>
     </ToastProvider>
   );

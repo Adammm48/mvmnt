@@ -1,6 +1,8 @@
+import { useRef, useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Constants from 'expo-constants';
-import { colors, radius, spacing, CONTACT_LINKS, SIGNATURE } from '@mvmnt/shared';
+import { adamSays, colors, radius, spacing, CONTACT_LINKS, SIGNATURE } from '@mvmnt/shared';
+import { RELEASE_NOTES } from '@/lib/releaseNotes';
 
 /**
  * Who made this.
@@ -16,13 +18,45 @@ import { colors, radius, spacing, CONTACT_LINKS, SIGNATURE } from '@mvmnt/shared
  */
 export default function AboutScreen() {
   const version = Constants.expoConfig?.version ?? '0.1.0';
+  const [taps, setTaps] = useState(0);
+  const found = taps >= 7;
+  const lastTap = useRef(0);
+
+  /**
+   * Seven taps on the wordmark.
+   *
+   * Costs nothing, is impossible to hit by accident, and is the kind of thing
+   * somebody screenshots. Resets if the taps are slow, so a member idly
+   * prodding the logo over a minute does not stumble into it.
+   */
+  function tapWordmark() {
+    const now = Date.now();
+    setTaps((n) => (now - lastTap.current > 1200 ? 1 : n + 1));
+    lastTap.current = now;
+  }
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-      <View style={styles.hero}>
-        <Text style={styles.wordmark}>MVMNT</Text>
-        <Text style={styles.tagline}>Run together.</Text>
-      </View>
+      <Pressable onPress={tapWordmark} accessibilityRole="header">
+        <View style={styles.hero}>
+          <Text style={styles.wordmark}>MVMNT</Text>
+          <Text style={styles.tagline}>Run together.</Text>
+        </View>
+      </Pressable>
+
+      {found && (
+        <View style={styles.egg}>
+          <Text style={styles.eggTitle}>🕵️ {adamSays('secret_found', { noSurprises: true })}</Text>
+          <Text style={styles.eggBody}>
+            Worth absolutely nothing. Congratulations anyway.
+          </Text>
+          <View style={styles.eggStats}>
+            <Text style={styles.eggStat}>Build {version}</Text>
+            <Text style={styles.eggStat}>{RELEASE_NOTES.length} releases so far</Text>
+            <Text style={styles.eggStat}>Built between lectures and Saturdays</Text>
+          </View>
+        </View>
+      )}
 
       <View style={styles.card}>
         <Text style={styles.builtBy}>Built by</Text>
@@ -74,6 +108,39 @@ export default function AboutScreen() {
         )}
       </View>
 
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Adam&apos;s notes</Text>
+        <Text style={styles.hint}>
+          {adamSays('whats_new', { stability: 'daily' })} What changed, in plain English rather than
+          a version number.
+        </Text>
+        {RELEASE_NOTES.map((release) => (
+          <View key={release.version} style={styles.release}>
+            <View style={styles.releaseHead}>
+              <Text style={styles.releaseTitle}>{release.title}</Text>
+              <Text style={styles.releaseVersion}>{release.version}</Text>
+            </View>
+            {release.notes.map((note) => (
+              <Text key={note} style={styles.releaseNote}>
+                · {note}
+              </Text>
+            ))}
+          </View>
+        ))}
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>The people behind MVMNT</Text>
+        <Text style={styles.body}>
+          <Text style={styles.creditName}>{SIGNATURE.name}</Text> — {SIGNATURE.role}
+          {'\n'}
+          <Text style={styles.creditName}>The organisers</Text> — who show up early and count
+          everybody in
+          {'\n'}
+          <Text style={styles.creditName}>Everyone who runs</Text> — who are the actual club
+        </Text>
+      </View>
+
       <View style={styles.footer}>
         <Text style={styles.signature}>{SIGNATURE.footer}</Text>
         <Text style={styles.version}>Version {version}</Text>
@@ -120,6 +187,29 @@ const styles = StyleSheet.create({
   linkLabel: { fontSize: 15, fontWeight: '700', color: colors.textOnDark },
   linkValue: { fontSize: 13, color: colors.textOnDarkMuted },
   hint: { fontSize: 13, color: colors.textOnDarkMuted, lineHeight: 19 },
+  egg: {
+    backgroundColor: colors.baseElevated,
+    borderRadius: radius.lg,
+    borderWidth: 1.5,
+    borderColor: colors.highlight,
+    padding: spacing.md,
+    gap: spacing.xs,
+  },
+  eggTitle: { fontSize: 17, fontWeight: '800', color: colors.highlight },
+  eggBody: { fontSize: 14, color: colors.textOnDarkMuted },
+  eggStats: { marginTop: spacing.sm, gap: 2 },
+  eggStat: { fontSize: 13, color: colors.textOnDarkMuted },
+  release: {
+    backgroundColor: colors.baseElevated,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    gap: 4,
+  },
+  releaseHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
+  releaseTitle: { fontSize: 15, fontWeight: '700', color: colors.textOnDark, flex: 1 },
+  releaseVersion: { fontSize: 12, color: colors.textOnDarkMuted },
+  releaseNote: { fontSize: 14, color: colors.textOnDarkMuted, lineHeight: 21 },
+  creditName: { color: colors.textOnDark, fontWeight: '700' },
   footer: { alignItems: 'center', gap: 4, marginTop: spacing.lg },
   signature: { fontSize: 14, color: colors.textOnDarkMuted },
   version: { fontSize: 12, color: colors.textOnDarkMuted, opacity: 0.7 },

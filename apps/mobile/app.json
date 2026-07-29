@@ -60,7 +60,8 @@
           "recordAudioAndroid": false
         }
       ],
-      "expo-video"
+      "expo-video",
+      "expo-sharing"
     ],
     "experiments": {
       "typedRoutes": true
