@@ -12,7 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/Button';
 import { Notice } from '@/components/Feedback';
-import { colors, radius, spacing, toMemberMessage, MIN_TOUCH_TARGET } from '@mvmnt/shared';
+import { colors, radius, spacing, toMemberMessage, MIN_TOUCH_TARGET, SIGNATURE } from '@mvmnt/shared';
 
 type Step = 'email' | 'code';
 
@@ -168,6 +168,10 @@ export default function SignIn() {
             <Button label="Continue with Google" variant="secondary" onPress={() => socialSignIn('google')} />
             <Text style={styles.socialNote}>Coming soon</Text>
           </View>
+
+          {/* The signature, on the front door — same string everywhere it
+              appears (SIGNATURE), so the credit is one edit, not a search. */}
+          <Text style={styles.credit}>Developed by {SIGNATURE.name}</Text>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -199,4 +203,10 @@ const styles = StyleSheet.create({
   dividerText: { color: colors.textOnDarkMuted, fontSize: 13 },
   social: { gap: spacing.sm },
   socialNote: { textAlign: 'center', color: colors.textOnDarkMuted, fontSize: 13 },
+  credit: {
+    textAlign: 'center',
+    color: colors.textOnDarkMuted,
+    fontSize: 12,
+    marginTop: spacing.lg,
+  },
 });

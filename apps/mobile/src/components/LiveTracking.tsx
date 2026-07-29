@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth';
 import { getCurrentFix } from '@/lib/location';
 import { RouteMap, type LiveDot } from '@/components/RouteMap';
-import { colors, radius, spacing, toMemberMessage, type Run } from '@mvmnt/shared';
+import { adamSays, colors, radius, spacing, toMemberMessage, type Run } from '@mvmnt/shared';
 
 /** How often positions are pushed and pulled while the screen is open. */
 const POLL_MS = 10_000;
@@ -29,6 +29,7 @@ export function LiveTracking({ run, checkedIn }: { run: Run; checkedIn: boolean 
   const [dots, setDots] = useState<LiveDot[]>([]);
   const [names, setNames] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
+  const [voiceLine, setVoiceLine] = useState<string | null>(null);
   const sharingRef = useRef(sharing);
   sharingRef.current = sharing;
 
@@ -109,6 +110,7 @@ export function LiveTracking({ run, checkedIn }: { run: Run; checkedIn: boolean 
     setError(null);
     if (!next) {
       setSharing(false);
+      setVoiceLine(null);
       const { error: stopError } = await supabase.rpc('stop_sharing_live_position', {
         p_run_id: run.id,
       });
@@ -134,6 +136,8 @@ export function LiveTracking({ run, checkedIn }: { run: Run; checkedIn: boolean 
       return;
     }
     setSharing(true);
+    // The moment it flips on — once, not on every poll.
+    setVoiceLine(adamSays('live_sharing', { userId: session?.user.id }));
     void tick();
   }
 
@@ -175,6 +179,7 @@ export function LiveTracking({ run, checkedIn }: { run: Run; checkedIn: boolean 
         </View>
       )}
 
+      {voiceLine && sharing && <Text style={styles.voice}>{voiceLine}</Text>}
       {error && <Text style={styles.error}>{error}</Text>}
     </View>
   );
@@ -200,5 +205,6 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   listRow: { color: colors.textOnDark, fontSize: 14 },
+  voice: { color: colors.textOnDarkMuted, fontSize: 12, fontStyle: 'italic' },
   error: { color: colors.alert, fontSize: 13 },
 });

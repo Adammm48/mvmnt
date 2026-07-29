@@ -2,9 +2,11 @@ import { useCallback, useState } from 'react';
 import { FlatList, Image, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/lib/auth';
 import { CoverFallback } from '@/components/CoverFallback';
 import { EmptyState, Loading, Notice } from '@/components/Feedback';
 import {
+  adamSays,
   colors,
   radius,
   spacing,
@@ -26,6 +28,7 @@ import {
  */
 export default function ShopScreen() {
   const router = useRouter();
+  const { session } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [points, setPoints] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -57,6 +60,8 @@ export default function ShopScreen() {
 
   if (loading) return <Loading label="Loading the shop" />;
 
+  const voiceLine = adamSays('shop_welcome', { userId: session?.user.id, stability: 'daily' });
+
   return (
     <FlatList
       style={styles.screen}
@@ -79,6 +84,10 @@ export default function ShopScreen() {
             Points are shown here rather than only at checkout: knowing what you
             can knock off changes whether you open an item at all.
           */}
+          {/* One line in the author's voice, stable for the day so it reads
+              as a shopkeeper's mood rather than a slot machine. */}
+          <Text style={styles.voice}>{voiceLine}</Text>
+
           <View style={styles.pointsCard}>
             <Text style={styles.pointsValue}>{points.toLocaleString()}</Text>
             <Text style={styles.pointsLabel}>
@@ -141,6 +150,7 @@ function ProductCard({ product, onPress }: { product: Product; onPress: () => vo
 }
 
 const styles = StyleSheet.create({
+  voice: { fontSize: 13, color: colors.textOnDarkMuted, fontStyle: 'italic' },
   screen: { flex: 1, backgroundColor: colors.base },
   list: { padding: spacing.md, paddingBottom: spacing.xxl, flexGrow: 1 },
   row: { gap: spacing.sm },

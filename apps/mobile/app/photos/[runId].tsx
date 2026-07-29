@@ -12,8 +12,9 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useNavigation } from 'expo-router';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/lib/auth';
 import { Loading, EmptyState, Notice } from '@/components/Feedback';
-import { colors, radius, spacing, toMemberMessage, typography } from '@mvmnt/shared';
+import { adamSays, colors, radius, spacing, toMemberMessage, typography } from '@mvmnt/shared';
 import type { Database } from '@mvmnt/shared';
 
 type PhotoCategory = Database['public']['Enums']['photo_category'];
@@ -42,6 +43,7 @@ type Photo = PhotoRow & { url: string };
 export default function RunPhotos() {
   const { runId } = useLocalSearchParams<{ runId: string }>();
   const navigation = useNavigation();
+  const { session } = useAuth();
 
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [category, setCategory] = useState<PhotoCategory>('run');
@@ -155,6 +157,11 @@ export default function RunPhotos() {
         })}
       </ScrollView>
 
+      {/* One quiet line, stable for the day — flavour, not furniture. */}
+      <Text style={styles.voice}>
+        {adamSays('photos_published', { userId: session?.user.id, stability: 'daily' })}
+      </Text>
+
       <FlatList
         data={shown}
         keyExtractor={(p) => p.id}
@@ -215,6 +222,13 @@ const styles = StyleSheet.create({
   tabActive: { backgroundColor: colors.action },
   tabText: { ...typography.label, color: colors.textOnDarkMuted },
   tabTextActive: { color: colors.textOnDark },
+  voice: {
+    fontSize: 12,
+    fontStyle: 'italic',
+    color: colors.textOnDarkMuted,
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.sm,
+  },
   grid: { paddingBottom: spacing.xl },
   row: { gap: GAP, marginBottom: GAP },
   cell: { width: CELL, height: CELL },

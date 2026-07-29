@@ -52,6 +52,11 @@ export type VoiceSlot =
   | 'secret_found'
   | 'whats_new'
   | 'birthday'
+  | 'shop_welcome'
+  | 'order_reserved'
+  | 'gift_sent'
+  | 'photos_published'
+  | 'live_sharing'
   | 'easter_egg';
 
 const LINES: Record<VoiceSlot, string[]> = {
@@ -144,6 +149,33 @@ const LINES: Record<VoiceSlot, string[]> = {
     'Adam added a thing. Adam hopes you like the thing.',
   ],
   birthday: ['Adam hopes you celebrate with a run. 🎂'],
+
+  // Phase 3 & 4 surfaces, same register: the shop, the photos, the live map.
+  shop_welcome: [
+    'Adam models none of this merch. You’re welcome.',
+    'Points off the price. Adam is basically giving it away. (He is not.)',
+    'Everything here survives a Cairo summer wash. Probably.',
+  ],
+  order_reserved: [
+    'Reserved. Adam is guarding it personally.',
+    'It’s yours. Pay at the run — Adam trusts you.',
+    'Adam has set one aside. Try to look surprised.',
+  ],
+  gift_sent: [
+    'Sent. Adam loves a generous runner.',
+    'On its way. Adam is telling them right now.',
+    'Adam thinks you just made someone’s Saturday.',
+  ],
+  photos_published: [
+    'Adam swears the camera adds pace.',
+    'Find yourself. Adam looks mid-blink in every single one.',
+    'Photographic proof you were there. Adam is proud.',
+  ],
+  live_sharing: [
+    'Your friends can see you now. No pressure. (Some pressure.)',
+    'Live. Adam suggests looking strong at every corner.',
+    'Sharing on. Adam promises it forgets where you were.',
+  ],
 
   // The rare ones. These are the reason anybody screenshots an app.
   easter_egg: [

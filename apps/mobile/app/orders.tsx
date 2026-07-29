@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { FlatList, Image, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/lib/supabase';
@@ -6,6 +6,7 @@ import { Button } from '@/components/Button';
 import { EmptyState, Loading, Notice } from '@/components/Feedback';
 import { confirmDestructive } from '@/lib/confirm';
 import {
+  adamSays,
   colors,
   radius,
   spacing,
@@ -66,6 +67,17 @@ export default function OrdersScreen() {
       load();
     }, [load]),
   );
+
+  // Arriving straight from checkout: one line in the author's voice, chosen by
+  // what just happened. A moment, not a banner that lives here.
+  useEffect(() => {
+    if (!highlight || note) return;
+    const fresh = orders.find((o) => o.id === highlight);
+    if (!fresh) return;
+    setNote(adamSays(fresh.is_gift ? 'gift_sent' : 'order_reserved'));
+    // note is deliberately not in the deps: this fires once per arrival.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [highlight, orders]);
 
   async function cancel(order: MyOrder) {
     const confirmed = await confirmDestructive({
