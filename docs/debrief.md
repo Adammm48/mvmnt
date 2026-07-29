@@ -154,6 +154,15 @@ patterns so they stay found.
 
 ---
 
+## The two lists that remain
+
+Everything still open is now split cleanly in two:
+[**owner-questionnaire.md**](owner-questionnaire.md) — every decision, asset
+and account only you can provide, answerable inline with no technical
+knowledge; and [**dev-todo.md**](dev-todo.md) — the engineering each answer
+unblocks, in execution order. Nothing in the second list can start before
+something in the first.
+
 ## Things worth knowing for later
 
 **Only you can do these** (full detail: [open-items.md](open-items.md), and
