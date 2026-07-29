@@ -204,6 +204,15 @@ export default function ProductScreen() {
                 <Text style={styles.qtySymbol}>+</Text>
               </Pressable>
             </View>
+            {/* Say why the button went quiet, instead of letting it die
+                silently at the cap (audit finding). */}
+            {quantity >= Math.min(product.stock ?? 20, 20) && (
+              <Text style={styles.hint}>
+                {product.stock !== null && quantity >= product.stock
+                  ? `That is all ${product.stock} the club has.`
+                  : 'Twenty per order — for more, talk to an organiser at a run.'}
+              </Text>
+            )}
           </View>
 
           {points > 0 && (
@@ -227,15 +236,32 @@ export default function ProductScreen() {
           )}
 
           <View style={styles.section}>
-            <View style={styles.switchRow}>
+            {/* The whole row is the control, styled like one — the owner
+                tapped the words "Send it to a friend", got nothing, and
+                rightly called it text pretending to be a button. Tapping
+                anywhere on the row toggles it; the switch shows the state. */}
+            <Pressable
+              onPress={() => friends.length > 0 && setIsGift((v) => !v)}
+              style={[styles.giftRow, friends.length === 0 && styles.giftRowDisabled]}
+              accessibilityRole="switch"
+              accessibilityState={{ checked: isGift, disabled: friends.length === 0 }}
+              accessibilityLabel="Send it to a friend"
+            >
               <Text style={styles.switchLabel}>Send it to a friend</Text>
               <Switch
                 value={isGift}
                 onValueChange={setIsGift}
+                disabled={friends.length === 0}
                 accessibilityLabel="Send it to a friend"
                 trackColor={{ false: colors.border, true: colors.success }}
               />
-            </View>
+            </Pressable>
+            {friends.length === 0 && (
+              <Text style={styles.hint}>
+                Gifting needs a friend in the app first — scan someone&rsquo;s code at the next run
+                and this switches on.
+              </Text>
+            )}
 
             {isGift &&
               (friends.length === 0 ? (
@@ -338,6 +364,17 @@ function Row({
 }
 
 const styles = StyleSheet.create({
+  giftRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  giftRowDisabled: { opacity: 0.55 },
   screen: { flex: 1, backgroundColor: colors.base },
   content: { padding: spacing.md, gap: spacing.lg, paddingBottom: spacing.xxl },
   hero: {

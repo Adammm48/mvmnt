@@ -119,7 +119,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   errorNotice: { backgroundColor: '#FDECEA', borderColor: '#F5C6C0' },
-  infoNotice: { backgroundColor: colors.surfaceSunken, borderColor: colors.border },
+  // baseElevated, not surfaceSunken: the rebrand turned surfaceSunken into a
+  // DARK panel token, and ink text on it was black-on-black — "We sent a code
+  // to…" was invisible at the exact moment a member needed to read it.
+  infoNotice: { backgroundColor: colors.baseElevated, borderColor: colors.border },
   successNotice: { backgroundColor: '#E8FBF0', borderColor: '#A9EFC8' },
   noticeText: { fontSize: 15, color: colors.textPrimary, lineHeight: 21 },
   noticeTextInset: { paddingRight: spacing.lg },

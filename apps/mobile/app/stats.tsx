@@ -60,7 +60,10 @@ export default function Stats() {
       <Text style={styles.sectionTitle}>With the club</Text>
       <View style={styles.grid}>
         <StatCard value={`${standing?.runs_attended ?? 0}`} label="runs" />
-        <StatCard value={`${km}K`} label="with the club" />
+        {/* "0K with the club" reads like a broken counter, not an invitation
+            (owner finding). Before the first check-in the card says what the
+            number is waiting for. */}
+        <StatCard value={km > 0 ? `${km}K` : '—'} label={km > 0 ? 'with the club' : 'first run pending'} />
         <StatCard value={describeStreakShort(standing?.streak_weeks ?? 0)} label="week streak" />
         <StatCard
           value={standing?.tier ? TIER_LABEL[standing.tier] : '—'}

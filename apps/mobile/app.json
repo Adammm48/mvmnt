@@ -12,9 +12,11 @@
       "bundleIdentifier": "com.mvmnt.app",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "MVMNT uses your location only while you are at a run's meeting point, to check you in. It is never tracked in the background and never shared with other members.",
-        "NSCameraUsageDescription": "MVMNT uses the camera only to scan a friend's code when you are standing together. Nothing is recorded or uploaded.",
-        "ITSAppUsesNonExemptEncryption": false
-      }
+        "NSCameraUsageDescription": "MVMNT uses the camera to scan a friend's code when you are standing together, and \u2014 only if you choose to \u2014 to take one selfie that helps find you in the club's run photos. The selfie is uploaded and you can delete it at any time; code scanning records nothing.",
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSPhotoLibraryUsageDescription": "MVMNT opens your photo library only when you choose a profile picture. Nothing else is read or uploaded."
+      },
+      "buildNumber": "1"
     },
     "android": {
       "package": "com.mvmnt.app",
@@ -29,7 +31,8 @@
         "ACCESS_FINE_LOCATION",
         "CAMERA"
       ],
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "versionCode": 1
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -65,6 +68,9 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
     }
   }
 }

@@ -107,11 +107,22 @@ export function Merch() {
   async function adjustStock(product: Product, delta: number) {
     if (product.stock === null) return;
     const next = Math.max(0, product.stock + delta);
-    const { error } = await supabase.from('products').update({ stock: next }).eq('id', product.id);
+    // Restocking a sold-out item puts it back on sale in the same motion —
+    // an organiser adding stock means "we have more", not "we have more but
+    // keep hiding it".
+    const patch: { stock: number; status?: 'in_stock' } =
+      next > 0 && product.status === 'sold_out' ? { stock: next, status: 'in_stock' } : { stock: next };
+    const { error } = await supabase.from('products').update(patch).eq('id', product.id);
     if (error) {
       toast.error("Couldn't update stock", toMemberMessage(error));
       return;
     }
+    // Say it happened. These were the only mutating controls in the console
+    // with no feedback beyond a number changing in a busy table (audit).
+    toast.success(
+      `${product.name}: ${next} in stock` +
+        (next > 0 && product.status === 'sold_out' ? ' — back on sale' : ''),
+    );
     load();
   }
 
@@ -126,7 +137,10 @@ export function Merch() {
       });
       if (!ok) return;
 
-      const { error } = await supabase.rpc('dev_mark_paid', { p_order_id: order.id });
+      // The real function: an organiser recording that cash changed hands.
+      // The dev stand-in this used to call refuses to run on production, which
+      // made every real "Mark paid" click an error (audit finding #1).
+      const { error } = await supabase.rpc('admin_mark_paid', { p_order_id: order.id });
       if (error) {
         toast.error("Couldn't mark that paid", toMemberMessage(error));
         return;

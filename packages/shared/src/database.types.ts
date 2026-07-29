@@ -199,6 +199,54 @@ export type Database = {
           },
         ]
       }
+      content_reports: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          reason: string
+          reporter_id: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          target_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: string
+          reason: string
+          reporter_id?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          target_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          reason?: string
+          reporter_id?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          target_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_reports_reporter_id_fkey"
+            columns: ["reporter_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_reports_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       face_optins: {
         Row: {
           created_at: string
@@ -1560,6 +1608,7 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: undefined
       }
+      admin_mark_paid: { Args: { p_order_id: string }; Returns: undefined }
       admin_member_detail: { Args: { p_user_id: string }; Returns: Json }
       admin_members: {
         Args: { p_limit?: number; p_search?: string }
@@ -1586,6 +1635,10 @@ export type Database = {
       admin_publish_route: { Args: { p_run_id: string }; Returns: string }
       admin_remove_check_in: {
         Args: { p_run_id: string; p_user_id: string }
+        Returns: undefined
+      }
+      admin_resolve_report: {
+        Args: { p_report_id: string }
         Returns: undefined
       }
       admin_send_sponsor_shoutout: {
@@ -1803,9 +1856,14 @@ export type Database = {
         Returns: undefined
       }
       remove_friend: { Args: { p_friend_id: string }; Returns: undefined }
+      report_content: {
+        Args: { p_kind: string; p_reason: string; p_target_id: string }
+        Returns: undefined
+      }
       revoke_my_friend_qr: { Args: never; Returns: undefined }
       runs_attended: { Args: { p_user_id: string }; Returns: number }
       scheduler_tick: { Args: never; Returns: Json }
+      set_avatar: { Args: { p_path: string }; Returns: undefined }
       set_leaderboard_visibility: {
         Args: { p_visible: boolean }
         Returns: undefined
@@ -1872,7 +1930,7 @@ export type Database = {
         | "adjustment"
         | "absence"
         | "redemption"
-      product_status: "in_stock" | "coming_soon" | "retired"
+      product_status: "in_stock" | "coming_soon" | "retired" | "sold_out"
       run_status:
         | "draft"
         | "published"
@@ -2059,7 +2117,7 @@ export const Constants = {
         "absence",
         "redemption",
       ],
-      product_status: ["in_stock", "coming_soon", "retired"],
+      product_status: ["in_stock", "coming_soon", "retired", "sold_out"],
       run_status: [
         "draft",
         "published",

@@ -9,6 +9,7 @@ import {
   type AttendanceState,
   type CheckInMethod,
 } from '@mvmnt/shared';
+import { useConfirm } from '../components/Confirm';
 import { useToast } from '../components/Toast';
 import { MemberDetail } from '../components/MemberDetail';
 import { LiveMap } from '../components/LiveMap';
@@ -32,6 +33,7 @@ type Attendee = {
  */
 export function RunDay({ runId, onBack }: { runId: string; onBack: () => void }) {
   const toast = useToast();
+  const confirm = useConfirm();
   const [run, setRun] = useState<Run | null>(null);
   const [counts, setCounts] = useState<RunCounts | null>(null);
   const [attendees, setAttendees] = useState<Attendee[]>([]);
@@ -77,6 +79,48 @@ export function RunDay({ runId, onBack }: { runId: string; onBack: () => void })
   useEffect(() => {
     load();
   }, [load]);
+
+  /**
+   * The post-run roster on paper. A 150-person club wants a check-in sheet
+   * for insurance and no-show follow-up on day one, and the sponsor screen
+   * already proved this exact pattern (audit suggestion).
+   */
+  function exportRoster() {
+    const header = ['Name', 'State', 'Joined the list', 'Check-in method'];
+    const rows = attendees.map((a) => [
+      a.display_name,
+      a.state.replace(/_/g, ' '),
+      new Date(a.queued_at).toLocaleString(),
+      a.check_in_method ?? '—',
+    ]);
+    const csv = [header, ...rows]
+      .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `mvmnt-roster-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+    toast.success('Roster downloaded');
+  }
+
+  /**
+   * A withdrawn member is different from an expected one: admin_check_in
+   * clears their withdrawal and re-enrols them, and the audit found the
+   * button for both rows was identical — one organiser tap down a list
+   * silently reversed a member's own decision. Same RPC, but the label says
+   * what will happen and a confirm stands in front of it.
+   */
+  async function reAddAndCheckIn(a: Attendee) {
+    const ok = await confirm({
+      title: 'They withdrew from this run',
+      message: `${a.display_name ?? 'This member'} took themselves off the list. Checking them in adds them back — do this only if they are actually standing in front of you.`,
+      confirmLabel: 'They are here — check in',
+    });
+    if (!ok) return;
+    await checkIn(a);
+  }
 
   async function checkIn(attendee: Attendee) {
     if (!attendee.user_id) return;
@@ -180,6 +224,7 @@ export function RunDay({ runId, onBack }: { runId: string; onBack: () => void })
               <button onClick={() => lifecycle('end_run')}>End run</button>
             )}
             <button onClick={load}>Refresh</button>
+            {attendees.length > 0 && <button onClick={exportRoster}>Export roster</button>}
           </div>
         </div>
       </div>
@@ -262,6 +307,14 @@ export function RunDay({ runId, onBack }: { runId: string; onBack: () => void })
                           disabled={busyId === a.id || !a.user_id}
                         >
                           Undo
+                        </button>
+                      ) : a.state === 'withdrawn' ? (
+                        <button
+                          className="primary"
+                          onClick={() => reAddAndCheckIn(a)}
+                          disabled={busyId === a.id || !a.user_id}
+                        >
+                          {busyId === a.id ? '…' : 'Re-add & check in'}
                         </button>
                       ) : (
                         <button

@@ -83,9 +83,19 @@ export async function registerForPush(): Promise<PushRegistration> {
     const projectId =
       Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
 
-    const { data: token } = await Notifications.getExpoPushTokenAsync(
-      projectId ? { projectId } : undefined,
-    );
+    // Explicit, not swallowed: without a projectId (EAS not initialised yet)
+    // the token call throws in a store build, and the old catch-all labelled
+    // that real regression "expected in Phase 1". The audit council's point:
+    // that comment would still have been there after launch.
+    if (!projectId) {
+      return {
+        ok: false,
+        reason: 'unconfigured',
+        message: 'Push notifications switch on once the club\u2019s app accounts are set up.',
+      };
+    }
+
+    const { data: token } = await Notifications.getExpoPushTokenAsync({ projectId });
 
     const { error } = await supabase.rpc('register_push_token', {
       p_token: token,

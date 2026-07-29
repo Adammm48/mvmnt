@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -31,6 +31,16 @@ export default function SignIn() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
+  const [oauthReady, setOauthReady] = useState(false);
+
+  useEffect(() => {
+    supabase
+      .from('feature_flags')
+      .select('enabled')
+      .eq('key', 'oauth_sign_in')
+      .maybeSingle()
+      .then(({ data }) => setOauthReady(data?.enabled ?? false));
+  }, []);
 
   async function sendCode() {
     const trimmed = email.trim().toLowerCase();
@@ -157,17 +167,26 @@ export default function SignIn() {
             </View>
           )}
 
-          <View style={styles.divider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>or</Text>
-            <View style={styles.dividerLine} />
-          </View>
-
-          <View style={styles.social}>
-            <Button label="Continue with Apple" variant="secondary" onPress={() => socialSignIn('apple')} />
-            <Button label="Continue with Google" variant="secondary" onPress={() => socialSignIn('google')} />
-            <Text style={styles.socialNote}>Coming soon</Text>
-          </View>
+          {/* The OAuth pair renders only when the club's OAuth apps actually
+              exist (the oauth_sign_in flag, flipped from the console — no app
+              release needed). Rendering them earlier as dead stubs was a
+              store-rejectable lie; hiding them entirely lost a sign-in the
+              owner wants. The flag is the honest middle. They ship as a PAIR
+              because Apple requires its own sign-in wherever Google's is
+              offered. */}
+          {oauthReady && (
+            <>
+              <View style={styles.divider}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>or</Text>
+                <View style={styles.dividerLine} />
+              </View>
+              <View style={styles.social}>
+                <Button label="Continue with Apple" variant="secondary" onPress={() => socialSignIn('apple')} />
+                <Button label="Continue with Google" variant="secondary" onPress={() => socialSignIn('google')} />
+              </View>
+            </>
+          )}
 
           {/* The signature, on the front door — same string everywhere it
               appears (SIGNATURE), so the credit is one edit, not a search. */}

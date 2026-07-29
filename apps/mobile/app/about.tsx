@@ -84,7 +84,11 @@ export default function AboutScreen() {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Get in touch</Text>
-        {CONTACT_LINKS.map((link) => (
+        {/* Placeholder links used to render as tappable rows that did
+            nothing — the same non-functional-UI problem as the sign-in
+            stubs, and the audit flagged both. Unfilled links now simply do
+            not render; the row appears the day the URL does. */}
+        {CONTACT_LINKS.filter((link) => !link.placeholder).map((link) => (
           <Pressable
             key={link.label}
             style={styles.link}
@@ -111,12 +115,6 @@ export default function AboutScreen() {
           </Pressable>
         ))}
         {linkError && <Text style={styles.linkError}>{linkError}</Text>}
-        {CONTACT_LINKS.some((l) => l.placeholder) && (
-          <Text style={styles.hint}>
-            These are not live yet. They will point somewhere real before the club starts using the
-            app properly.
-          </Text>
-        )}
       </View>
 
       <View style={styles.section}>

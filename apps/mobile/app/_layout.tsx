@@ -6,6 +6,7 @@ import { AppState } from 'react-native';
 import { AuthProvider, useAuth } from '@/lib/auth';
 import { Loading } from '@/components/Feedback';
 import { ConfirmHost } from '@/components/ConfirmHost';
+import { CrashBoundary } from '@/components/CrashScreen';
 import { flush } from '@/lib/checkInQueue';
 import { publishSync } from '@/lib/syncStatus';
 import { useNotificationRouting } from '@/lib/notificationRouting';
@@ -88,6 +89,8 @@ function RootNavigator() {
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
+      {/* The floor: a render throw shows a human screen instead of white. */}
+      <CrashBoundary>
       <AuthProvider>
         {/* Dark glyphs on the white base — the brand is black on white. */}
         <StatusBar style="dark" />
@@ -96,6 +99,7 @@ export default function RootLayout() {
             why neither platform dialog could be trusted with this. */}
         <ConfirmHost />
       </AuthProvider>
+      </CrashBoundary>
     </SafeAreaProvider>
   );
 }

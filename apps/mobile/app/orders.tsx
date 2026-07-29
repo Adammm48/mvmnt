@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { FlatList, Image, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/lib/supabase';
+import { ReportSheet } from '@/components/ReportSheet';
 import { Button } from '@/components/Button';
 import { EmptyState, Loading, Notice } from '@/components/Feedback';
 import { confirmDestructive } from '@/lib/confirm';
@@ -156,6 +157,7 @@ function OrderCard({
   const received = order.direction === 'received';
   // A gift needs confirming once it is paid for and before the club hands it
   // over. Until then there is nothing for the recipient to do.
+  const [reporting, setReporting] = useState(false);
   const needsConfirming = received && order.status === 'paid' && !order.redeemed_at;
 
   const [size, setSize] = useState<string | null>(order.size);
@@ -285,6 +287,7 @@ function OrderCard({
 }
 
 const styles = StyleSheet.create({
+  reportLink: { fontSize: 12, color: colors.textSecondary, textDecorationLine: 'underline', marginTop: 6 },
   screen: { flex: 1, backgroundColor: colors.base },
   list: { padding: spacing.md, paddingBottom: spacing.xxl, flexGrow: 1 },
   header: { gap: spacing.sm },

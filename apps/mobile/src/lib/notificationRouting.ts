@@ -22,9 +22,18 @@ type PushData = { run_id?: string | null; type?: string | null };
 
 type Destination =
   | { pathname: '/photos/[runId]'; params: { runId: string } }
-  | { pathname: '/run/[id]'; params: { id: string } };
+  | { pathname: '/run/[id]'; params: { id: string } }
+  | { pathname: '/profile' }
+  | { pathname: '/orders' };
 
 function destination(data: PushData): Destination | null {
+  // Run-less notifications first: badge_earned and gift_received are enqueued
+  // with no run at all, and used to fall through to null — a member tapping
+  // "Badge unlocked" landed on the home screen, the exact dead-end this hook
+  // was built to fix for photos (audit finding).
+  if (data.type === 'badge_earned') return { pathname: '/profile' };
+  if (data.type === 'gift_received') return { pathname: '/orders' };
+
   if (!data.run_id) return null;
   // Photos land on the gallery itself. Everything else about a run — it
   // dropped, it starts soon, the route is live, a spot opened — lands on the
@@ -54,7 +63,8 @@ export function useNotificationRouting(ready: boolean) {
       // Narrowed per variant: spreading the union re-widens it past what the
       // typed router accepts.
       if (target.pathname === '/photos/[runId]') router.push(target);
-      else router.push(target);
+      else if (target.pathname === '/run/[id]') router.push(target);
+      else router.push(target.pathname);
     };
 
     // The tap that cold-started the app, if there was one.

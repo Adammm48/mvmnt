@@ -74,6 +74,9 @@ export function maxUsablePoints(points: number, priceMinor: number): number {
 export function describeStock(product: Pick<Product, 'stock' | 'status'>): string | null {
   if (product.status === 'coming_soon') return 'Coming soon';
   if (product.status === 'retired') return 'No longer available';
+  // Its own status since migration 0053 — selling out used to masquerade as
+  // 'retired' and vanish from the shop entirely.
+  if (product.status === 'sold_out') return 'Sold out';
   if (product.stock === null) return null;
   if (product.stock <= 0) return 'Sold out';
   if (product.stock === 1) return 'Last one';

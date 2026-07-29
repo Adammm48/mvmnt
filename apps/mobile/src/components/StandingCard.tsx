@@ -45,6 +45,7 @@ export function StandingCard({
   const windowed = lifetime !== undefined;
   const tier = base.tier;
   const fraction = tierProgressFraction(tier, base.points_to_next_tier);
+  const isNew = base.points === 0 && base.runs_attended === 0;
   const gap = describeGapToNextRank(standing.points_to_next_rank);
 
   return (
@@ -69,16 +70,29 @@ export function StandingCard({
         {describeTierProgress(tier, base.points_to_next_tier)}
       </Text>
 
-      <View style={styles.statRow}>
-        <Stat value={describeRank(standing)} label={windowed ? 'this month' : 'on the board'} />
-        <Stat value={`${base.runs_attended}`} label={base.runs_attended === 1 ? 'run' : 'runs'} />
-        {distanceMeters != null && distanceMeters > 0 && (
-          <Stat value={`${Math.round(distanceMeters / 1000)}K`} label="with the club" />
-        )}
-        <Stat value={describeStreakShort(base.streak_weeks)} label="streak" />
-      </View>
+      {/* A brand-new member used to get the full dashboard anyway: a rank
+          sentence crammed into a stat cell, "0 runs", "— streak" and — the
+          absurd one — "40 points to move up a place" against a total of
+          zero. One warm line replaces four empty dials until the first
+          check-in exists (owner finding). */}
+      {isNew ? (
+        <Text style={styles.newHere}>
+          Your first check-in puts you on the board — everything here starts counting on Saturday.
+        </Text>
+      ) : (
+        <>
+          <View style={styles.statRow}>
+            <Stat value={describeRank(standing)} label={windowed ? 'this month' : 'on the board'} />
+            <Stat value={`${base.runs_attended}`} label={base.runs_attended === 1 ? 'run' : 'runs'} />
+            {distanceMeters != null && distanceMeters > 0 && (
+              <Stat value={`${Math.round(distanceMeters / 1000)}K`} label="with the club" />
+            )}
+            <Stat value={describeStreakShort(base.streak_weeks)} label="streak" />
+          </View>
 
-      {gap && <Text style={styles.gap}>{gap}</Text>}
+          {gap && <Text style={styles.gap}>{gap}</Text>}
+        </>
+      )}
     </View>
   );
 }
@@ -95,6 +109,7 @@ function Stat({ value, label }: { value: string; label: string }) {
 }
 
 const styles = StyleSheet.create({
+  newHere: { fontSize: 14, color: colors.textSecondary, lineHeight: 20 },
   card: {
     backgroundColor: colors.baseElevated,
     borderRadius: radius.lg,

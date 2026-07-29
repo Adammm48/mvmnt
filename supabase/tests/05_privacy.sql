@@ -365,3 +365,45 @@ begin
 end $$;
 
 rollback;
+
+-- ---------------------------------------------------------------------------
+-- Avatars (migration 0051): own folder only, and erasure removes the face.
+-- ---------------------------------------------------------------------------
+do $$
+declare
+  v_a uuid; v_b uuid;
+begin
+  perform tests.act_as_system();
+  v_a := tests.make_member('selfista');
+  v_b := tests.make_member('other');
+
+  perform tests.act_as(v_a);
+  perform public.set_avatar('avatars/' || v_a || '/face.jpg');
+  perform tests.act_as_system();
+  perform tests.assert_eq(
+    (select avatar_url from public.profiles where id = v_a),
+    'avatars/' || v_a || '/face.jpg',
+    'a member sets their own avatar path');
+
+  perform tests.act_as(v_a);
+  perform tests.assert_rejects(
+    format('select public.set_avatar(%L)', 'avatars/' || v_b || '/face.jpg'),
+    'a member cannot point their face at somebody else''s folder');
+  perform public.set_avatar(null);
+  perform tests.act_as_system();
+  perform tests.assert(
+    (select avatar_url is null from public.profiles where id = v_a),
+    'and clearing it works');
+
+  -- Erasure reaches the stored files.
+  perform tests.act_as_system();
+  insert into storage.objects (bucket_id, name, owner)
+  values ('avatars', v_a || '/face.jpg', v_a);
+  perform tests.act_as(v_a);
+  perform public.erase_member(v_a);
+  perform tests.act_as_system();
+  perform tests.assert_eq(
+    (select count(*)::int from storage.objects
+      where bucket_id = 'avatars' and name like v_a || '/%'), 0,
+    'erasing a member deletes their avatar files — the face does not outlive the person');
+end $$;

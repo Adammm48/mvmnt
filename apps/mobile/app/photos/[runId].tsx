@@ -14,6 +14,7 @@ import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth';
 import { Loading, EmptyState, Notice } from '@/components/Feedback';
+import { ReportSheet } from '@/components/ReportSheet';
 import { adamSays, colors, radius, spacing, toMemberMessage, typography } from '@mvmnt/shared';
 import type { Database } from '@mvmnt/shared';
 
@@ -52,6 +53,7 @@ export default function RunPhotos() {
   // visible (migration 0049).
   const [matchIds, setMatchIds] = useState<Set<string>>(new Set());
   const [category, setCategory] = useState<PhotoCategory | 'you'>('run');
+  const [reporting, setReporting] = useState<string | null>(null);
   const [viewing, setViewing] = useState<Photo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -222,8 +224,34 @@ export default function RunPhotos() {
           {viewing && (
             <Image source={{ uri: viewing.url }} style={styles.full} resizeMode="contain" />
           )}
+          {/* Reporting, on the photo itself — the store guideline (Apple 1.2,
+              Play UGC) and plain decency both want the flag where the problem
+              is, not buried in a settings page. */}
+          {viewing && (
+            <Pressable
+              onPress={() => setReporting(viewing.id)}
+              style={styles.reportBtn}
+              accessibilityRole="button"
+              accessibilityLabel="Report this photo"
+              hitSlop={10}
+            >
+              <Text style={styles.reportText}>Report this photo</Text>
+            </Pressable>
+          )}
         </Pressable>
       </Modal>
+
+      {reporting && (
+        <ReportSheet
+          kind="photo"
+          targetId={reporting}
+          what="this photo"
+          onClose={() => {
+            setReporting(null);
+            setViewing(null);
+          }}
+        />
+      )}
     </View>
   );
 }
@@ -233,6 +261,16 @@ const COLUMNS = 3;
 const CELL = (Dimensions.get('window').width - GAP * (COLUMNS - 1)) / COLUMNS;
 
 const styles = StyleSheet.create({
+  reportBtn: {
+    position: 'absolute',
+    bottom: 44,
+    alignSelf: 'center',
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+  },
+  reportText: { color: '#FFFFFF', fontSize: 13, fontWeight: '700' },
   screen: { flex: 1, backgroundColor: colors.base },
   findMe: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
   findMeText: { color: colors.action, fontSize: 14, fontWeight: '700' },

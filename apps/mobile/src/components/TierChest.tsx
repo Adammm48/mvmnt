@@ -109,14 +109,24 @@ export function TierChest({
               <Text style={[styles.tier, { color }]}>{TIER_LABEL[award.tier]}</Text>
 
               <View style={[styles.giftBox, { borderColor: color }]}>
-                <Text style={styles.giftFrom}>{SIGNATURE.giftFrom} has gifted you</Text>
-                <Text style={styles.giftReward}>{award.reward || 'something good'}</Text>
-                {/* Honest about a reward the club has not settled. Better a
-                    member knows it is coming than feels misled later. */}
-                {award.is_placeholder && (
-                  <Text style={styles.giftPending}>
-                    The club is still confirming this one — it will be worth the wait.
-                  </Text>
+                {/* An unconfirmed reward must not read as a broken promise at
+                    the app's biggest emotional moment (audit finding). The
+                    chest keeps its ceremony — the specific prize is framed as
+                    being engraved, not as missing. */}
+                {award.is_placeholder ? (
+                  <>
+                    <Text style={styles.giftFrom}>{SIGNATURE.giftFrom} owes you a gift</Text>
+                    <Text style={styles.giftReward}>It&rsquo;s being engraved.</Text>
+                    <Text style={styles.giftPending}>
+                      The club is choosing something worthy of {TIER_LABEL[award.tier]} — you will
+                      be the first to hear.
+                    </Text>
+                  </>
+                ) : (
+                  <>
+                    <Text style={styles.giftFrom}>{SIGNATURE.giftFrom} has gifted you</Text>
+                    <Text style={styles.giftReward}>{award.reward || 'something good'}</Text>
+                  </>
                 )}
               </View>
 

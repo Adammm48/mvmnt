@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Linking, Platform, StyleSheet, Text, View } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import * as ImagePicker from 'expo-image-picker';
 import { colors, radius, spacing } from '@mvmnt/shared';
 import { adamSays, toMemberMessage } from '@mvmnt/shared';
 import { supabase } from '@/lib/supabase';
@@ -48,18 +49,15 @@ export default function FindMe() {
     load();
   }, [load]);
 
-  async function takeSelfie() {
+  async function enrolFrom(uri: string) {
     if (!session) return;
     setBusy(true);
     setError(null);
 
     try {
-      const photo = await cameraRef.current?.takePictureAsync({ quality: 0.8 });
-      if (!photo?.uri) throw new Error('no photo captured');
-
       // The bytes go to selfies/<own id> — the only path the storage policy
-      // allows this member to write. Upsert, so retaking replaces.
-      const body = await (await fetch(photo.uri)).blob();
+      // allows this member to write. Upsert, so replacing replaces.
+      const body = await (await fetch(uri)).blob();
       const { error: uploadError } = await supabase.storage
         .from('gallery-media')
         .upload(`selfies/${session.user.id}`, body, {
@@ -78,6 +76,34 @@ export default function FindMe() {
     } finally {
       setBusy(false);
     }
+  }
+
+  async function takeSelfie() {
+    const photo = await cameraRef.current?.takePictureAsync({ quality: 0.8 });
+    if (!photo?.uri) {
+      setError('No photo captured — try again.');
+      return;
+    }
+    await enrolFrom(photo.uri);
+  }
+
+  /**
+   * The library route, added on the owner's instruction. The original build
+   * was camera-only on the argument that "choose any image" invites enrolling
+   * somebody else's face; the owner overrode it for the ordinary reason that
+   * people already own a photo they like. The safeguard that actually
+   * matters is unchanged either way: matching only ever surfaces photos the
+   * member could already see, so enrolling the wrong face reveals nothing.
+   */
+  async function pickFromLibrary() {
+    const picked = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (picked.canceled || !picked.assets?.[0]?.uri) return;
+    await enrolFrom(picked.assets[0].uri);
   }
 
   async function optOut() {
@@ -148,6 +174,7 @@ export default function FindMe() {
           the matcher can compare it against published run photos.
         </Text>
         <Button label="Retake my selfie" variant="secondary" onPress={() => setTaking(true)} />
+        <Button label="Upload a photo instead" variant="secondary" onPress={pickFromLibrary} />
         <Button
           label={busy ? 'One moment…' : 'Stop and delete my selfie'}
           variant="secondary"
@@ -178,6 +205,7 @@ export default function FindMe() {
         </Text>
       )}
       <Button label="Take the selfie" onPress={() => setTaking(true)} />
+      <Button label="Upload a photo instead" variant="secondary" onPress={pickFromLibrary} />
     </View>
   );
 }

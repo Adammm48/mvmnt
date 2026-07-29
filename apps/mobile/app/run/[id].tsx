@@ -106,6 +106,8 @@ export default function RunDetail() {
     setBusy(true);
     setError(null);
     setSuccess(null);
+    // "You're in!" must not keep celebrating above "You're out" (audit).
+    setCelebrate(null);
 
     const { error: withdrawError } = await supabase.rpc('withdraw_from_run', { p_run_id: id });
     setBusy(false);
@@ -177,6 +179,19 @@ export default function RunDetail() {
 
     setCelebrate("You're in!");
     await load();
+
+    // Milestones ride the celebration they belong to. streak_new and
+    // milestone_100 sat in the voice catalogue with zero call sites (audit
+    // finding) while the data to fire them was already on this screen's
+    // standing call — the moment after a check-in is exactly when "six weeks
+    // straight" means something.
+    const { data: after } = await supabase.rpc('my_standing', { p_window: 'all_time' });
+    const standing = (after ?? [])[0];
+    if (standing?.runs_attended === 100) {
+      setSuccess(adamSays('milestone_100', { userId: session?.user.id }));
+    } else if ((standing?.streak_weeks ?? 0) >= 2) {
+      setSuccess(adamSays('streak_new', { userId: session?.user.id }));
+    }
   }
 
   if (loading) return <Loading label="Loading run" />;

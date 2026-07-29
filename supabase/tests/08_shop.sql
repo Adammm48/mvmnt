@@ -403,3 +403,96 @@ begin
 end $$;
 
 rollback;
+
+-- ---------------------------------------------------------------------------
+-- The audit council's merch fixes (migrations 0052/0053).
+-- ---------------------------------------------------------------------------
+do $$
+declare
+  v_admin uuid; v_a uuid; v_p uuid; v_o uuid;
+begin
+  perform tests.act_as_system();
+  v_admin := tests.make_member('organiser-m', true);
+  v_a := tests.make_member('salma');
+  perform tests.act_as(v_admin);
+  perform public.admin_adjust_points(v_a, 100, 'test points');
+  perform tests.act_as_system();
+  insert into public.products (name, price_minor, status, stock)
+  values ('Audit Cap', 20000, 'in_stock', 1) returning id into v_p;
+
+  -- Selling the last one marks it SOLD OUT, not retired: still visible.
+  perform tests.act_as(v_a);
+  select public.place_order(v_p, 1, null, 0) into v_o;
+  perform tests.assert_eq(
+    (select status::text from public.products where id = v_p), 'sold_out',
+    'selling the last one marks the item sold out, not retired');
+  perform tests.assert(
+    exists (select 1 from public.products where id = v_p),
+    'and a member can still see it in the shop saying so');
+
+  -- The organiser's real mark-paid path works; a member's does not.
+  perform tests.assert_rejects(
+    format('select public.admin_mark_paid(%L)', v_o),
+    'a member cannot mark their own order paid');
+  perform tests.act_as(v_admin);
+  perform public.admin_mark_paid(v_o);
+  perform tests.act_as_system();
+  perform tests.assert_eq(
+    (select status::text from public.orders where id = v_o), 'paid',
+    'an organiser records an in-person payment — the production path exists');
+
+  -- A retired product stays retired whatever happens to its old orders.
+  perform tests.act_as_system();
+  update public.products set status = 'retired' where id = v_p;
+  update public.orders set status = 'awaiting_payment' where id = v_o;
+  perform tests.act_as(v_a);
+  perform public.cancel_order(v_o);
+  perform tests.act_as_system();
+  perform tests.assert_eq(
+    (select status::text from public.products where id = v_p), 'retired',
+    'cancelling an order no longer resurrects a deliberately retired item');
+end $$;
+
+-- ---------------------------------------------------------------------------
+-- Content reports (migration 0051): file, dedupe, resolve, and who sees them.
+-- ---------------------------------------------------------------------------
+do $$
+declare
+  v_admin uuid; v_a uuid; v_b uuid; v_r uuid;
+begin
+  perform tests.act_as_system();
+  v_admin := tests.make_member('organiser-r', true);
+  v_a := tests.make_member('reporter');
+  v_b := tests.make_member('bystander');
+
+  perform tests.act_as(v_a);
+  perform public.report_content('photo', 'some-photo-id', 'this photo shows my house number');
+  perform public.report_content('photo', 'some-photo-id', 'tapped twice');
+  perform tests.act_as_system();
+  perform tests.assert_eq(
+    (select count(*)::int from public.content_reports where target_id = 'some-photo-id'), 1,
+    'reporting twice is a double-tap, not a second grievance');
+
+  perform tests.act_as(v_a);
+  perform tests.assert_rejects(
+    'select public.report_content(''photo'', ''x'', '''')',
+    'a report needs words — it is what the organiser acts on');
+
+  -- Members see none of it, not even their own; organisers see all of it.
+  perform tests.act_as(v_b);
+  perform tests.assert_eq(
+    (select count(*)::int from public.content_reports), 0,
+    'reports are a message to the club, not a public thread');
+  perform tests.act_as(v_admin);
+  perform tests.assert_eq(
+    (select count(*)::int from public.content_reports where resolved_at is null), 1,
+    'organisers see the open queue');
+
+  select id into v_r from public.content_reports where target_id = 'some-photo-id';
+  perform public.admin_resolve_report(v_r);
+  perform tests.act_as_system();
+  perform tests.assert(
+    (select resolved_at is not null and resolved_by is not null
+       from public.content_reports where id = v_r),
+    'resolving records who and when');
+end $$;

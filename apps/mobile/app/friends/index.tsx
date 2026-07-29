@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { FlatList, Image, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
+import { avatarUri } from '@/lib/avatar';
 import { loadFriends, nextRun } from '@/lib/friends';
 import { Button } from '@/components/Button';
 import { EmptyState, Loading, Notice } from '@/components/Feedback';
@@ -198,8 +199,8 @@ function FriendCard({
 
   return (
     <View style={styles.card}>
-      {friend.avatar_url ? (
-        <Image source={{ uri: friend.avatar_url }} style={styles.avatar} />
+      {avatarUri(friend.avatar_url) ? (
+        <Image source={{ uri: avatarUri(friend.avatar_url)! }} style={styles.avatar} />
       ) : (
         <View style={[styles.avatar, styles.avatarFallback]}>
           <Text style={styles.avatarInitial}>

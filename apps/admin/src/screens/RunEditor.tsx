@@ -28,6 +28,8 @@ export function RunEditor({ runId, onDone }: Props) {
   const [run, setRun] = useState<Run | null>(null);
   const [loading, setLoading] = useState(runId !== null);
   const [busy, setBusy] = useState(false);
+  const [cancelSheet, setCancelSheet] = useState(false);
+  const [cancelReason, setCancelReason] = useState('Weather');
   const [error, setError] = useState<string | null>(null);
 
   const [title, setTitle] = useState('');
@@ -94,8 +96,13 @@ export function RunEditor({ runId, onDone }: Props) {
   // A completed run's start is in the past by definition. The organiser opens
   // its editor to manage the photos, not to reschedule history — scolding them
   // about the date (and disabling Save) made the gallery feel broken.
+  // Only a run that has not happened yet gets scolded about the past. A
+  // published or in-progress run is past its start BY DEFINITION once the
+  // morning arrives, and the old check (which exempted only 'completed')
+  // locked Save exactly when an organiser most needs it — fixing a typo or
+  // adjusting the end time while the run is happening (audit finding).
   const startsInPast =
-    run?.status !== 'completed' &&
+    (run == null || run.status === 'draft') &&
     startsAtIso !== null &&
     new Date(startsAtIso) <= new Date();
   const problems: string[] = [];
@@ -226,12 +233,22 @@ export function RunEditor({ runId, onDone }: Props) {
     });
     if (!confirmed) return;
 
-    let reason: string | null = '';
+    // The reason used to come from window.prompt — the one native dialog this
+    // codebase had left, and the exact silent-failure family lib/confirm.ts
+    // documents: a suppressed prompt returns null and the cancel silently
+    // never happens (audit finding). A published run's reason now comes from
+    // the styled sheet below; a draft needs none.
     if (!stillDraft) {
-      reason = window.prompt('Why is it cancelled? Members will see this.', 'Weather');
-      if (reason === null) return;
+      setCancelSheet(true);
+      return;
     }
 
+    await reallyCancel('');
+  }
+
+  async function reallyCancel(reason: string) {
+    if (!run) return;
+    setCancelSheet(false);
     setBusy(true);
     setError(null);
     const { error: cancelError } = await supabase.rpc('cancel_run', {
@@ -244,7 +261,7 @@ export function RunEditor({ runId, onDone }: Props) {
       return;
     }
 
-    if (stillDraft) {
+    if (run.status === 'draft') {
       toast.info('Draft deleted');
       onDone(); // the run is gone — nothing left here to reload
       return;
@@ -544,6 +561,37 @@ export function RunEditor({ runId, onDone }: Props) {
           </p>
         )}
       </div>
+
+      {cancelSheet && (
+        <div className="modal-backdrop" onClick={() => setCancelSheet(false)}>
+          <div
+            className="modal"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="cancel-reason-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 id="cancel-reason-title">Why is it cancelled?</h3>
+            <p>Members see this line in the app and in the notification.</p>
+            <input
+              autoFocus
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') setCancelSheet(false);
+                if (e.key === 'Enter') reallyCancel(cancelReason.trim());
+              }}
+              maxLength={140}
+            />
+            <div className="modal-actions">
+              <button onClick={() => setCancelSheet(false)}>Keep the run</button>
+              <button className="danger" onClick={() => reallyCancel(cancelReason.trim())}>
+                Cancel the run
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

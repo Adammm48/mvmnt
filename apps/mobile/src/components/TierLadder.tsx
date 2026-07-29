@@ -56,11 +56,24 @@ export function TierLadder({
             accessibilityRole="text"
             accessibilityLabel={`${TIER_LABEL[tier]}, ${floor} points${reached ? ', reached' : ''}`}
           >
-            <View style={[styles.marker, { backgroundColor: reached ? TIER_COLOR[tier] : colors.border }]} />
+            {/* Every rung wears its own colour, reached or not (owner call:
+                "colored and unique for every tier"). Unreached rungs show the
+                colour at reduced opacity — aspiration, not absence. */}
+            <View
+              style={[
+                styles.marker,
+                { backgroundColor: TIER_COLOR[tier], opacity: reached ? 1 : 0.35 },
+              ]}
+            />
 
             <View style={styles.body}>
               <View style={styles.titleRow}>
-                <Text style={[styles.tier, { color: reached ? TIER_COLOR[tier] : colors.textOnDarkMuted }]}>
+                <Text
+                  style={[
+                    styles.tier,
+                    { color: TIER_COLOR[tier], opacity: reached ? 1 : 0.65 },
+                  ]}
+                >
                   {TIER_LABEL[tier]}
                 </Text>
                 <Text style={styles.threshold}>

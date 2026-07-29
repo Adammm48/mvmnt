@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
@@ -7,6 +7,8 @@ import { Button } from '@/components/Button';
 import { Notice } from '@/components/Feedback';
 import { StandingCard } from '@/components/StandingCard';
 import { pushStatus, registerForPush } from '@/lib/push';
+import * as ImagePicker from 'expo-image-picker';
+import { avatarUri } from '@/lib/avatar';
 import { pendingCount } from '@/lib/checkInQueue';
 import { confirmDestructive } from '@/lib/confirm';
 import {
@@ -34,6 +36,7 @@ export default function ProfileScreen() {
   const [success, setSuccess] = useState<string | null>(null);
   const [queued, setQueued] = useState(0);
   const [pushState, setPushState] = useState<string | null>(null);
+  const [pushGranted, setPushGranted] = useState(false);
   const [standing, setStanding] = useState<Standing | null>(null);
   const [distance, setDistance] = useState<number | null>(null);
   const [badges, setBadges] = useState<EarnedBadge[]>([]);
@@ -50,6 +53,7 @@ export default function ProfileScreen() {
       if (status === 'denied') {
         setPushState('Notifications are switched off for MVMNT in your phone settings.');
       } else if (status === 'granted') {
+        setPushGranted(true);
         setPushState('Notifications are on.');
       }
     });
@@ -145,6 +149,44 @@ export default function ProfileScreen() {
     }
     setSuccess('Saved.');
     await refreshProfile();
+  }
+
+  /**
+   * The avatar, finally uploadable. The column existed since Phase 1 and was
+   * only ever filled from OAuth metadata — which email-OTP members never
+   * have, so every face in the club rendered as an initial (audit finding).
+   * The server's set_avatar() refuses any path outside the member's own
+   * folder, so this cannot set someone else's picture.
+   */
+  async function pickAvatar() {
+    const picked = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+    });
+    if (picked.canceled || !picked.assets?.[0]?.uri || !session) return;
+
+    setBusy(true);
+    setError(null);
+    try {
+      const body = await (await fetch(picked.assets[0].uri)).blob();
+      const path = `${session.user.id}/${Date.now()}.jpg`;
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(path, body, { contentType: 'image/jpeg', upsert: true });
+      if (uploadError) throw uploadError;
+      const { error: rpcError } = await supabase.rpc('set_avatar', {
+        p_path: `avatars/${path}`,
+      });
+      if (rpcError) throw rpcError;
+      await refreshProfile();
+      setSuccess('Looking good.');
+    } catch (e) {
+      setError(toMemberMessage(e));
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function enableNotifications() {
@@ -265,6 +307,30 @@ export default function ProfileScreen() {
       )}
 
       <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Your photo</Text>
+        <View style={styles.avatarRow}>
+          {avatarUri(profile?.avatar_url) ? (
+            <Image source={{ uri: avatarUri(profile?.avatar_url)! }} style={styles.avatarPreview} />
+          ) : (
+            <View style={[styles.avatarPreview, styles.avatarEmpty]}>
+              <Text style={styles.avatarInitial}>
+                {(profile?.display_name ?? '?').trim().charAt(0).toUpperCase()}
+              </Text>
+            </View>
+          )}
+          <View style={{ flex: 1, gap: spacing.xs }}>
+            <Button
+              label={profile?.avatar_url ? 'Change photo' : 'Add a photo'}
+              variant="secondary"
+              onPress={pickAvatar}
+              disabled={busy}
+            />
+            <Text style={styles.hint}>Shown beside your name on the board and to friends.</Text>
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.section}>
         <Text style={styles.sectionTitle}>Your name</Text>
         <Text style={styles.hint}>This is what other members see on the board.</Text>
         <TextInput
@@ -287,8 +353,17 @@ export default function ProfileScreen() {
           opens up.
         </Text>
         <Text style={styles.voice}>{adamSays('push_permission', { stability: 'daily' })}</Text>
-        <Button label="Turn on notifications" variant="secondary" onPress={enableNotifications} />
-        {pushState && <Text style={styles.hint}>{pushState}</Text>}
+        {/* The button stands down once permission is granted — an inviting,
+            always-tappable "Turn on notifications" above the words
+            "Notifications are on" was the audit's politest finding. */}
+        {pushState === 'Notifications are on.' || pushGranted ? (
+          <Text style={styles.hint}>Notifications are on.</Text>
+        ) : (
+          <>
+            <Button label="Turn on notifications" variant="secondary" onPress={enableNotifications} />
+            {pushState && <Text style={styles.hint}>{pushState}</Text>}
+          </>
+        )}
       </View>
 
       {queued > 0 && (
@@ -369,6 +444,16 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
+  avatarRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  avatarPreview: { width: 72, height: 72, borderRadius: 999 },
+  avatarEmpty: {
+    backgroundColor: colors.baseElevated,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  avatarInitial: { fontSize: 26, fontWeight: '800', color: colors.textSecondary },
   statsLink: { alignSelf: 'flex-end' },
   statsLinkText: { color: colors.action, fontSize: 14, fontWeight: '700' },
   screen: { flex: 1, backgroundColor: colors.base },

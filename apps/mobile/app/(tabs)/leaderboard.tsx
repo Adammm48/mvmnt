@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { FlatList, Image, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { supabase } from '@/lib/supabase';
+import { avatarUri } from '@/lib/avatar';
 import { StandingCard } from '@/components/StandingCard';
 import { TierLadder } from '@/components/TierLadder';
 import { ShareSheet } from '@/components/ShareSheet';
@@ -226,8 +227,8 @@ function Row({ row, shared }: { row: LeaderboardRow; shared: boolean }) {
     >
       <Text style={[styles.rank, medal && styles.rankMedal]}>{rankBadge(row.rank, shared)}</Text>
 
-      {row.avatar_url ? (
-        <Image source={{ uri: row.avatar_url }} style={styles.avatar} />
+      {avatarUri(row.avatar_url) ? (
+        <Image source={{ uri: avatarUri(row.avatar_url)! }} style={styles.avatar} />
       ) : (
         <View style={[styles.avatar, styles.avatarFallback]}>
           <Text style={styles.avatarInitial}>
