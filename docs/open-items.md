@@ -18,19 +18,26 @@ like a placeholder, and then it never gets fixed — it just ships.
 
 ## Blocks release
 
-### Privacy policy — four open questions
+### Privacy policy — two open questions
+
+*(Two of the original four are answered and built: photo consent is now asked
+in the app and recorded with its version, and the app account is 18+ with
+under-18s checked in by an organiser. See migration 0048.)*
 
 **Who:** the club owner, with legal advice.
 **Where:** [`docs/privacy-policy.md`](privacy-policy.md), marked `[TO CONFIRM BEFORE PUBLICATION]`.
 
 Both app stores require a published privacy policy at a public URL, and it
-cannot be published with open questions inside it. The four are: which region
-the Supabase project is hosted in (a cross-border transfer question under
-Egypt's PDPL), whether under-18s attend club runs (which changes consent
-requirements and the store age rating), whether MVMNT must register as a
-data controller, and how consent to be photographed at runs is obtained today
-(the galleries shipped with a takedown route, but the consent side is club
-practice, not software).
+cannot be published with open questions inside it. The two remaining are:
+which region the Supabase project is hosted in (a cross-border transfer
+question under Egypt's PDPL, and the same decision as creating the hosted
+project), and whether MVMNT must register as a data controller.
+
+One more thing turns the consent screen from honest to complete: **the policy
+needs a public URL**. `POLICY_URL` in `packages/shared/src/consent.ts` is an
+empty string, so the screen currently says the policy is being finalised
+rather than linking to something that does not exist. The same domain
+purchase covers the sending address for sign-in codes.
 
 This is the item most likely to hold up a launch, and it is writing and advice
 rather than engineering — so it can start now and run in parallel with

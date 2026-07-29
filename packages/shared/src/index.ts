@@ -5,3 +5,4 @@ export * from './loyalty';
 export * from './shop';
 export * from './voice';
 export * from './errors';
+export * from './consent';

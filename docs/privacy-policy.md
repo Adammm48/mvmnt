@@ -169,10 +169,20 @@ as an in-app gallery for that run.
   will remove it — organisers can delete any photo from a gallery, and the file
   is deleted with it, not just hidden.
 
-> **[TO CONFIRM BEFORE PUBLICATION]** How consent to be photographed is
-> obtained at runs today (announcement at the start? a line at sign-up?), and
-> whether that needs to be formalised under Egypt's PDPL. The takedown route
-> above exists in the software either way.
+**You are asked, and your answer is recorded.** When you first open the app
+you are asked whether the club may share photos of you from runs. Your answer
+is stored with the date and the version of this policy you were shown, and you
+can change it at any time in **Profile → Photos from runs**. Turning it off
+tells organisers you would rather not appear.
+
+We will not pretend that switch is a guarantee. At a run of three hundred
+people nobody can promise you are not in the background of somebody else's
+photo. What it does is put your preference in front of the organisers who
+publish the galleries, and any photo of you comes down whenever you ask.
+
+The club also asks verbally at runs. The in-app record exists because a
+verbal answer, while perfectly valid, cannot be shown later — and the club
+carries the burden of showing that consent was given.
 
 ### Notifications
 
@@ -276,14 +286,25 @@ This is immediate and cannot be undone.
 
 ---
 
-## Children
+## Under 18s
 
-MVMNT is intended for adults. We do not knowingly collect data from children.
+**The app account is for members aged 18 and over.** You confirm this when you
+first open the app, and the app will not let you continue without it.
 
-> **[TO CONFIRM BEFORE PUBLICATION]** If under-18s do attend club runs, this
-> section needs rewriting and guardian consent is likely required for location
-> processing. It also changes the app's store age rating. See
-> [ADR 0002 §9](decisions/0002-check-in-location-and-retention.md).
+This is not the club turning young runners away. **Under-18s are welcome at
+every run** — they simply do not get an app account, and an organiser checks
+them in by hand, which is the same fallback used for anyone whose phone has no
+signal or a flat battery.
+
+The reason is consent. Somebody under 18 cannot give valid consent for their
+own personal data — a parent or guardian has to — and MVMNT has no
+guardian-consent process. Rather than collect a child's location and
+photographs on a permission that would not stand up, the app does not collect
+from under-18s at all.
+
+If the club later wants under-18s to have accounts, that means a guardian
+consent flow, a rewrite of this section, and a change to the app's store age
+rating. It is a deliberate piece of work, not a setting.
 
 ---
 

@@ -256,4 +256,112 @@ begin
   raise notice 'PASS 05_privacy';
 end $$;
 
+-- ---------------------------------------------------------------------------
+-- Consent is recorded, not assumed (migration 0048).
+--
+-- The club took consent verbally before this. That is real consent but not a
+-- demonstrable one, and the burden of showing it was given sits with the club.
+-- ---------------------------------------------------------------------------
+do $$
+declare
+  v_admin uuid; v_a uuid; v_b uuid;
+begin
+  perform tests.act_as_system();
+  v_admin := tests.make_member('organiser-c', true);
+  v_a := tests.make_member('nour');
+  v_b := tests.make_member('omar');
+
+  -- A fresh member has accepted nothing, which is what the app gates on.
+  perform tests.assert(
+    (select consent_version is null from public.profiles where id = v_a),
+    'a new member has no consent on file');
+
+  -- Under 18 is refused rather than recorded as a false. There is no version
+  -- of that row that would be valid consent, and writing one would create a
+  -- record that looks like consent and is not.
+  perform tests.act_as(v_a);
+  perform tests.assert_rejects(
+    'select public.accept_consent(''2026-07-draft'', false, true)',
+    'an under-18 cannot consent for themselves, so it is refused not stored');
+  perform tests.act_as_system();
+  perform tests.assert(
+    (select consent_version is null from public.profiles where id = v_a),
+    'and nothing is written when it is refused');
+
+  -- Accepting records the version, the age assertion and the photo position.
+  perform tests.act_as(v_a);
+  perform public.accept_consent('2026-07-draft', true, true);
+  perform tests.act_as_system();
+  perform tests.assert_eq(
+    (select consent_version from public.profiles where id = v_a), '2026-07-draft',
+    'acceptance records WHICH version was accepted');
+  perform tests.assert(
+    (select age_confirmed and not photo_objection from public.profiles where id = v_a),
+    'along with the age assertion and the photo position');
+  perform tests.assert_eq(
+    (select count(*)::int from public.consent_events
+      where user_id = v_a and event = 'accepted'), 1,
+    'and leaves an append-only record of it');
+
+  -- Objecting to photos at sign-up is carried through.
+  perform tests.act_as(v_b);
+  perform public.accept_consent('2026-07-draft', true, false);
+  perform tests.act_as_system();
+  perform tests.assert(
+    (select photo_objection from public.profiles where id = v_b),
+    'a member who declines photos at sign-up is recorded as objecting');
+
+  -- Withdrawal has to be as easy as consent, or the consent was never valid.
+  perform tests.act_as(v_a);
+  perform public.set_photo_objection(true);
+  perform tests.act_as_system();
+  perform tests.assert(
+    (select photo_objection from public.profiles where id = v_a),
+    'a member can withdraw photo consent at any time');
+  perform tests.assert_eq(
+    (select count(*)::int from public.consent_events
+      where user_id = v_a and event = 'photo_objection'), 1,
+    'and the withdrawal is its own event rather than an edit of the acceptance');
+
+  -- Setting it to what it already is must not fabricate a change of mind.
+  perform tests.act_as(v_a);
+  perform public.set_photo_objection(true);
+  perform tests.act_as_system();
+  perform tests.assert_eq(
+    (select count(*)::int from public.consent_events
+      where user_id = v_a and event = 'photo_objection'), 1,
+    'saving the same position again writes no history');
+
+  -- Lifting it again is recorded too — the club needs both directions.
+  perform tests.act_as(v_a);
+  perform public.set_photo_objection(false);
+  perform tests.act_as_system();
+  perform tests.assert_eq(
+    (select count(*)::int from public.consent_events
+      where user_id = v_a and event = 'photo_objection_lifted'), 1,
+    'and changing back is recorded rather than erasing the objection');
+
+  -- One member cannot read another's consent history.
+  perform tests.act_as(v_b);
+  perform tests.assert_eq(
+    (select count(*)::int from public.consent_events where user_id = v_a), 0,
+    'consent history is private to its owner');
+
+  -- The organiser can see the objection, because they are the only person who
+  -- can act on it when publishing a gallery.
+  perform tests.act_as(v_admin);
+  perform tests.assert(
+    (select photo_objection from public.admin_members() where user_id = v_b),
+    'organisers see who has asked not to appear in photos');
+
+  -- Erasure takes the consent record with it: once the person is gone there is
+  -- nobody whose consent needs demonstrating.
+  perform tests.act_as(v_b);
+  perform public.erase_member(v_b);
+  perform tests.act_as_system();
+  perform tests.assert_eq(
+    (select count(*)::int from public.consent_events where user_id = v_b), 0,
+    'erasing a member erases their consent record with them');
+end $$;
+
 rollback;

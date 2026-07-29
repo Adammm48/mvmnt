@@ -38,6 +38,7 @@ export default function ProfileScreen() {
   const [distance, setDistance] = useState<number | null>(null);
   const [badges, setBadges] = useState<EarnedBadge[]>([]);
   const [onBoard, setOnBoard] = useState(!(profile?.leaderboard_opt_out ?? false));
+  const [photosOk, setPhotosOk] = useState(!(profile?.photo_objection ?? false));
 
   useEffect(() => {
     pendingCount().then(setQueued);
@@ -74,6 +75,31 @@ export default function ProfileScreen() {
   useEffect(() => {
     setOnBoard(!(profile?.leaderboard_opt_out ?? false));
   }, [profile?.leaderboard_opt_out]);
+
+  useEffect(() => {
+    setPhotosOk(!(profile?.photo_objection ?? false));
+  }, [profile?.photo_objection]);
+
+  /**
+   * Photographs, changeable at any time.
+   *
+   * Withdrawing consent has to be as easy as giving it — that is not a
+   * courtesy, it is the condition that makes the original consent valid. So
+   * this sits in the profile as a plain switch rather than behind a support
+   * request.
+   */
+  async function setPhotos(ok: boolean) {
+    setPhotosOk(ok);
+    const { error: rpcError } = await supabase.rpc('set_photo_objection', {
+      p_objects: !ok,
+    });
+    if (rpcError) {
+      setPhotosOk(!ok);
+      setError(toMemberMessage(rpcError));
+      return;
+    }
+    await refreshProfile();
+  }
 
   /**
    * Leaderboard visibility.
@@ -277,6 +303,24 @@ export default function ProfileScreen() {
         <Text style={styles.hint}>
           Turn this off and other members will not see you listed. You keep your points, your badges
           and your own position — you just are not on the public board.
+        </Text>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Photos from runs</Text>
+        <View style={styles.switchRow}>
+          <Text style={styles.switchLabel}>The club can share photos of me</Text>
+          <Switch
+            value={photosOk}
+            onValueChange={setPhotos}
+            accessibilityLabel="The club can share photos of me"
+            trackColor={{ false: '#3A4152', true: colors.success }}
+          />
+        </View>
+        <Text style={styles.hint}>
+          {photosOk
+            ? 'Photos from runs go in the app, visible to members only. Turn this off and organisers will see that you would rather not appear.'
+            : 'Organisers can see that you would rather not appear. At a run of three hundred people nobody can promise you are in no one’s background — but ask an organiser and any photo of you comes down.'}
         </Text>
       </View>
 

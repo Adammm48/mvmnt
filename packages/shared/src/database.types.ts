@@ -164,6 +164,41 @@ export type Database = {
           },
         ]
       }
+      consent_events: {
+        Row: {
+          age_confirmed: boolean | null
+          document_version: string
+          event: string
+          id: string
+          occurred_at: string
+          user_id: string
+        }
+        Insert: {
+          age_confirmed?: boolean | null
+          document_version: string
+          event: string
+          id?: string
+          occurred_at?: string
+          user_id: string
+        }
+        Update: {
+          age_confirmed?: boolean | null
+          document_version?: string
+          event?: string
+          id?: string
+          occurred_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consent_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       feature_flags: {
         Row: {
           description: string
@@ -783,32 +818,44 @@ export type Database = {
       }
       profiles: {
         Row: {
+          age_confirmed: boolean
           avatar_url: string | null
+          consent_version: string | null
+          consented_at: string | null
           created_at: string
           display_name: string
           id: string
           is_founder: boolean
           leaderboard_opt_out: boolean
+          photo_objection: boolean
           role: Database["public"]["Enums"]["member_role"]
           updated_at: string
         }
         Insert: {
+          age_confirmed?: boolean
           avatar_url?: string | null
+          consent_version?: string | null
+          consented_at?: string | null
           created_at?: string
           display_name: string
           id: string
           is_founder?: boolean
           leaderboard_opt_out?: boolean
+          photo_objection?: boolean
           role?: Database["public"]["Enums"]["member_role"]
           updated_at?: string
         }
         Update: {
+          age_confirmed?: boolean
           avatar_url?: string | null
+          consent_version?: string | null
+          consented_at?: string | null
           created_at?: string
           display_name?: string
           id?: string
           is_founder?: boolean
           leaderboard_opt_out?: boolean
+          photo_objection?: boolean
           role?: Database["public"]["Enums"]["member_role"]
           updated_at?: string
         }
@@ -1412,6 +1459,14 @@ export type Database = {
       }
     }
     Functions: {
+      accept_consent: {
+        Args: {
+          p_age_confirmed: boolean
+          p_photo_ok?: boolean
+          p_version: string
+        }
+        Returns: undefined
+      }
       acknowledge_tier: {
         Args: { p_tier: Database["public"]["Enums"]["member_tier"] }
         Returns: undefined
@@ -1453,6 +1508,7 @@ export type Database = {
           joined_at: string
           last_run_at: string
           leaderboard_opt_out: boolean
+          photo_objection: boolean
           points: number
           role: Database["public"]["Enums"]["member_role"]
           runs_attended: number
@@ -1680,6 +1736,7 @@ export type Database = {
         Args: { p_visible: boolean }
         Returns: undefined
       }
+      set_photo_objection: { Args: { p_objects: boolean }; Returns: undefined }
       share_live_position: {
         Args: { p_lat: number; p_lng: number; p_run_id: string }
         Returns: undefined

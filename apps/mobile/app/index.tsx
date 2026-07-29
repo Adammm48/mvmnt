@@ -9,6 +9,7 @@ import { RunCard } from '@/components/RunCard';
 import { TierProgressBar } from '@/components/TierProgressBar';
 import { TierChest, type UnclaimedTier } from '@/components/TierChest';
 import { Welcome } from '@/components/Welcome';
+import { ConsentGate, useConsentNeeded } from '@/components/ConsentGate';
 import { SponsorBanner } from '@/components/SponsorBanner';
 import { clearSync, useLastSync } from '@/lib/syncStatus';
 import { EmptyState, Loading, Notice } from '@/components/Feedback';
@@ -68,13 +69,22 @@ export default function Home() {
     }, [reload]),
   );
 
+  // Above the early return: a hook called after one runs on some renders and
+  // not others, which is the "change in the order of Hooks" React shouts about.
+  const consentNeeded = useConsentNeeded();
+
   if (loading) return <Loading label="Loading runs" />;
 
   const firstName = profile?.display_name?.split(' ')[0];
 
   return (
     <View style={styles.screen}>
-      <Welcome />
+      {/* Before the welcome, and not dismissible: an introduction can wait,
+          the question of whether the club may hold your data cannot. */}
+      <ConsentGate />
+      {/* The introduction waits its turn — two modals at once means the later
+          one covers the earlier, and consent is not the one to cover. */}
+      {!consentNeeded && <Welcome />}
       {chest && (
         <TierChest
           award={chest}
