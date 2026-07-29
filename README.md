@@ -20,7 +20,9 @@ WhatsApp, Instagram and word of mouth. This replaces that.
 > alternative needs quotes the club has not obtained, so orders stop at
 > "reserved" and the club takes payment in person. Phase 5 (HealthKit, AI
 > face-matching) is specified and deliberately unbuilt. See
-> [docs/backlog.md](docs/backlog.md).
+> [docs/backlog.md](docs/backlog.md), and [docs/debrief.md](docs/debrief.md)
+> for the whole build in one read — every phase, the bugs worth remembering,
+> and the owner's to-do list.
 >
 > Built against [`docs/spec/MVMNT_App_Spec_1.md`](docs/spec/MVMNT_App_Spec_1.md)
 > and [`docs/spec/MVMNT_Engineering_Principles.md`](docs/spec/MVMNT_Engineering_Principles.md),
