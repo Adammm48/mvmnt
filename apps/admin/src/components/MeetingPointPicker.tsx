@@ -54,8 +54,8 @@ export function MeetingPointPicker({ lat, lng, radiusM, onChange }: Props) {
     const marker = L.marker([lat, lng], { draggable: true }).addTo(map);
     const circle = L.circle([lat, lng], {
       radius: radiusM,
-      color: '#FF5A36',
-      fillColor: '#FF5A36',
+      color: '#16191F',
+      fillColor: '#16191F',
       fillOpacity: 0.12,
       weight: 2,
     }).addTo(map);

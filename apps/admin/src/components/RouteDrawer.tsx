@@ -104,7 +104,7 @@ export function RouteDrawer({ lat, lng, route, onChange }: Props) {
     if (route.length === 0) return;
 
     const latLngs = route.map(([lo, la]) => [la, lo] as [number, number]);
-    lineRef.current = L.polyline(latLngs, { color: '#FF5A36', weight: 5 }).addTo(map);
+    lineRef.current = L.polyline(latLngs, { color: '#16191F', weight: 5 }).addTo(map);
 
     // Only the ends get a handle. A dot on every point turns a hand-drawn route
     // into a wall of circles, and the only two an organiser needs to identify

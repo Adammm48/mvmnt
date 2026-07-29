@@ -8,17 +8,19 @@
  */
 
 :root {
-  --action: #ff5a36;
-  --action-dark: #e04421;
-  --success: #1a9d5c;
-  --success-bg: #e8fbf0;
-  --base: #1b1f2a;
+  /* The club's mark is black on white; the console wears the same brand as
+     the app: ink actions, green for approval, amber saved for celebration. */
+  --action: #16191f;
+  --action-dark: #31363f;
+  --success: #15803d;
+  --success-bg: #e9f7ee;
+  --base: #16191f;
   --surface: #ffffff;
-  --page: #f4f2ef;
-  --sunken: #eeebe6;
-  --border: #e2ddd6;
-  --text: #1b1f2a;
-  --muted: #5f6675;
+  --page: #f7f8fa;
+  --sunken: #eef0f3;
+  --border: #e4e6ea;
+  --text: #16191f;
+  --muted: #5a6070;
   --alert: #c62d20;
   --alert-bg: #fdecea;
 

@@ -53,7 +53,7 @@ export function LiveMap({
 
     if (route && route.length >= 2) {
       const latLngs = route.map(([lo, la]) => [la, lo] as [number, number]);
-      L.polyline(latLngs, { color: '#FF5A36', weight: 4, opacity: 0.7 }).addTo(map);
+      L.polyline(latLngs, { color: '#16191F', weight: 4, opacity: 0.7 }).addTo(map);
       map.fitBounds(L.latLngBounds(latLngs), { padding: [30, 30] });
     }
 
