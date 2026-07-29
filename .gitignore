@@ -34,3 +34,7 @@ docs/screenshots/.frames/
 # this laptop and nothing about the project — noise in a shared repo, and it
 # accumulates local session tokens as a side effect.
 .claude/settings.local.json
+
+# Throwaway browser-verification scripts, run from the repo root so
+# playwright resolves. Never part of the project.
+*.tmp.mjs
