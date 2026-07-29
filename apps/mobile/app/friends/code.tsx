@@ -11,6 +11,7 @@ import {
   formatFriendCode,
   secondsUntil,
   toMemberMessage,
+  adamSays,
 } from '@mvmnt/shared';
 
 /**
@@ -92,7 +93,9 @@ export default function FriendCodeScreen() {
               field, and the app's dark base would make this slow to read across
               a table.
             */}
-            <QRCode value={token} size={216} backgroundColor="#FFFFFF" color={colors.base} />
+            {/* Ink modules, not base-coloured: the base is white now, and a QR
+                drawn in the base colour is a white square nobody can scan. */}
+            <QRCode value={token} size={216} backgroundColor="#FFFFFF" color={colors.textPrimary} />
           </View>
 
           <View style={styles.textCode}>
@@ -107,6 +110,7 @@ export default function FriendCodeScreen() {
               {remaining}s
             </Text>
             <Text style={styles.countdownLabel}>until a new code replaces this one</Text>
+      <Text style={styles.voiceLine}>{adamSays('friend_code', { stability: 'daily' })}</Text>
           </View>
         </>
       ) : (
@@ -133,6 +137,13 @@ export default function FriendCodeScreen() {
 }
 
 const styles = StyleSheet.create({
+  voiceLine: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    marginTop: spacing.sm,
+  },
   screen: { flex: 1, backgroundColor: colors.base },
   content: { padding: spacing.md, gap: spacing.lg, paddingBottom: spacing.xxl },
   codeCard: {

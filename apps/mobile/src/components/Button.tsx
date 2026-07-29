@@ -71,7 +71,7 @@ const styles = StyleSheet.create({
   // variants are styled for a dark surface. Using the light-surface text colour
   // here renders charcoal on charcoal — invisible, and a contrast failure under
   // Principles §5.
-  secondary: { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: '#4A5165' },
+  secondary: { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: colors.borderStrong },
   quiet: { backgroundColor: 'transparent' },
   destructive: { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: colors.alert },
   pressed: { opacity: 0.85, transform: [{ scale: 0.99 }] },

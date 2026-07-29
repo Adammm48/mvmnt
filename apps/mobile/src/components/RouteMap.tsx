@@ -99,10 +99,12 @@ export function RouteMap({
                 // lands on the start and hides it — so the legend promised a
                 // green dot that was nowhere on the map. One marker says what
                 // is true: this is where you start and where you come back to.
+                // Ink markers, not base-coloured ones: the base is white now,
+                // and a white dot with a white stroke vanishes into the map.
                 if (loops) {
                   return (
                     <>
-                      <Circle cx={start[0]} cy={start[1]} r={9} fill={colors.base} stroke="#FFFFFF" strokeWidth={2.5} />
+                      <Circle cx={start[0]} cy={start[1]} r={9} fill={colors.action} stroke="#FFFFFF" strokeWidth={2.5} />
                       <Circle cx={start[0]} cy={start[1]} r={4.5} fill={colors.success} />
                     </>
                   );
@@ -110,7 +112,7 @@ export function RouteMap({
                 return (
                   <>
                     <Circle cx={start[0]} cy={start[1]} r={7} fill={colors.success} stroke="#FFFFFF" strokeWidth={2.5} />
-                    <Circle cx={end[0]} cy={end[1]} r={7} fill={colors.base} stroke="#FFFFFF" strokeWidth={2.5} />
+                    <Circle cx={end[0]} cy={end[1]} r={7} fill={colors.action} stroke="#FFFFFF" strokeWidth={2.5} />
                   </>
                 );
               })()}
@@ -142,7 +144,7 @@ export function RouteMap({
                       y={y - 13}
                       fontSize={12}
                       fontWeight="700"
-                      fill={colors.base}
+                      fill={colors.action}
                       textAnchor="middle"
                     >
                       {dot.label}
@@ -164,7 +166,7 @@ export function RouteMap({
         ) : (
           <>
             <Legend colour={colors.success} label="Start" />
-            <Legend colour={colors.base} label="Finish" />
+            <Legend colour={colors.action} label="Finish" />
           </>
         )}
         <Text style={styles.distance}>{km.toFixed(1)}K</Text>

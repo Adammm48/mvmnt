@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     paddingVertical: 3,
   },
-  stockPillMuted: { backgroundColor: '#4A5165' },
+  stockPillMuted: { backgroundColor: colors.borderStrong },
   stockText: { fontSize: 11, fontWeight: '800', color: colors.textOnAction },
   name: { fontSize: 15, fontWeight: '700', color: colors.textOnDark },
   price: { ...typography.data, fontSize: 14, color: colors.textOnDarkMuted },

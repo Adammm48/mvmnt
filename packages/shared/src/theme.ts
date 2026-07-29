@@ -1,33 +1,43 @@
 /**
- * Design tokens from App Spec §2.
+ * Design tokens — the club's own look, second edition.
  *
- * The palette is psychological, not decorative, and the reasoning is preserved
- * here because it constrains use: coral is reserved for THE primary action on a
- * screen, and stops meaning "go" the moment a second one appears next to it.
+ * Owner decision, 2026-07-29, holding the actual club mark: MVMNT's brand is
+ * black type on white, so the app is too. White base, ink text, and exactly
+ * two colours with a meaning: GREEN says yes — approval, confirmation,
+ * checked in, points earned — and AMBER celebrates — badges, streaks, the
+ * chest, a friend's dot on the live map. The primary button is ink, like the
+ * wordmark: on a monochrome brand the strongest colour is black, and a green
+ * button next to green confirmations would dilute what green means.
+ *
+ * The first palette (dark blue-grey, coral) predates the club's mark arriving.
+ * The token NAMES it left behind are kept even where they now read oddly —
+ * `textOnDark` is simply "text on the base surface" — because renaming them
+ * would touch every screen to change nothing.
  *
  * Both the mobile app and the admin console import these. Neither hard-codes a
  * hex value (Principles §2).
  */
 
 export const colors = {
-  /** Primary CTA only — Join, Check In, Sign Up. Never two on one screen. */
-  action: '#FF5A36',
-  actionPressed: '#E64420',
+  /** Primary CTA only — Join, Check In, Sign Up. Ink, like the wordmark. */
+  action: '#16191F',
+  actionPressed: '#31363F',
 
-  /** Confirmation: checked in, streak kept, points earned. */
-  success: '#3DDC84',
+  /** Approval: checked in, streak kept, points earned, "you're in". Green-700
+   *  rather than a brighter green — this one has to carry TEXT on white. */
+  success: '#15803D',
 
-  /** Calm base. Deliberately not pure black — less fatiguing on long scrolls. */
-  base: '#1B1F2A',
-  baseElevated: '#252A38',
+  /** The base is the brand: white, with cards one step of grey off it. */
+  base: '#FFFFFF',
+  baseElevated: '#F4F5F7',
 
-  /** Warm off-white rather than clinical white. */
-  surface: '#F7F5F2',
-  surfaceSunken: '#EDEAE5',
+  /** A dark panel for the few surfaces that stay dark (viewer, share card). */
+  surface: '#16191F',
+  surfaceSunken: '#0E1014',
 
-  /** Reward highlights only — badges, streaks. Capped at small elements: at
-   *  larger sizes yellow reads as anxious rather than optimistic. */
-  highlight: '#FFC93C',
+  /** Celebration only — badges, streaks, the chest, live dots. Capped at
+   *  small elements: at larger sizes amber reads as anxious, not optimistic. */
+  highlight: '#F59E0B',
 
   /**
    * Genuine alerts only — run cancelled, waitlist closing. App Spec §2 is
@@ -36,14 +46,15 @@ export const colors = {
    */
   alert: '#D93025',
 
-  textPrimary: '#1B1F2A',
-  textSecondary: '#5C6272',
-  textOnDark: '#F7F5F2',
-  textOnDarkMuted: '#A8AEBF',
+  textPrimary: '#16191F',
+  textSecondary: '#5A6070',
+  /** Historic names — today: primary and muted text on the (white) base. */
+  textOnDark: '#16191F',
+  textOnDarkMuted: '#5A6070',
   textOnAction: '#FFFFFF',
 
-  border: '#E3DED7',
-  borderStrong: '#CFC8BE',
+  border: '#E4E6EA',
+  borderStrong: '#C9CDD4',
 } as const;
 
 export const spacing = {

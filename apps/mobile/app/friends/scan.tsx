@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.textOnDark,
     borderWidth: 1,
-    borderColor: '#3A4152',
+    borderColor: colors.border,
   },
   done: {
     flex: 1,

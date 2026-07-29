@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     paddingTop: spacing.md,
     borderTopWidth: 1,
-    borderTopColor: '#333B4D',
+    borderTopColor: colors.border,
   },
   stat: { flex: 1, alignItems: 'center', gap: 2 },
   statValue: { ...typography.dataLarge, fontSize: 24, color: colors.textOnDark },

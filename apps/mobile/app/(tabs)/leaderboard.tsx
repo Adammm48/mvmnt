@@ -277,7 +277,7 @@ const styles = StyleSheet.create({
   segmentText: { fontSize: 14, fontWeight: '700', color: colors.textOnDarkMuted },
   segmentTextActive: { color: colors.textOnAction },
 
-  separator: { height: 1, backgroundColor: '#2C3244', marginLeft: 56 },
+  separator: { height: 1, backgroundColor: colors.border, marginLeft: 56 },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -294,7 +294,7 @@ const styles = StyleSheet.create({
     color: colors.textOnDarkMuted,
   },
   rankMedal: { fontSize: 20 },
-  avatar: { width: 36, height: 36, borderRadius: radius.pill, backgroundColor: '#333B4D' },
+  avatar: { width: 36, height: 36, borderRadius: radius.pill, backgroundColor: colors.border },
   avatarFallback: { alignItems: 'center', justifyContent: 'center' },
   avatarInitial: { fontSize: 15, fontWeight: '800', color: colors.textOnDark },
   nameCol: { flex: 1, gap: 1 },

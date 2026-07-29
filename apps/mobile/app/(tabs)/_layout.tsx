@@ -33,7 +33,7 @@ export default function TabsLayout() {
         sceneStyle: { backgroundColor: colors.base },
         tabBarStyle: {
           backgroundColor: colors.baseElevated,
-          borderTopColor: 'rgba(255,255,255,0.08)',
+          borderTopColor: colors.border,
         },
         tabBarActiveTintColor: colors.action,
         tabBarInactiveTintColor: colors.textOnDarkMuted,

@@ -306,7 +306,7 @@ export default function ProfileScreen() {
             value={onBoard}
             onValueChange={setVisibility}
             accessibilityLabel="Show my name on the leaderboard"
-            trackColor={{ false: '#3A4152', true: colors.success }}
+            trackColor={{ false: colors.border, true: colors.success }}
           />
         </View>
         <Text style={styles.hint}>
@@ -323,7 +323,7 @@ export default function ProfileScreen() {
             value={photosOk}
             onValueChange={setPhotos}
             accessibilityLabel="The club can share photos of me"
-            trackColor={{ false: '#3A4152', true: colors.success }}
+            trackColor={{ false: colors.border, true: colors.success }}
           />
         </View>
         <Text style={styles.hint}>
@@ -384,7 +384,7 @@ const styles = StyleSheet.create({
     fontSize: 17,
     color: colors.textOnDark,
     borderWidth: 1,
-    borderColor: '#3A4152',
+    borderColor: colors.border,
   },
   footer: { gap: spacing.sm, marginTop: spacing.lg },
   link: { fontSize: 14, fontWeight: '700', color: colors.action },
@@ -410,7 +410,7 @@ const styles = StyleSheet.create({
     padding: spacing.sm,
   },
   badgeEarned: { backgroundColor: colors.baseElevated, borderColor: colors.highlight },
-  badgeLocked: { backgroundColor: 'transparent', borderColor: '#333B4D' },
+  badgeLocked: { backgroundColor: 'transparent', borderColor: colors.border },
   badgeMark: { fontSize: 18, color: colors.highlight },
   badgeMarkLocked: { color: colors.textOnDarkMuted },
   badgeHint: { fontSize: 11, color: colors.textOnDarkMuted },

@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
   track: {
     height: 8,
     borderRadius: radius.pill,
-    backgroundColor: '#333B4D',
+    backgroundColor: colors.border,
     overflow: 'hidden',
     marginTop: spacing.xs,
   },
@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     marginTop: spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: '#333B4D',
+    borderTopColor: colors.border,
     paddingTop: spacing.md,
   },
   stat: { flex: 1, gap: 2 },

@@ -59,6 +59,8 @@ export type VoiceSlot =
   | 'live_sharing'
   | 'selfie_optin'
   | 'stats_intro'
+  | 'sign_in'
+  | 'friend_code'
   | 'easter_egg';
 
 const LINES: Record<VoiceSlot, string[]> = {
@@ -172,6 +174,17 @@ const LINES: Record<VoiceSlot, string[]> = {
     'Adam swears the camera adds pace.',
     'Find yourself. Adam looks mid-blink in every single one.',
     'Photographic proof you were there. Adam is proud.',
+  ],
+  sign_in: [
+    'No password. Adam forgot his too, so he removed them for everyone.',
+    'Six digits and you’re in. Faster than Adam’s 400m. Slower than his excuses.',
+    'The hardest part of running is this screen. It gets easier from here.',
+    'One code, one club. Check your inbox — the run won’t wait forever.',
+  ],
+  friend_code: [
+    'Codes die in sixty seconds. Friendships take slightly longer.',
+    'This only works face to face. Like running. And like Adam’s pep talks.',
+    'Sixty seconds. If they can’t scan it in time, make them do burpees.',
   ],
   selfie_optin: [
     'One selfie and the app finds you in every crowd shot. Adam still finds you at the front. Or the back.',

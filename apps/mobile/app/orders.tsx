@@ -301,7 +301,7 @@ const styles = StyleSheet.create({
   // recognisable rather than a list where nothing has obviously changed.
   cardNew: { borderColor: colors.success },
   cardTop: { flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-start' },
-  thumb: { width: 56, height: 56, borderRadius: radius.md, backgroundColor: '#333B4D' },
+  thumb: { width: 56, height: 56, borderRadius: radius.md, backgroundColor: colors.border },
   thumbFallback: { alignItems: 'center', justifyContent: 'center' },
   thumbInitial: { fontSize: 22, fontWeight: '800', color: colors.textOnDark },
   cardBody: { flex: 1, gap: 2 },
@@ -322,7 +322,7 @@ const styles = StyleSheet.create({
   confirmBox: {
     gap: spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: '#333B4D',
+    borderTopColor: colors.border,
     paddingTop: spacing.md,
   },
   confirmTitle: { fontSize: 15, fontWeight: '700', color: colors.textOnDark },
@@ -334,7 +334,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     borderRadius: radius.md,
     borderWidth: 1.5,
-    borderColor: '#3A4152',
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -349,7 +349,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: colors.textOnDark,
     borderWidth: 1,
-    borderColor: '#3A4152',
+    borderColor: colors.border,
   },
   cancel: { fontSize: 13, color: colors.textOnDarkMuted, textDecorationLine: 'underline' },
 });

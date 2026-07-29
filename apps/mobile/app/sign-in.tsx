@@ -12,7 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/Button';
 import { Notice } from '@/components/Feedback';
-import { colors, radius, spacing, toMemberMessage, MIN_TOUCH_TARGET, SIGNATURE } from '@mvmnt/shared';
+import { adamSays, colors, radius, spacing, toMemberMessage, MIN_TOUCH_TARGET, SIGNATURE } from '@mvmnt/shared';
 
 type Step = 'email' | 'code';
 
@@ -171,6 +171,9 @@ export default function SignIn() {
 
           {/* The signature, on the front door — same string everywhere it
               appears (SIGNATURE), so the credit is one edit, not a search. */}
+          {/* One line a day, before anyone is signed in — the door has a
+              doorman. Daily-stable, so it does not reshuffle on every keystroke. */}
+          <Text style={styles.voiceLine}>{adamSays('sign_in', { stability: 'daily' })}</Text>
           <Text style={styles.credit}>Developed by {SIGNATURE.name}</Text>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -195,14 +198,20 @@ const styles = StyleSheet.create({
     fontSize: 17,
     color: colors.textOnDark,
     borderWidth: 1,
-    borderColor: '#3A4152',
+    borderColor: colors.border,
   },
   codeInput: { fontSize: 24, letterSpacing: 8, textAlign: 'center', fontVariant: ['tabular-nums'] },
   divider: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  dividerLine: { flex: 1, height: 1, backgroundColor: '#3A4152' },
+  dividerLine: { flex: 1, height: 1, backgroundColor: colors.border },
   dividerText: { color: colors.textOnDarkMuted, fontSize: 13 },
   social: { gap: spacing.sm },
   socialNote: { textAlign: 'center', color: colors.textOnDarkMuted, fontSize: 13 },
+  voiceLine: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    fontStyle: 'italic',
+    textAlign: 'center',
+  },
   credit: {
     textAlign: 'center',
     color: colors.textOnDarkMuted,

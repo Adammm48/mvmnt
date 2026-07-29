@@ -89,7 +89,8 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
-        <StatusBar style="light" />
+        {/* Dark glyphs on the white base — the brand is black on white. */}
+        <StatusBar style="dark" />
         <RootNavigator />
         {/* One host for every confirmation in the app. See lib/confirm.ts for
             why neither platform dialog could be trusted with this. */}

@@ -56,7 +56,7 @@ export function TierLadder({
             accessibilityRole="text"
             accessibilityLabel={`${TIER_LABEL[tier]}, ${floor} points${reached ? ', reached' : ''}`}
           >
-            <View style={[styles.marker, { backgroundColor: reached ? TIER_COLOR[tier] : '#333B4D' }]} />
+            <View style={[styles.marker, { backgroundColor: reached ? TIER_COLOR[tier] : colors.border }]} />
 
             <View style={styles.body}>
               <View style={styles.titleRow}>

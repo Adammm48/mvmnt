@@ -57,12 +57,18 @@ export const TIER_ORDER: MemberTier[] = ['rookie', 'runner', 'competitor', 'elit
  * the highlight yellow applies to all of them: small elements only. At larger
  * sizes these read as decoration rather than status (App Spec §2).
  */
+/**
+ * Tuned for the white theme: every one of these is used as TEXT and small
+ * marks on a white or near-white surface, so each sits at roughly WCAG AA
+ * against white. The originals were picked for a dark base and washed out
+ * the day the brand went black-on-white.
+ */
 export const TIER_COLOR: Record<MemberTier, string> = {
-  rookie: '#A8AEBF',
-  runner: '#5FB0F5',
-  competitor: '#3DDC84',
-  elite: '#FFC93C',
-  legend: '#C77DFF',
+  rookie: '#6B7280',
+  runner: '#1D6FC2',
+  competitor: '#15803D',
+  elite: '#B45309',
+  legend: '#7C3AED',
 };
 
 /**

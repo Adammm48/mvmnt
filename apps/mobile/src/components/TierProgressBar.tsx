@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
   headRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
   currentTier: { fontSize: 13, fontWeight: '800', letterSpacing: 0.6, textTransform: 'uppercase' },
   points: { ...typography.data, fontSize: 14, color: colors.textOnDark },
-  track: { height: 8, borderRadius: radius.pill, backgroundColor: '#333B4D', overflow: 'hidden' },
+  track: { height: 8, borderRadius: radius.pill, backgroundColor: colors.border, overflow: 'hidden' },
   fill: { height: '100%', borderRadius: radius.pill },
   caption: { fontSize: 12, color: colors.textOnDarkMuted },
 });

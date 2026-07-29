@@ -216,7 +216,7 @@ export default function ProductScreen() {
                   value={usePoints}
                   onValueChange={setUsePoints}
                   accessibilityLabel="Use my points"
-                  trackColor={{ false: '#3A4152', true: colors.success }}
+                  trackColor={{ false: colors.border, true: colors.success }}
                 />
               </View>
               <Text style={styles.hint}>
@@ -233,7 +233,7 @@ export default function ProductScreen() {
                 value={isGift}
                 onValueChange={setIsGift}
                 accessibilityLabel="Send it to a friend"
-                trackColor={{ false: '#3A4152', true: colors.success }}
+                trackColor={{ false: colors.border, true: colors.success }}
               />
             </View>
 
@@ -365,7 +365,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     borderRadius: radius.md,
     borderWidth: 1.5,
-    borderColor: '#3A4152',
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -379,7 +379,7 @@ const styles = StyleSheet.create({
     height: MIN_TOUCH_TARGET,
     borderRadius: radius.pill,
     borderWidth: 1.5,
-    borderColor: '#3A4152',
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -402,7 +402,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: radius.pill,
     borderWidth: 1.5,
-    borderColor: '#3A4152',
+    borderColor: colors.border,
   },
   friendOn: { borderColor: colors.success, backgroundColor: 'rgba(61,220,132,0.12)' },
   friendText: { fontSize: 14, fontWeight: '600', color: colors.textOnDarkMuted },
@@ -416,7 +416,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: colors.textOnDark,
     borderWidth: 1,
-    borderColor: '#3A4152',
+    borderColor: colors.border,
     textAlignVertical: 'top',
   },
 

@@ -1,6 +1,6 @@
 import Svg, { Circle, Defs, LinearGradient, Path, Polygon, Stop } from 'react-native-svg';
 import { View } from 'react-native';
-import { TIER_COLOR, TIER_ORDER, type MemberTier } from '@mvmnt/shared';
+import { colors, TIER_COLOR, TIER_ORDER, type MemberTier } from '@mvmnt/shared';
 
 /**
  * The medallion for a tier.
@@ -25,7 +25,7 @@ export function TierBadge({
   /** Drawn flat and grey — a tier the member has not reached yet. */
   locked?: boolean;
 }) {
-  const color = locked ? '#4A5165' : TIER_COLOR[tier];
+  const color = locked ? colors.borderStrong : TIER_COLOR[tier];
   const rank = TIER_ORDER.indexOf(tier);
   const points = 3 + rank; // 3 for Rookie … 7 for Legend
   const id = `grad-${tier}${locked ? '-locked' : ''}`;
