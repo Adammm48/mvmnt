@@ -136,9 +136,14 @@ jobs:
       - name: Assert every action reports its outcome
         run: |
           set -uo pipefail
-          npm run dev --workspace @mvmnt/admin > /tmp/admin.log 2>&1 &
+          # Both through their own workspace scripts. `npx expo` from a
+          # subshell resolved the hoisted binary and inferred the wrong project
+          # root, so it bundled node_modules/expo/AppEntry.js instead of this
+          # package's `main` (expo-router/entry) and failed on CI while working
+          # locally. --host binds vite where curl actually looks.
+          npm run dev --workspace @mvmnt/admin -- --host 127.0.0.1 > /tmp/admin.log 2>&1 &
           ADMIN_PID=$!
-          (cd apps/mobile && npx expo start --web --port 8081 --non-interactive > /tmp/expo.log 2>&1) &
+          npm run web --workspace @mvmnt/mobile -- --port 8081 --non-interactive > /tmp/expo.log 2>&1 &
           EXPO_PID=$!
           trap 'kill $ADMIN_PID $EXPO_PID 2>/dev/null || true' EXIT
 
