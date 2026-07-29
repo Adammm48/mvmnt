@@ -226,6 +226,32 @@ check-in without standing at the meeting point. Ignored in release builds.
 
 ---
 
+## If the club is locked out
+
+Organiser access is one field on a profile, and the founding account is
+protected from demotion precisely so this should not happen. It still can: the
+owner can lose access to their email, or delete their own account, which is
+their right.
+
+**There is no hidden recovery account, and deliberately so.** An account the
+club cannot see is one they cannot revoke, and it would make the privacy policy
+untrue — it says organisers can see everything and every action is logged.
+
+Recovery instead uses the credentials whoever runs the project already holds.
+`service_role` and `postgres` both carry `rolbypassrls`, so anyone with the
+Supabase project can already read and write every table; and the role guard in
+[migration 0022](supabase/migrations/20260729110000_organiser_roles_and_member_detail.sql)
+exempts callers with no authenticated identity, which is what the SQL editor is.
+That is the same path the first organiser was created through.
+
+Open Supabase → SQL Editor and run
+[`scripts/restore-organiser.sql`](scripts/restore-organiser.sql). It checks
+whether anyone still has access before changing anything, promotes one named
+email, and prints the audit trail. Then tell the owner it was done — an
+organiser appearing from nowhere is indistinguishable from a compromise.
+
+---
+
 ## Before it goes live
 
 1. **Apple Developer Program**, enrolled to MVMNT. Organisation enrolment needs a
