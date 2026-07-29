@@ -12,11 +12,15 @@ WhatsApp, Instagram and word of mouth. This replaces that.
 > check-in, the notification pipeline, the organiser console, the loyalty system
 > (points, streaks, tiers, badges), the club leaderboard, the QR-only friends
 > system, and the merch shop with gifts and sponsor placements are built and
-> tested. **No payment gateway is wired in** — Stripe does not serve Egypt-based
-> businesses and the alternative needs quotes the club has not obtained, so
-> orders stop at "reserved" and the club takes payment in person. Phases 4–5
-> (routes, live tracking, photo galleries, HealthKit) are specified and
-> deliberately unbuilt. See [docs/backlog.md](docs/backlog.md).
+> tested, along with Phase 4's routes (drawn in the console, rendered as a
+> shape in the app), photo galleries in a private bucket, and opt-in live
+> location that is friends-only and structurally incapable of recording a
+> trail ([ADR 0004](docs/decisions/0004-live-tracking.md)). **No payment
+> gateway is wired in** — Stripe does not serve Egypt-based businesses and the
+> alternative needs quotes the club has not obtained, so orders stop at
+> "reserved" and the club takes payment in person. Phase 5 (HealthKit, AI
+> face-matching) is specified and deliberately unbuilt. See
+> [docs/backlog.md](docs/backlog.md).
 >
 > Built against [`docs/spec/MVMNT_App_Spec_1.md`](docs/spec/MVMNT_App_Spec_1.md)
 > and [`docs/spec/MVMNT_Engineering_Principles.md`](docs/spec/MVMNT_Engineering_Principles.md),

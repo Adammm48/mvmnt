@@ -271,6 +271,52 @@ export type Database = {
           },
         ]
       }
+      live_positions: {
+        Row: {
+          lat: number
+          lng: number
+          run_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          lat: number
+          lng: number
+          run_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          lat?: number
+          lng?: number
+          run_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_positions_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "run_attendance_counts"
+            referencedColumns: ["run_id"]
+          },
+          {
+            foreignKeyName: "live_positions_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "live_positions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       member_badges: {
         Row: {
           badge_key: string
@@ -1459,6 +1505,7 @@ export type Database = {
           type: Database["public"]["Enums"]["placement_type"]
         }[]
       }
+      are_friends: { Args: { a: string; b: string }; Returns: boolean }
       attendance_state: {
         Args: {
           checked_in_at: string
@@ -1607,6 +1654,7 @@ export type Database = {
       }
       publish_run: { Args: { p_run_id: string }; Returns: undefined }
       purge_expired_location_data: { Args: never; Returns: number }
+      purge_stale_live_positions: { Args: never; Returns: number }
       record_placement_seen: {
         Args: { p_placement_id: string }
         Returns: undefined
@@ -1631,7 +1679,15 @@ export type Database = {
         Args: { p_visible: boolean }
         Returns: undefined
       }
+      share_live_position: {
+        Args: { p_lat: number; p_lng: number; p_run_id: string }
+        Returns: undefined
+      }
       start_run: { Args: { p_run_id: string }; Returns: undefined }
+      stop_sharing_live_position: {
+        Args: { p_run_id: string }
+        Returns: undefined
+      }
       tier_for_points: {
         Args: { p_points: number }
         Returns: Database["public"]["Enums"]["member_tier"]

@@ -105,30 +105,52 @@ you specifically saw them, or anything else about you.
 
 ### Your location — read this bit
 
-We ask for your location for **one purpose only**: to confirm you are actually
-at the meeting point when you check in to a run.
+We ask for your location for **two purposes, and nothing else**:
 
-**How it works.** When you tap "check in", the app reads your position once and
+1. to confirm you are actually at the meeting point when you check in to a
+   run; and
+2. **only if you switch it on**, to show your friends where you are on the
+   route while a run is happening.
+
+**Check-in.** When you tap "check in", the app reads your position once and
 sends it to our server, which measures how far you are from that run's meeting
 point. If you are close enough, you are checked in.
 
+**Live location during a run — off unless you turn it on.** While a run is in
+progress, you can flip a switch to share where you are. If you do:
+
+- Only **your friends** — people you added by scanning codes in person — and
+  the club's organisers can see you. Other members cannot, even on the same
+  run.
+- We keep **one single point**: your latest position, overwritten every few
+  seconds. There is no route recording, no trail, and no way to replay where
+  you have been — the way it is stored makes a trail impossible, not just
+  against the rules.
+- It only updates **while the app is open on the run's screen**. Put the phone
+  in your pocket and your dot stops moving, then greys out.
+- It is **deleted the moment the run ends**, the moment you flip the switch
+  off, or automatically after two minutes of silence — whichever comes first.
+- The switch is per run. Nothing carries over to the next one.
+
 **What we specifically do NOT do:**
 
-- We do **not** collect your location in the background.
+- We do **not** collect your location in the background — for either purpose.
 - We do **not** collect it while the app is closed or in the background.
 - We do **not** collect it between runs, or on days you are not running.
 - We do **not** build a history of your movements.
-- We do **not** share your location with other members, or with anyone else.
+- We do **not** show your location to anyone beyond the friends and organisers
+  described above, and never unless you switched sharing on.
 
 **How long we keep it.** The coordinates from a check-in are **automatically and
 permanently deleted 30 days afterwards**. This is enforced by a scheduled job,
 not by anyone remembering to do it. After 30 days, the record that you attended
-remains, but *where you were* is gone.
+remains, but *where you were* is gone. Live positions are deleted as described
+above — at most minutes, not days.
 
 **You can refuse.** If you decline the location permission, or it fails — no
 signal, dead battery, phone in a bag — **you can still attend and still be
 checked in.** Ask an organiser and they will check you in by hand. Declining
-location does not lock you out of anything.
+location does not lock you out of anything, and live sharing simply stays off.
 
 ### Run photos
 

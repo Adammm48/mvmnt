@@ -1,8 +1,19 @@
 import { StyleSheet, Text, View } from 'react-native';
-import Svg, { Circle, Path } from 'react-native-svg';
+import Svg, { Circle, G, Path, Text as SvgText } from 'react-native-svg';
 import { colors, radius as radii, spacing, typography } from '@mvmnt/shared';
 
 type LngLat = [number, number];
+
+/** A friend out on the course right now (ADR 0004). */
+export type LiveDot = {
+  id: string;
+  /** First name or initials — drawn beside the dot. */
+  label: string;
+  lat: number;
+  lng: number;
+  /** True when the position is old enough to distrust; drawn dimmed. */
+  stale: boolean;
+};
 
 /**
  * The route, drawn as a shape rather than on a map.
@@ -25,10 +36,13 @@ export function RouteMap({
   route,
   distanceMeters,
   height = 200,
+  live = [],
 }: {
   route: LngLat[];
   distanceMeters?: number | null;
   height?: number;
+  /** Friends sharing live location, projected onto the same shape. */
+  live?: LiveDot[];
 }) {
   if (!route || route.length < 2) return null;
 
@@ -52,6 +66,31 @@ export function RouteMap({
           />
           <Circle cx={path.start[0]} cy={path.start[1]} r={3.5} fill={colors.success} stroke={colors.base} strokeWidth={1.5} />
           <Circle cx={path.end[0]} cy={path.end[1]} r={3.5} fill={colors.textOnDark} stroke={colors.base} strokeWidth={1.5} />
+
+          {/* Friends out on the course, through the same projection as the
+              line itself — a dot two-thirds around the loop reads as exactly
+              that. A stale dot dims rather than vanishing: "roughly there a
+              minute ago" is more honest than either certainty or absence. */}
+          {live.map((dot) => {
+            const [x, y] = path.project([dot.lng, dot.lat]);
+            return (
+              <G key={dot.id} opacity={dot.stale ? 0.45 : 1}>
+                <Circle cx={x} cy={y} r={4.5} fill={colors.highlight} stroke={colors.base} strokeWidth={1.5} />
+                <SvgText
+                  x={x}
+                  y={y - 7}
+                  fontSize={7}
+                  fontWeight="700"
+                  fill={colors.textOnDark}
+                  stroke={colors.base}
+                  strokeWidth={0.4}
+                  textAnchor="middle"
+                >
+                  {dot.label}
+                </SvgText>
+              </G>
+            );
+          })}
         </Svg>
       </View>
 
@@ -80,7 +119,13 @@ function Legend({ colour, label }: { colour: string; label: string }) {
  * longitude in Cairo is about 88km against 111km for latitude, and ignoring
  * that draws every east-west route noticeably squashed.
  */
-function toPath(route: LngLat[]): { d: string; start: [number, number]; end: [number, number] } {
+function toPath(route: LngLat[]): {
+  d: string;
+  start: [number, number];
+  end: [number, number];
+  /** Project any [lng, lat] with the same fit as the route — for live dots. */
+  project: (point: LngLat) => [number, number];
+} {
   const midLat = route.reduce((sum, [, la]) => sum + la, 0) / route.length;
   const scale = Math.cos((midLat * Math.PI) / 180);
 
@@ -113,7 +158,13 @@ function toPath(route: LngLat[]): { d: string; start: [number, number]; end: [nu
   });
 
   const d = points.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(2)} ${y.toFixed(2)}`).join(' ');
-  return { d, start: points[0]!, end: points[points.length - 1]! };
+
+  const project = ([lo, la]: LngLat): [number, number] => [
+    pad + offsetX + ((lo * scale - minX) / span) * usable,
+    pad + offsetY + (usable - ((la - minY) / span) * usable),
+  ];
+
+  return { d, start: points[0]!, end: points[points.length - 1]!, project };
 }
 
 /** Straight-line length between clicked points — a sanity figure, not a survey. */

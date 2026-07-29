@@ -30,6 +30,19 @@ consent" is answered by the code already expiring in a minute rather than by a
 button. Recorded here so a future reader comparing the spec to the code is not
 left thinking one of them is wrong.
 
+Two process divergences, same authority:
+
+- **Phase gates.** Spec §0 says each phase waits for confirmation before the
+  next begins. Owner instruction, 2026-07-29: proceed through the remaining
+  phases without per-phase sign-off. Verification per phase (tests, browser
+  walkthroughs, screenshots) continued unchanged; only the waiting stopped.
+- **The live-location design review.** Spec §0 asks for a multi-model council
+  on the live-location approach. On the owner's instruction to avoid the cost
+  of spawning that, the review was written as a full decision record instead:
+  [ADR 0004](decisions/0004-live-tracking.md). The end-of-build whole-system
+  review the spec also asks for remains open in
+  [open-items](open-items.md).
+
 ---
 
 ## Health stats — HealthKit / Health Connect · **Phase 5**

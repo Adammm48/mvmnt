@@ -136,6 +136,25 @@ implausible claim is still recorded as evidence.
 
 ---
 
+### `share_live_position(p_run_id uuid, p_lat float8, p_lng float8) → void`
+
+Live location, per [ADR 0004](decisions/0004-live-tracking.md). Upserts the
+caller's **single** current position for the run — `(run_id, user_id)` is the
+primary key, so a movement trail is impossible by construction, not by
+policy. Refused unless the run is in progress and the caller is checked in.
+Deliberately not audited: an audit log of positions would be the history the
+table exists to prevent.
+
+Who sees it: the sharer, their friends, and organisers — enforced by RLS on
+`live_positions`, which is read directly (the one member-readable table where
+polling a `SELECT` is the API). Rows die with the toggle, with the run ending,
+or after two minutes of silence via `scheduler_tick`.
+
+### `stop_sharing_live_position(p_run_id uuid) → void`
+
+Unconditional and unfailable — "stop showing people where I am" must always
+work, whatever state the run is in.
+
 ### `register_push_token(p_token text, p_platform text) → void`
 
 Register a device for notifications. `p_platform` is `'ios'` or `'android'`.
@@ -686,6 +705,12 @@ rate is the club's to change — see `docs/open-items.md`.
 | `friendships` | **No** — only via `my_friends()` | No — via RPC |
 | `friend_qr_tokens` | **No** — only via `my_friend_qr()` | No — via RPC |
 | `pokes` | Only ones they sent or received | No — via RPC |
+| `products` | Active ones | No |
+| `orders` | Own (as buyer or recipient) | No — via RPC |
+| `sponsors` / `sponsor_placements` | Via `active_placements()` only | No |
+| `sponsor_impressions` | **No** | Via the two `record_placement_*` RPCs |
+| `run_photos` | Only for published galleries | No |
+| `live_positions` | Self, friends' rows; organisers all | No — via RPC |
 
 **There is deliberately no member directory.** A member can read exactly one
 profile: their own. App Spec §4.4 makes QR-only friend adding a safety measure

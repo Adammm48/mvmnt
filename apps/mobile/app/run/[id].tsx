@@ -8,6 +8,7 @@ import { Loading, Notice } from '@/components/Feedback';
 import { RunHero } from '@/components/RunHero';
 import { Celebration } from '@/components/Celebration';
 import { RouteMap } from '@/components/RouteMap';
+import { LiveTracking } from '@/components/LiveTracking';
 import { getCurrentFix } from '@/lib/location';
 import { enqueue, hasPendingFor, removePendingFor } from '@/lib/checkInQueue';
 import {
@@ -256,14 +257,28 @@ export default function RunDetail() {
         a draft, and showing it would have members planning around a shape that
         changes under them.
       */}
-      {run.route && run.route_published_at && (
+      {/*
+        While the run is on, the route section becomes the live one: the same
+        shape, with friends who chose to share drawn on it, and the opt-in
+        toggle for whoever is checked in (ADR 0004). Before and after, it is
+        the plain drawing.
+      */}
+      {run.status === 'in_progress' ? (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>The route</Text>
-          <RouteMap
-            route={run.route as [number, number][]}
-            distanceMeters={run.distance_meters}
-          />
+          <Text style={styles.sectionTitle}>Out on the run</Text>
+          <LiveTracking run={run} checkedIn={myState === 'checked_in'} />
         </View>
+      ) : (
+        run.route &&
+        run.route_published_at && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>The route</Text>
+            <RouteMap
+              route={run.route as [number, number][]}
+              distanceMeters={run.distance_meters}
+            />
+          </View>
+        )
       )}
 
       {/* Same rule as the route: nothing until the organiser publishes. */}

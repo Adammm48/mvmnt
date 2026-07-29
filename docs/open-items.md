@@ -139,6 +139,22 @@ Phase 3 — sponsors, and the merch catalogue itself — can be built without th
 
 ---
 
+## Owed to the spec
+
+### The end-of-build whole-system review
+
+**Who:** Adam triggers it; the review itself is a multi-model council run.
+**Where:** App Spec §0 — "At the end of all phases, run /llm-council once on
+the whole system as a final review."
+
+The per-decision reviews happened (Phase 2's council on the data model;
+ADR 0004 standing in for the live-location council on the owner's
+instruction), but the one-shot review of the complete system has not. Worth
+running before the first real member signs in — it is the last chance to
+catch something structural while everything is still cheap to change.
+
+---
+
 ## Deliberately not on this list
 
 `scripts/restore-organiser.sql` contains `REPLACE_WITH_THE_EMAIL@example.com`.
