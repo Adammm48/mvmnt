@@ -134,8 +134,11 @@ export function describeStreak(weeks: number): string {
 
 /** The same thing for a stat tile, where a label underneath supplies the noun. */
 export function describeStreakShort(weeks: number): string {
-  if (weeks === 0) return 'None yet';
-  return `${weeks} ${weeks === 1 ? 'week' : 'weeks'}`;
+  // Genuinely short: this renders in a stat cell that now shares a row with
+  // three others, and "22 weeks" was truncating to "22 wee…" on a phone.
+  // The unit lives in the label next to it.
+  if (weeks === 0) return '—';
+  return `${weeks}w`;
 }
 
 /**
