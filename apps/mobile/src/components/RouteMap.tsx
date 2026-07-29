@@ -159,9 +159,16 @@ function toPath(route: LngLat[]): {
 
   const d = points.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(2)} ${y.toFixed(2)}`).join(' ');
 
+  // Clamped to the frame: a runner who has drifted off the route would
+  // otherwise project outside the viewBox and silently vanish — and the
+  // person off the loop is precisely the dot worth seeing. Pinned to the
+  // edge it reads as "out that way", which is the honest answer at this
+  // level of map. The organiser's console has the real map for "where
+  // exactly".
+  const clamp = (v: number) => Math.min(100 - pad / 2, Math.max(pad / 2, v));
   const project = ([lo, la]: LngLat): [number, number] => [
-    pad + offsetX + ((lo * scale - minX) / span) * usable,
-    pad + offsetY + (usable - ((la - minY) / span) * usable),
+    clamp(pad + offsetX + ((lo * scale - minX) / span) * usable),
+    clamp(pad + offsetY + (usable - ((la - minY) / span) * usable)),
   ];
 
   return { d, start: points[0]!, end: points[points.length - 1]!, project };
