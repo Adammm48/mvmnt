@@ -101,6 +101,29 @@ begin
     'adding a late batch and publishing again does not notify twice');
 
   -- ------------------------------------------------------------------------
+  -- The BYTES gate, not just the rows: storage.objects' own policy.
+  --
+  -- The privacy claim is that an object in gallery-media is readable only
+  -- when a run_photos row links it to a published gallery. Objects that
+  -- never got a row — an upload that failed halfway, or something dropped
+  -- into the bucket by hand — must be invisible, not leaked.
+  -- ------------------------------------------------------------------------
+  perform tests.act_as_system();
+  insert into storage.objects (bucket_id, name, owner)
+  values ('gallery-media', v_run || '/run/bridge.jpg', v_admin),
+         ('gallery-media', v_run || '/run/orphan-no-row.jpg', v_admin);
+
+  perform tests.act_as(v_a);
+  perform tests.assert_eq(
+    (select count(*)::int from storage.objects
+      where bucket_id = 'gallery-media' and name = v_run || '/run/bridge.jpg'), 1,
+    'a member can read the bytes of a published, registered photo');
+  perform tests.assert_eq(
+    (select count(*)::int from storage.objects
+      where bucket_id = 'gallery-media' and name = v_run || '/run/orphan-no-row.jpg'), 0,
+    'an object with no run_photos row is invisible — orphans do not leak');
+
+  -- ------------------------------------------------------------------------
   -- Erasing the organiser anonymises their uploads; the club keeps its photos.
   -- ------------------------------------------------------------------------
   perform tests.act_as(v_admin);
