@@ -102,7 +102,44 @@ try {
   // running app rather than mocked — which also means the countdown underneath
   // it is real, and that countdown is the whole safety argument.
   await shoot(phonePage, `${MOBILE}/friends/code`, 'app-friend-code');
+
+  // The profile, scrolled to the badges — including any hidden one this member
+  // has actually earned.
+  await phonePage.goto(`${MOBILE}/profile`, { waitUntil: 'networkidle' });
+  await phonePage.waitForTimeout(1500);
+  await phonePage.screenshot({ path: `${OUT}/app-profile.png` });
+  console.log('  app-profile.png');
   await phone.close();
+
+  // --- the chest -----------------------------------------------------------
+  // Its own context, because it fires for a member with an unclaimed tier and
+  // claiming it is a one-way door — capturing it in the main session would
+  // consume the seed's only demoable chest before the other shots are taken.
+  const chestMember = await signIn('runner9@mvmnt.test');
+  const chestPhone = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    deviceScaleFactor: 2,
+  });
+  const chestPage = await chestPhone.newPage();
+  await seedSession(chestPage, MOBILE, chestMember);
+  await chestPage.goto(MOBILE, { waitUntil: 'networkidle' });
+  await chestPage.waitForTimeout(2500);
+
+  // The welcome modal shows once on a fresh profile and would cover the chest.
+  const welcome = chestPage.getByRole('button', { name: 'Let’s go' });
+  if (await welcome.isVisible().catch(() => false)) {
+    await welcome.click();
+    await chestPage.waitForTimeout(700);
+  }
+  if (await chestPage.getByText('Tap to open').isVisible().catch(() => false)) {
+    await chestPage.getByText('🎁').click();
+    await chestPage.waitForTimeout(1100);
+    await chestPage.screenshot({ path: `${OUT}/app-chest.png` });
+    console.log('  app-chest.png');
+  } else {
+    console.log('  app-chest.png SKIPPED — no unclaimed tier; run npm run db:reset first');
+  }
+  await chestPhone.close();
 
   // --- the organiser's console -------------------------------------------
   const organiser = await signIn('organiser@mvmnt.test');
@@ -114,6 +151,13 @@ try {
   await seedSession(desktopPage, ADMIN, organiser);
 
   await shoot(desktopPage, ADMIN, 'admin-runs');
+
+  // The members directory — organiser-only, and the screen that answers "who is
+  // this person and what have they done".
+  await desktopPage.getByRole('button', { name: 'Members', exact: true }).click();
+  await desktopPage.waitForTimeout(1400);
+  await desktopPage.screenshot({ path: `${OUT}/admin-members.png` });
+  console.log('  admin-members.png');
 
   // The editor, scrolled to the map — the part worth showing.
   await desktopPage.goto(ADMIN, { waitUntil: 'networkidle' });

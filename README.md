@@ -30,15 +30,25 @@ WhatsApp, Instagram and word of mouth. This replaces that.
 
 | The board | The friend code |
 |---|---|
-| <img src="docs/screenshots/app-leaderboard.png" width="330" alt="Leaderboard showing the member's own points, tier and streak above the top 100"> | <img src="docs/screenshots/app-friend-code.png" width="330" alt="A friend QR code with a three-minute countdown beneath it"> |
+| <img src="docs/screenshots/app-leaderboard.png" width="330" alt="Leaderboard showing the member's own points, tier and streak above the top 100"> | <img src="docs/screenshots/app-friend-code.png" width="330" alt="A friend code shown as a QR and as eight readable characters, with a countdown"> |
 
-<p align="center"><em>Your own standing sits above the board, because most of the club will never be in the top 100. The countdown under the friend code is the whole safety argument: three minutes, one scan.</em></p>
+<p align="center"><em>Your own standing sits above the board, because most of the club will never be in the top 100. The friend code is shown twice — as a square to scan and as eight characters to read aloud — and rolls every sixty seconds, which is the entire reason "in person only" is true rather than merely intended.</em></p>
+
+| Reaching a tier | Your badges |
+|---|---|
+| <img src="docs/screenshots/app-chest.png" width="330" alt="A chest opening to reveal the Competitor badge and its reward"> | <img src="docs/screenshots/app-profile.png" width="330" alt="Profile showing points, tier, streak and the badge grid"> |
+
+<p align="center"><em>Crossing a tier is recorded server-side as an event, so the celebration survives a reinstall and cannot fire twice across two phones. It opens on a tap — this arrives thirty seconds after checking in, when the member is standing in a car park in the cold.</em></p>
 
 **The organiser's console** — no developer required, which is the whole point of it.
 
 <img src="docs/screenshots/admin-editor.png" width="820" alt="Run editor with a map picker showing the check-in radius">
 
 <img src="docs/screenshots/admin-runs.png" width="820" alt="Run list with attendance counts">
+
+<img src="docs/screenshots/admin-members.png" width="820" alt="Members directory with points, tiers and last run">
+
+<p align="center"><em>The one screen in MVMNT that lists the whole membership — organiser-only, and a <code>SECURITY DEFINER</code> function rather than a relaxed policy. Members still read exactly one profile: their own.</em></p>
 
 ---
 
@@ -124,11 +134,22 @@ version would have cost usefulness without buying privacy. It is a third
 `SECURITY DEFINER` function that refuses anyone who is not an admin; the members'
 own `profiles` policy is untouched and still returns exactly one row.
 
-**Being added as a friend requires being there.** The code behind the QR lives
-three minutes and burns on first scan, so a screenshot forwarded to somebody who
-was not standing there is dead on arrival. That property is invisible in the UI,
-so [`07_friends.sql`](supabase/tests/07_friends.sql) tests each half of it
-directly — expiry, single use, revocation, and organiser moderation.
+**Being added as a friend requires being there.** The code lives sixty seconds,
+burns on first scan, and each new one retires the last — so a screenshot
+forwarded to somebody who was not standing there is dead on arrival. It is eight
+characters rather than thirty-two because the fallback the whole feature depends
+on is one person reading it aloud when a camera will not focus, and 40 bits
+against a one-minute single-use window is not a practical target. None of that
+is visible in the UI, so [`07_friends.sql`](supabase/tests/07_friends.sql) tests
+each property directly.
+
+**Points can go down.** Reaching Legend takes six months of not missing a
+Saturday — a number derived from the scoring rules rather than picked, and
+asserted in a test so changing either cannot silently move the ladder. That
+ceiling only works because absence costs: the first missed run is free, and from
+the second consecutive one a member loses exactly what attending earns, never
+below zero. Without it every regular is Legend forever by their second season
+and the top rung measures nothing.
 
 ---
 
@@ -177,9 +198,18 @@ npm run db:test
 ```
 
 Seven suites over attendance and waitlist ordering, geofenced check-in, every RLS
-policy, notification idempotency, retention and erasure, the points/streak/badge
-rules, and the friend-code safety properties. They run inside transactions and
-roll back, so they are safe against a seeded database.
+policy, notification idempotency, retention and erasure, the points, streak,
+badge, tier and decay rules, organiser role changes, and the friend-code safety
+properties. They run inside transactions and roll back, so they are safe against
+a seeded database.
+
+**A recurring bug class worth naming:** four separate features shipped with a
+platform call that failed silently — `Alert` (`static alert() {}` on web),
+`window.confirm` (returns `false` when a browser suppresses it),
+`navigator.share` (undefined nearly everywhere), and `flush().catch(() => {})`
+on the offline check-in queue. Each looked correct, ran without error, and told
+nobody anything. Every one of them is now required to report an outcome, and the
+tests assert that the member was told rather than that the function ran.
 
 **RLS cannot be tested by clicking around** — the UI only ever asks for data it
 is supposed to have, so a policy hole is invisible from the front end and
