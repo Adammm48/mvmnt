@@ -33,7 +33,7 @@ type Delivery = {
   event_id: string;
   push_token: string;
   attempts: number;
-  notification_events: { title: string; body: string; run_id: string | null } | null;
+  notification_events: { title: string; body: string; run_id: string | null; type: string } | null;
 };
 
 Deno.serve(async (req) => {
@@ -91,7 +91,7 @@ async function deliverPending(supabase: SupabaseClient) {
 
   const { data: pending, error } = await supabase
     .from('notification_deliveries')
-    .select('id, event_id, push_token, attempts, notification_events(title, body, run_id)')
+    .select('id, event_id, push_token, attempts, notification_events(title, body, run_id, type)')
     .eq('status', 'pending')
     .lt('attempts', MAX_ATTEMPTS)
     .limit(MAX_DELIVERIES_PER_TICK)
@@ -148,8 +148,12 @@ async function sendBatch(batch: Delivery[]) {
     title: d.notification_events?.title ?? 'MVMNT',
     body: d.notification_events?.body ?? '',
     sound: 'default',
-    // Lets the app deep-link straight to the run the notification is about.
-    data: { run_id: d.notification_events?.run_id ?? null },
+    // Lets the app deep-link to the screen the notification is about — the
+    // type decides which one (photos land on the gallery, not the run).
+    data: {
+      run_id: d.notification_events?.run_id ?? null,
+      type: d.notification_events?.type ?? null,
+    },
   }));
 
   const updates: { id: number; patch: Record<string, unknown> }[] = [];

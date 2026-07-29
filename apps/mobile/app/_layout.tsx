@@ -8,6 +8,7 @@ import { Loading } from '@/components/Feedback';
 import { ConfirmHost } from '@/components/ConfirmHost';
 import { flush } from '@/lib/checkInQueue';
 import { publishSync } from '@/lib/syncStatus';
+import { useNotificationRouting } from '@/lib/notificationRouting';
 import { colors } from '@mvmnt/shared';
 
 function RootNavigator() {
@@ -49,6 +50,11 @@ function RootNavigator() {
     });
     return () => subscription.remove();
   }, [session]);
+
+  // Signed in and settled: a tapped notification may now route somewhere.
+  // Gated on that, because routing to a run before auth resolves would bounce
+  // off the sign-in redirect above and the tap would be lost.
+  useNotificationRouting(!loading && !!session);
 
   if (loading) return <Loading label="Starting MVMNT" />;
 
