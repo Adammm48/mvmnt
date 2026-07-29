@@ -64,6 +64,7 @@ export default function AboutScreen() {
         <Text style={styles.name}>{SIGNATURE.name}</Text>
         <Text style={styles.role}>{SIGNATURE.role}</Text>
         <Text style={styles.study}>{SIGNATURE.study}</Text>
+        <Text style={styles.study}>{SIGNATURE.location}</Text>
       </View>
 
       <View style={styles.section}>
@@ -105,7 +106,7 @@ export default function AboutScreen() {
           >
             <Text style={styles.linkLabel}>{link.label}</Text>
             <Text style={styles.linkValue}>
-              {link.placeholder ? 'coming soon' : link.url.replace(/^https?:\/\//, '')}
+              {link.placeholder ? 'coming soon' : link.url.replace(/^(https?:\/\/|mailto:)/, '')}
             </Text>
           </Pressable>
         ))}

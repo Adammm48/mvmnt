@@ -88,17 +88,15 @@ since before this project started. Harmless to the running app, but a public
 repo with an obviously unfinished line in its founding document looks
 unfinished.
 
-### Adam's contact links
+### Adam's contact links — mostly DONE, 2026-07-29
 
 **Who:** Adam.
 **Where:** `CONTACT_LINKS` in [`packages/shared/src/voice.ts`](../packages/shared/src/voice.ts).
 
-GitHub is real. Portfolio, LinkedIn and email are **empty strings** with
-`placeholder: true` — the About page renders them as "coming soon" and refuses
-to open them. They are empty rather than invented because a plausible-looking
-URL that 404s in front of three hundred members is worse than one that is
-visibly unfinished, and guessing somebody's portfolio address is exactly how
-that happens.
+GitHub, LinkedIn and email are real and live on the About page, along with
+Nottingham, UK. Only the **portfolio** remains a placeholder — no URL exists
+yet, and a plausible-looking one that 404s in front of three hundred members
+is worse than "coming soon".
 
 ---
 

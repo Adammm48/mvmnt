@@ -314,6 +314,7 @@ export const SIGNATURE = {
   giftFrom: 'Adam the Great',
   footer: 'Made with ❤️ by Adam Elbasiony',
   study: 'Computer Science, University of Nottingham',
+  location: 'Nottingham, UK',
   hello: 'If you enjoyed MVMNT, say hi 👋',
 } as const;
 
@@ -328,7 +329,9 @@ export const SIGNATURE = {
  */
 export const CONTACT_LINKS: { label: string; url: string; placeholder: boolean }[] = [
   { label: 'GitHub', url: 'https://github.com/Adammm48', placeholder: false },
+  { label: 'LinkedIn', url: 'https://linkedin.com/in/adam-elbasiony', placeholder: false },
+  { label: 'Email', url: 'mailto:adamtaimour2@gmail.com', placeholder: false },
+  // Still real-when-provided: no portfolio URL exists yet, and a plausible
+  // guess that 404s in front of the club is worse than "coming soon".
   { label: 'Portfolio', url: '', placeholder: true },
-  { label: 'LinkedIn', url: '', placeholder: true },
-  { label: 'Email', url: '', placeholder: true },
 ];
