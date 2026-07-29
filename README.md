@@ -37,7 +37,9 @@ WhatsApp, Instagram and word of mouth. This replaces that.
 
 | The member's app | The run detail |
 |---|---|
-| <img src="docs/screenshots/app-home.png" width="330" alt="Home screen showing upcoming runs as photo cards"> | <img src="docs/screenshots/app-run-detail.png" width="330" alt="Run detail with cover photo, meeting point and check-in"> |
+| <img src="docs/screenshots/app-home.png" width="330" alt="Home screen showing upcoming runs as photo cards"> | <img src="docs/screenshots/app-run-detail.png" width="330" alt="Run detail with the route drawn as a shape, meeting point and check-in"> |
+
+<p align="center"><em>The route on the run detail is the organiser's drawing, rendered as a shape with SVG rather than a tiled map — what a member wants the night before is the loop and the distance, not street names, and it costs no map SDK, no API key and no per-platform rendering to QA.</em></p>
 
 | The board | The friend code |
 |---|---|
@@ -60,6 +62,10 @@ WhatsApp, Instagram and word of mouth. This replaces that.
 **The organiser's console** — no developer required, which is the whole point of it.
 
 <img src="docs/screenshots/admin-editor.png" width="820" alt="Run editor with a map picker showing the check-in radius">
+
+<img src="docs/screenshots/admin-route.png" width="820" alt="Route drawer: the organiser clicks along the streets and the polyline follows">
+
+<p align="center"><em>Routes are drawn by clicking along the streets, and published as a separate act from saving — sketching on Tuesday should not notify three hundred people. Coordinates are validated server-side in GeoJSON order, because a transposed pair renders the route off the coast of Somalia.</em></p>
 
 <img src="docs/screenshots/admin-runs.png" width="820" alt="Run list with attendance counts">
 

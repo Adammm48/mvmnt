@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { CLUB_TIMEZONE, toMemberMessage, type Run } from '@mvmnt/shared';
 import { MediaUpload } from '../components/MediaUpload';
 import { MeetingPointPicker } from '../components/MeetingPointPicker';
+import { RouteDrawer } from '../components/RouteDrawer';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/Confirm';
 
@@ -40,6 +41,9 @@ export function RunEditor({ runId, onDone }: Props) {
   const [lat, setLat] = useState(DEFAULT_LAT);
   const [lng, setLng] = useState(DEFAULT_LNG);
   const [radius, setRadius] = useState(250);
+  const [route, setRoute] = useState<[number, number][]>([]);
+  const [routePublishedAt, setRoutePublishedAt] = useState<string | null>(null);
+  const [routeDirty, setRouteDirty] = useState(false);
   const [distance, setDistance] = useState('');
   const [capacity, setCapacity] = useState('');
   const [paceGroups, setPaceGroups] = useState('');
@@ -68,6 +72,9 @@ export function RunEditor({ runId, onDone }: Props) {
     setMeetingPoint(data.meeting_point_name);
     setLat(data.meeting_point_lat);
     setLng(data.meeting_point_lng);
+    setRoute((data.route as [number, number][] | null) ?? []);
+    setRoutePublishedAt(data.route_published_at);
+    setRouteDirty(false);
     setRadius(data.check_in_radius_m);
     setDistance(data.distance_meters ? String(data.distance_meters) : '');
     setCapacity(data.capacity ? String(data.capacity) : '');
@@ -121,9 +128,56 @@ export function RunEditor({ runId, onDone }: Props) {
       setError(toMemberMessage(result.error));
       return;
     }
+    // The route goes through its own RPC rather than the payload above: it
+    // validates every coordinate pair server-side, and a transposed point that
+    // slipped past the drawer would otherwise be stored happily and fail later
+    // on somebody's phone.
+    const savedId = result.data?.id ?? id;
+    if (savedId && routeDirty) {
+      const { error: routeError } = await supabase.rpc('admin_set_route', {
+        p_run_id: savedId,
+        p_route: route.length > 0 ? route : null,
+      });
+      if (routeError) {
+        setError(toMemberMessage(routeError));
+        return;
+      }
+      setRouteDirty(false);
+    }
+
     if (result.data) applyRun(result.data);
     if (id) toast.success('Changes saved');
     else toast.success('Draft saved', "Members can't see it until you publish.");
+  }
+
+  /**
+   * Publishing the route is separate from saving it.
+   *
+   * Saving is drafting; publishing tells everybody who signed up. Conflating
+   * the two would ping the club every time an organiser nudged a corner.
+   */
+  async function publishRoute() {
+    if (!run) return;
+    const ok = await confirm({
+      title: 'Publish this route?',
+      message:
+        'Everyone signed up for this run gets a notification saying the route is live.\n\n' +
+        'You can keep editing it afterwards without notifying them again.',
+      confirmLabel: 'Publish the route',
+    });
+    if (!ok) return;
+
+    setBusy(true);
+    const { error: routeError } = await supabase.rpc('admin_publish_route', {
+      p_run_id: run.id,
+    });
+    setBusy(false);
+    if (routeError) {
+      toast.error("Couldn't publish the route", toMemberMessage(routeError));
+      return;
+    }
+    toast.success('Route published', 'Everyone signed up has been told.');
+    setRoutePublishedAt(new Date().toISOString());
   }
 
   async function publish() {
@@ -302,6 +356,33 @@ export function RunEditor({ runId, onDone }: Props) {
             setLng(nextLng);
           }}
         />
+
+        <RouteDrawer
+          lat={lat}
+          lng={lng}
+          route={route}
+          onChange={(next) => {
+            setRoute(next);
+            setRouteDirty(true);
+          }}
+        />
+
+        {route.length >= 2 && run && run.status !== 'draft' && (
+          <div className="field">
+            <div className="inline">
+              <button type="button" onClick={publishRoute} disabled={busy || routeDirty}>
+                {routePublishedAt ? 'Publish the route again' : 'Publish the route'}
+              </button>
+              <span style={{ color: 'var(--muted)', fontSize: 13 }}>
+                {routeDirty
+                  ? 'Save your changes first.'
+                  : routePublishedAt
+                    ? 'Members have been told once. Publishing again will not notify them twice.'
+                    : 'Members signed up for this run get a notification.'}
+              </span>
+            </div>
+          </div>
+        )}
 
         <div className="field">
           <label htmlFor="radius">Check-in area: {radius}m across</label>

@@ -10,7 +10,7 @@ declare
   v_admin uuid; v_a uuid; v_b uuid; v_c uuid; v_run uuid;
   v_state public.attendance_state;
   v_queued_before timestamptz; v_queued_after timestamptz;
-  v_next uuid;
+  v_next uuid; v_route_run uuid;
 begin
   perform tests.act_as_system();
   v_admin := tests.make_member('organiser', true);
@@ -194,6 +194,69 @@ begin
   perform tests.assert_rejects(
     format('select public.join_run(%L)', v_run),
     'a draft run cannot be joined');
+  perform tests.act_as_system();
+
+  -- ---------------------------------------------------------------------
+  -- Routes (App Spec §4.7).
+  --
+  -- Every coordinate is validated server-side because the console is not the
+  -- only thing that could ever call this, and a transposed pair stored happily
+  -- fails later on a member's phone rather than here.
+  -- ---------------------------------------------------------------------
+  -- Its own run: by this point in the suite the fixture above has been through
+  -- cancellation and re-publication, and admin_publish_route refuses a draft.
+  v_route_run := tests.make_run(v_admin, null, now() + interval '4 hours');
+  perform tests.act_as(v_admin);
+
+  perform tests.assert_rejects(
+    format('select public.admin_set_route(%L, %L::jsonb)', v_route_run, '[[31.23, 30.04]]'),
+    'a single point is not a route');
+
+  perform tests.assert_rejects(
+    format('select public.admin_set_route(%L, %L::jsonb)', v_route_run, '[[31.23, 30.04], [31.24]]'),
+    'every point must be a pair');
+
+  -- The classic mapping bug: latitude and longitude the wrong way round. It
+  -- renders as a route in the Indian Ocean, and the only place to catch it is
+  -- the range check.
+  perform tests.assert_rejects(
+    format('select public.admin_set_route(%L, %L::jsonb)', v_route_run, '[[30.04, 131.23], [30.05, 131.24]]'),
+    'a latitude beyond 90 is refused — that is a transposed pair, not a route');
+
+  perform public.admin_set_route(v_route_run, '[[31.235, 30.044], [31.240, 30.048], [31.245, 30.044]]'::jsonb);
+  perform tests.act_as_system();
+  perform tests.assert_eq(
+    (select jsonb_array_length(route) from public.runs where id = v_route_run), 3,
+    'a valid route is stored');
+  perform tests.assert(
+    (select route_published_at is null from public.runs where id = v_route_run),
+    'and drawing it does not publish it — drafting is not announcing');
+
+  -- Members only see a published route.
+  perform tests.act_as(v_admin);
+  perform public.admin_publish_route(v_route_run);
+  perform tests.act_as_system();
+  perform tests.assert(
+    (select route_published_at is not null from public.runs where id = v_route_run),
+    'publishing marks it live');
+  perform tests.assert_eq(
+    (select count(*)::int from public.notification_events
+      where type = 'route_published' and run_id = v_route_run), 1,
+    'and tells the people who signed up');
+
+  -- Re-publishing a corrected route must not notify twice.
+  perform tests.act_as(v_admin);
+  perform public.admin_publish_route(v_route_run);
+  perform tests.act_as_system();
+  perform tests.assert_eq(
+    (select count(*)::int from public.notification_events
+      where type = 'route_published' and run_id = v_route_run), 1,
+    'and fixing a corner does not ping the club again');
+
+  perform tests.act_as(v_a);
+  perform tests.assert_rejects(
+    format('select public.admin_set_route(%L, %L::jsonb)', v_route_run, '[[31.23, 30.04], [31.24, 30.05]]'),
+    'a member cannot draw a route');
   perform tests.act_as_system();
 
   raise notice 'PASS 01_attendance';

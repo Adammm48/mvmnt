@@ -85,6 +85,22 @@ begin
     'Our weekly 6K. All paces welcome — nobody gets left behind.', v_admin)
   returning id into v_soon;
 
+  -- A published route on it, so the map has something to draw on both sides.
+  --
+  -- A loop out of the meeting point, over Qasr El Nil bridge, around Gezira and
+  -- back. It starts at this run's own pin on purpose — a route beginning
+  -- somewhere else is exactly the mistake the drawer should make obvious, so
+  -- the demo data should not model it.
+  --
+  -- Placeholder geometry, like the meeting points themselves. Real routes come
+  -- from the club (docs/open-items.md).
+  update public.runs
+     set route = '[[31.2357,30.0444],[31.2330,30.0450],[31.2312,30.0464],[31.2270,30.0478],
+                   [31.2245,30.0490],[31.2228,30.0518],[31.2240,30.0548],[31.2270,30.0560],
+                   [31.2298,30.0540],[31.2318,30.0505],[31.2340,30.0470],[31.2357,30.0444]]'::jsonb,
+         route_published_at = now()
+   where id = v_soon;
+
   -- Capacity 5, so the waitlist and its promotion flow can be exercised.
   insert into public.runs (title, starts_at, ends_at, meeting_point_name,
     meeting_point_lat, meeting_point_lng, distance_meters, capacity,

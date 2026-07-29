@@ -7,6 +7,7 @@ import { Button } from '@/components/Button';
 import { Loading, Notice } from '@/components/Feedback';
 import { RunHero } from '@/components/RunHero';
 import { Celebration } from '@/components/Celebration';
+import { RouteMap } from '@/components/RouteMap';
 import { getCurrentFix } from '@/lib/location';
 import { enqueue, hasPendingFor, removePendingFor } from '@/lib/checkInQueue';
 import {
@@ -250,6 +251,21 @@ export default function RunDetail() {
         <Fact label="Pace groups" value={run.pace_groups.join(' · ')} />
       )}
 
+      {/*
+        Only once the organiser has published it. A route still being drawn is
+        a draft, and showing it would have members planning around a shape that
+        changes under them.
+      */}
+      {run.route && run.route_published_at && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>The route</Text>
+          <RouteMap
+            route={run.route as [number, number][]}
+            distanceMeters={run.distance_meters}
+          />
+        </View>
+      )}
+
       <View style={styles.social}>
         {capacityStatus && <Text style={styles.spots}>{capacityStatus}</Text>}
         <Text style={styles.yourStatus}>
@@ -342,6 +358,8 @@ const styles = StyleSheet.create({
   content: { paddingBottom: spacing.xxl },
   body: { padding: spacing.md, gap: spacing.md },
   description: { fontSize: 16, color: colors.textOnDarkMuted, lineHeight: 23 },
+  section: { gap: spacing.sm },
+  sectionTitle: { fontSize: 18, fontWeight: '700', color: colors.textOnDark },
   factRow: { flexDirection: 'row', gap: spacing.md },
   fact: {
     flex: 1,

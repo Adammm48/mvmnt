@@ -90,11 +90,17 @@ try {
 
   await shoot(phonePage, MOBILE, 'app-home');
 
+  // The *next* run, not just any run with that title. The seed carries a year
+  // of finished ones under the same names, and without the ordering this shot
+  // was quietly of a run from last summer — check-in gone, route section gone,
+  // "This run has finished" where the interesting half of the screen should be.
   const runId = await (
-    await fetch(`${API}/rest/v1/runs?select=id&title=eq.Saturday%206K`, {
-      headers: { apikey: ANON, Authorization: `Bearer ${member.access_token}` },
-    })
+    await fetch(
+      `${API}/rest/v1/runs?select=id&status=eq.published&order=starts_at.asc&limit=1`,
+      { headers: { apikey: ANON, Authorization: `Bearer ${member.access_token}` } },
+    )
   ).json();
+  if (!runId[0]) throw new Error('no upcoming published run — run npm run db:reset');
   await shoot(phonePage, `${MOBILE}/run/${runId[0].id}`, 'app-run-detail');
   await shoot(phonePage, `${MOBILE}/leaderboard`, 'app-leaderboard');
 
@@ -177,6 +183,26 @@ try {
   await desktopPage.waitForTimeout(1500);
   await desktopPage.screenshot({ path: `${OUT}/admin-editor.png` });
   console.log('  admin-editor.png');
+
+  // The route drawer, on the published run — that is the one the seed draws a
+  // route on, and the publish control only appears once the run itself is out.
+  await desktopPage.goto(ADMIN, { waitUntil: 'networkidle' });
+  await desktopPage
+    .locator('.card', { hasText: 'Saturday 6K' })
+    .first()
+    .getByRole('button', { name: 'Edit' })
+    .click();
+  await desktopPage.waitForTimeout(2500);
+  // scrollIntoView rather than Playwright's if-needed variant: the drawer sits
+  // low in a long card and 'centre' is what actually frames it.
+  await desktopPage
+    .getByText('The route', { exact: true })
+    .evaluate((el) => el.scrollIntoView({ block: 'center' }));
+  // Tiles come from OpenStreetMap over the network, so this one needs longer
+  // than a layout settle — an empty grey map is a screenshot of nothing.
+  await desktopPage.waitForTimeout(3000);
+  await desktopPage.screenshot({ path: `${OUT}/admin-route.png` });
+  console.log('  admin-route.png');
 
   await desktop.close();
 } finally {

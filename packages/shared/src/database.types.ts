@@ -966,6 +966,8 @@ export type Database = {
           meeting_point_name: string
           pace_groups: string[]
           published_at: string | null
+          route: Json | null
+          route_published_at: string | null
           starts_at: string
           status: Database["public"]["Enums"]["run_status"]
           title: string
@@ -989,6 +991,8 @@ export type Database = {
           meeting_point_name: string
           pace_groups?: string[]
           published_at?: string | null
+          route?: Json | null
+          route_published_at?: string | null
           starts_at: string
           status?: Database["public"]["Enums"]["run_status"]
           title: string
@@ -1012,6 +1016,8 @@ export type Database = {
           meeting_point_name?: string
           pace_groups?: string[]
           published_at?: string | null
+          route?: Json | null
+          route_published_at?: string | null
           starts_at?: string
           status?: Database["public"]["Enums"]["run_status"]
           title?: string
@@ -1357,6 +1363,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      admin_publish_route: { Args: { p_run_id: string }; Returns: string }
       admin_remove_check_in: {
         Args: { p_run_id: string; p_user_id: string }
         Returns: undefined
@@ -1370,6 +1377,10 @@ export type Database = {
           p_role: Database["public"]["Enums"]["member_role"]
           p_user_id: string
         }
+        Returns: undefined
+      }
+      admin_set_route: {
+        Args: { p_route: Json; p_run_id: string }
         Returns: undefined
       }
       admin_set_tier_reward: {
@@ -1604,6 +1615,7 @@ export type Database = {
         | "badge_earned"
         | "sponsor_shoutout"
         | "gift_received"
+        | "route_published"
       order_status:
         | "awaiting_payment"
         | "paid"
@@ -1785,6 +1797,7 @@ export const Constants = {
         "badge_earned",
         "sponsor_shoutout",
         "gift_received",
+        "route_published",
       ],
       order_status: [
         "awaiting_payment",
