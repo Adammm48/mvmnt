@@ -50,12 +50,13 @@ jobs:
 
       - name: Show delivery pipeline state
         # Useful when a run fails: proves whether notifications were enqueued
-        # and fanned out, rather than leaving it to guesswork.
+        # and fanned out, rather than leaving it to guesswork. psql against the
+        # exposed local port — `supabase db execute` is not a CLI command, and
+        # the old `|| true` was quietly hiding exactly that.
         if: always()
         run: |
-          supabase db execute --sql "
-            select status, count(*) from notification_deliveries group by status;
-          " || true
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres \
+            -c "select status, count(*) from notification_deliveries group by status;" || true
 
   typecheck:
     name: Typecheck — shared, mobile and admin
