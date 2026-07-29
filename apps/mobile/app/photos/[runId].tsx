@@ -288,7 +288,11 @@ const styles = StyleSheet.create({
   },
   tabActive: { backgroundColor: colors.action },
   tabText: { ...typography.label, color: colors.textOnDarkMuted },
-  tabTextActive: { color: colors.textOnDark },
+  // textOnAction, not textOnDark: the active pill is filled with `action`
+  // (ink since the rebrand) and `textOnDark` is now also ink — the selected
+  // tab's own label was invisible. The leaderboard's segmented control had
+  // this right; this was the one place that did not.
+  tabTextActive: { color: colors.textOnAction },
   voice: {
     fontSize: 12,
     fontStyle: 'italic',

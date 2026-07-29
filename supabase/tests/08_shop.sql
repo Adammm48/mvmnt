@@ -483,8 +483,13 @@ begin
     (select count(*)::int from public.content_reports), 0,
     'reports are a message to the club, not a public thread');
   perform tests.act_as(v_admin);
+  -- Scoped to this fixture's own reporter, never a global count: the seeded
+  -- database carries demo reports, and a suite that counts every row in the
+  -- table fails the moment somebody adds one. Same trap as the product and
+  -- badge counts elsewhere in this file.
   perform tests.assert_eq(
-    (select count(*)::int from public.content_reports where resolved_at is null), 1,
+    (select count(*)::int from public.content_reports
+      where resolved_at is null and reporter_id = v_a), 1,
     'organisers see the open queue');
 
   select id into v_r from public.content_reports where target_id = 'some-photo-id';
