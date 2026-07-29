@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { toMemberMessage } from '@mvmnt/shared';
+import { toMemberMessage, SIGNATURE } from '@mvmnt/shared';
 
 /**
  * Same email one-time-code sign-in as the app. There is no separate admin
@@ -93,6 +93,11 @@ export function SignIn() {
           </div>
         </form>
       )}
+
+      {/* Same credit as the member app's front door, same single string. */}
+      <p style={{ marginTop: 28, fontSize: 12, color: 'var(--muted)', textAlign: 'center' }}>
+        Developed by {SIGNATURE.name}
+      </p>
     </main>
   );
 }
