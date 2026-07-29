@@ -23,7 +23,9 @@
     "seed:media": "bash scripts/seed-media.sh",
     "docs:screenshots": "node scripts/screenshots.mjs",
     "docs:gif": "node scripts/capture-checkin-gif.mjs && python3 scripts/frames-to-gif.py",
-    "check:placeholders": "node scripts/check-placeholders.mjs"
+    "check:placeholders": "node scripts/check-placeholders.mjs",
+    "test:e2e": "node tests/e2e/visible-outcomes.mjs",
+    "check:reachable": "node scripts/check-reachable.mjs"
   },
   "devDependencies": {
     "playwright": "^1.62.0",

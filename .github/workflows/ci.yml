@@ -82,8 +82,77 @@ jobs:
         continue-on-error: true
         run: npm run check:placeholders
 
+      # A screen with no way in is not a typecheck error and not a test
+      # failure — it is a feature nobody can open. This is the one class of bug
+      # that shipped fully working and completely unreachable, so it blocks.
+      - name: Every screen is reachable
+        run: npm run check:reachable
+
       - name: Build the admin console
         run: npm run build --workspace @mvmnt/admin
+
+  # The suite that asserts what a MEMBER SEES, not that a function returned.
+  #
+  # Every silent-failure bug in this project was found by a person using the
+  # app and by none of the database tests, because those prove the server did
+  # its job — not that anybody was told. This job is slow because it drives a
+  # real browser against the real stack; that is the cost of catching the one
+  # class of bug that keeps escaping.
+  visible-outcomes:
+    name: End to end — what the member actually sees
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install the browser
+        run: npx playwright install --with-deps chromium
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.110.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Start Supabase
+        run: supabase start
+
+      - name: Apply migrations, seed, and upload the demo media
+        run: npm run db:reset
+
+      - name: Start the organisers' console
+        run: npm run dev --workspace @mvmnt/admin &
+
+      - name: Start the app's web build
+        run: npx expo start --web --port 8081 --non-interactive &
+        working-directory: apps/mobile
+
+      # Both servers, on their own terms. Expo's first web bundle takes a
+      # while on a cold runner, and a fixed sleep is the thing that makes a
+      # suite like this flaky.
+      - name: Wait for both servers
+        run: |
+          for i in $(seq 1 60); do
+            admin=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:5173 || true)
+            app=$(curl -s -o /dev/null -w '%{http_code}' \
+              'http://127.0.0.1:8081/node_modules/expo/AppEntry.bundle?platform=web&dev=true' || true)
+            if [ "$admin" = "200" ] && [ "$app" = "200" ]; then
+              echo "both servers up after ${i}0s at most"; exit 0
+            fi
+            sleep 10
+          done
+          echo "servers did not come up: admin=$admin app=$app" >&2
+          exit 1
+
+      - name: Assert every action reports its outcome
+        run: npm run test:e2e
 
   # Generated types are committed and reviewed as part of each diff. If someone
   # changes a migration without regenerating them, the apps typecheck against a
