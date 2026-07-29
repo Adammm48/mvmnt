@@ -29,3 +29,8 @@ apps/mobile/.expo/
 
 # Intermediate frames for the README animation; the GIF itself is committed
 docs/screenshots/.frames/
+
+# Claude Code's per-machine settings. Records which commands were approved on
+# this laptop and nothing about the project — noise in a shared repo, and it
+# accumulates local session tokens as a side effect.
+.claude/settings.local.json
