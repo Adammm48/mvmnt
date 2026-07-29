@@ -12,6 +12,7 @@ declare
   v_purged integer;
   v_att uuid;
   v_token text;
+  v_product uuid; v_order uuid;
 begin
   perform tests.act_as_system();
   v_admin := tests.make_member('organiser', true);
@@ -97,6 +98,30 @@ begin
   perform public.add_friend_by_token(v_token);
   perform tests.act_as_system();
 
+  -- And a Phase 3 one: a gift ama sent him, carrying free text.
+  --
+  -- Placed through place_order() rather than written straight into the table,
+  -- so the fixture obeys the same rules a real gift does — the gift_is_not_self
+  -- constraint rejects the shortcut of making one person both sides, which is
+  -- the constraint doing its job.
+  insert into public.products (name, price_minor, status, stock, sizes)
+  values ('Test hoodie', 30000, 'in_stock', 5, array['S','L']) returning id into v_product;
+
+  perform tests.act_as(v_a);
+  v_order := public.place_order(v_product, 1, 'S', 0, v_b, 'see you Saturday');
+  perform tests.act_as_system();
+  update public.orders set status = 'paid' where id = v_order;
+
+  -- Ben confirms it, which is where the address comes from.
+  perform tests.act_as(v_b);
+  perform public.redeem_gift(v_order, 'L', '14 Zamalek Street, ask for Ben');
+  perform tests.act_as_system();
+
+  perform tests.assert_eq(
+    (select delivery_note from public.orders where id = v_order),
+    '14 Zamalek Street, ask for Ben',
+    'the delivery note is stored while the member exists');
+
   perform tests.assert_eq(
     (select count(*)::int from public.friendships
       where user_low in (v_a, v_b) and user_high in (v_a, v_b)), 1,
@@ -130,6 +155,48 @@ begin
   perform tests.assert(
     not exists (select 1 from public.point_events where user_id = v_b),
     'no points event still names them');
+
+  -- ---------------------------------------------------------------------
+  -- And what they typed goes with them.
+  --
+  -- The order row survives as anonymised sales history, which is right. What
+  -- must not survive is the free text: a delivery note is an address, and a
+  -- gift message is private correspondence.
+  -- ---------------------------------------------------------------------
+  perform tests.assert_eq(
+    (select count(*)::int from public.orders where id = v_order), 1,
+    'the order survives — the club''s sales history is not personal data');
+  -- Only the recipient was erased. The buyer is still a member, and her record
+  -- of what she bought is hers — erasing one person must not quietly strip
+  -- another person's purchase history.
+  perform tests.assert(
+    (select recipient_id is null from public.orders where id = v_order),
+    'it no longer names the person who was erased');
+  perform tests.assert_eq(
+    (select buyer_id from public.orders where id = v_order), v_a,
+    'but the buyer, who has not erased anything, keeps her own order');
+  perform tests.assert(
+    (select delivery_note is null from public.orders where id = v_order),
+    'the delivery note is gone — an anonymised row holding a street address is not anonymous');
+  perform tests.assert(
+    (select gift_message is null from public.orders where id = v_order),
+    'and so is the message they wrote');
+  perform tests.assert(
+    (select size is null from public.orders where id = v_order),
+    'and their size, which is a body measurement rather than a sales fact');
+
+  -- The erasure completing at all is the assertion here. gift_has_recipient
+  -- used to abort it: recipient_id is SET NULL on delete while is_gift stays
+  -- true, so anybody who had ever been sent a gift could not delete their
+  -- account. An integrity rule that forbids the anonymised state is a rule that
+  -- forbids erasure.
+  perform tests.assert(
+    (select is_gift from public.orders where id = v_order),
+    'the row still records that it was a gift, to somebody who no longer exists');
+
+  perform tests.assert_eq(
+    (select count(*)::int from public.sponsor_impressions where user_id = v_b), 0,
+    'which sponsors they saw is deleted outright — it is a behavioural profile, not history');
 
   -- Personal data is gone.
   perform tests.assert_eq(

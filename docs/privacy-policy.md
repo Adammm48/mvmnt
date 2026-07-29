@@ -51,6 +51,8 @@ If you have a question about your data, or want it deleted, contact us at
   logged.
 - Your check-in coordinates are **permanently deleted after 30 days**,
   automatically.
+- **We never see your card.** The club takes payment for merch in person, so
+  the app holds no payment details at all.
 - You can **delete your account from inside the app**, at any time, without
   asking anyone.
 
@@ -72,6 +74,34 @@ If you have a question about your data, or want it deleted, contact us at
 |---|---|---|
 | Which runs you sign up for, join a waitlist for, or withdraw from | To manage places and waitlists, and to send you reminders | Kept as club attendance history — anonymised if you delete your account |
 | Which runs you checked in to | It is the record that you were there | As above |
+
+### The shop
+
+| What | Why | How long |
+|---|---|---|
+| What you ordered, and what you paid | The club has to know what to hand you, and to keep its own sales records | The sale is kept as club history — **anonymised** if you delete your account |
+| Your clothing size | Apparel comes in sizes | **Deleted** when you delete your account — it is a measurement of your body, not a sales record |
+| A message you write on a gift | To show it to the person you sent it to | **Deleted** when either of you deletes their account |
+| A delivery note, if you leave one | So the club knows where to hand the item over | **Deleted** when you delete your account. If you write an address here, it is deleted with everything else |
+| Loyalty points you spend | Points come off the price | Kept in your points history, anonymised on deletion |
+
+**No card details, ever.** MVMNT does not take payment in the app. You reserve
+an item and pay the club in person, so there is no card number, no billing
+address and no payment processor holding anything of yours.
+
+### Sponsors
+
+| What | Why | How long |
+|---|---|---|
+| That *somebody* saw a sponsor on a given day, and whether they tapped it | So the club can tell a sponsor how many people it reached | **Deleted outright** when you delete your account |
+
+We record this **once per person per day**, not once per time you look. It is
+counted this way on purpose: it means the club reports how many real people saw
+a sponsor rather than an inflated view count, and it means we are not building a
+log of how often you open the app.
+
+Sponsors are told **numbers only**. No sponsor is ever told who you are, that
+you specifically saw them, or anything else about you.
 
 ### Your location — read this bit
 
@@ -113,6 +143,11 @@ We do not collect health or fitness data, contacts, photos from your library,
 advertising identifiers, or your browsing activity. We do not use analytics or
 advertising SDKs. We do not sell data to anyone, ever, and we do not share it
 for advertising.
+
+**We do not collect payment details** — there is no card entry in the app.
+**We do not build an advertising profile.** The only thing recorded about
+sponsors is that one person saw one placement on one day, it is never linked to
+a sponsor's own systems, and it is deleted when you delete your account.
 
 ---
 
@@ -178,13 +213,20 @@ You can, at any time:
 We think you should know precisely, rather than being told "we delete your data":
 
 - **Permanently deleted:** your profile, your name, your email and login, every
-  location record we hold about you, and your registered devices.
-- **Kept, but anonymised:** the fact that *somebody* attended past runs. Your
-  name is removed and the record is no longer linked to you.
+  location record we hold about you, your registered devices, your friendships
+  and friend codes, your badges, any gift messages or delivery notes you wrote,
+  your clothing size, and the record of which sponsors you saw.
+- **Kept, but anonymised:** the fact that *somebody* attended past runs, and
+  that *somebody* bought an item. Your name is removed and neither record is
+  linked to you any more.
 
-We keep that last part so historical attendance numbers for runs that already
-happened stay correct. Once your account is gone, those records say nothing
-about you and cannot be traced back to you.
+We keep that last part so historical attendance numbers and the club's own sales
+records stay correct. Once your account is gone, those records say nothing about
+you and cannot be traced back to you.
+
+A note on gifts: if you delete your account, a gift you **sent** stays on the
+other person's record as something they received, because it is theirs. What you
+wrote on it is deleted.
 
 This is immediate and cannot be undone.
 
