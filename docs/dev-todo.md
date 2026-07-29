@@ -68,6 +68,16 @@ everything that could be done today has been done (see
 - Face-matching behind an Edge Function, opt-in by selfie, matched once at
   gallery publish per ADR 0005.
 
+## Done since the audit council (no owner input needed)
+Recorded here so the queue above reads as the whole remaining list:
+content reporting end to end (member sheet → organiser Reports tab with
+remove/resolve), avatar upload, honest camera/photo-library purpose strings,
+OAuth buttons behind a flag instead of dead on screen, crash boundary,
+SecureStore chunking, expo-updates + build numbers, the merch pipeline's
+production path, sold-out as its own status, notification deep-links for
+every type, the attendance CSV, and two test suites that were committing
+their fixtures.
+
 ## Parked, by decision (revisit only if the club asks)
 - Arabic/RTL localisation · guardian-consent flow for under-18 accounts ·
   multi-tenancy for other clubs · payment gateway integration (C2).
