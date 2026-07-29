@@ -57,6 +57,8 @@ export type VoiceSlot =
   | 'gift_sent'
   | 'photos_published'
   | 'live_sharing'
+  | 'selfie_optin'
+  | 'stats_intro'
   | 'easter_egg';
 
 const LINES: Record<VoiceSlot, string[]> = {
@@ -170,6 +172,16 @@ const LINES: Record<VoiceSlot, string[]> = {
     'Adam swears the camera adds pace.',
     'Find yourself. Adam looks mid-blink in every single one.',
     'Photographic proof you were there. Adam is proud.',
+  ],
+  selfie_optin: [
+    'One selfie and the app finds you in every crowd shot. Adam still finds you at the front. Or the back.',
+    'Smile like you negative-split. The camera believes you even if Adam doesn’t.',
+    'This is the only photo you take standing still. Make it count.',
+  ],
+  stats_intro: [
+    'Numbers don’t lie. Adam does, but only about his 5K time.',
+    'Every kilometre here was real. We checked. Adam checked twice.',
+    'Stats are just bragging with receipts.',
   ],
   live_sharing: [
     'Your friends can see you now. No pressure. (Some pressure.)',

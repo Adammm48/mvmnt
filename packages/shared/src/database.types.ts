@@ -199,6 +199,35 @@ export type Database = {
           },
         ]
       }
+      face_optins: {
+        Row: {
+          created_at: string
+          provider_face_id: string | null
+          storage_path: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          provider_face_id?: string | null
+          storage_path: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          provider_face_id?: string | null
+          storage_path?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "face_optins_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       feature_flags: {
         Row: {
           description: string
@@ -621,6 +650,42 @@ export type Database = {
           {
             foreignKeyName: "orders_recipient_id_fkey"
             columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      photo_matches: {
+        Row: {
+          confidence: number
+          created_at: string
+          photo_id: string
+          user_id: string
+        }
+        Insert: {
+          confidence: number
+          created_at?: string
+          photo_id: string
+          user_id: string
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          photo_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "photo_matches_photo_id_fkey"
+            columns: ["photo_id"]
+            isOneToOne: false
+            referencedRelation: "run_photos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "photo_matches_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1595,6 +1660,8 @@ export type Database = {
         Returns: number
       }
       dev_mark_paid: { Args: { p_order_id: string }; Returns: undefined }
+      disable_photo_matching: { Args: never; Returns: undefined }
+      enable_photo_matching: { Args: never; Returns: undefined }
       end_run: { Args: { p_run_id: string }; Returns: undefined }
       erase_member: { Args: { p_user_id: string }; Returns: undefined }
       is_admin: { Args: { uid?: string }; Returns: boolean }
@@ -1663,6 +1730,13 @@ export type Database = {
           size: string
           status: Database["public"]["Enums"]["order_status"]
           total_minor: number
+        }[]
+      }
+      my_photo_matches: {
+        Args: { p_run_id: string }
+        Returns: {
+          confidence: number
+          photo_id: string
         }[]
       }
       my_standing: {

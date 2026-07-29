@@ -10,7 +10,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { useLocalSearchParams, useNavigation } from 'expo-router';
+import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth';
 import { Loading, EmptyState, Notice } from '@/components/Feedback';
@@ -43,10 +43,15 @@ type Photo = PhotoRow & { url: string };
 export default function RunPhotos() {
   const { runId } = useLocalSearchParams<{ runId: string }>();
   const navigation = useNavigation();
+  const router = useRouter();
   const { session } = useAuth();
 
   const [photos, setPhotos] = useState<Photo[]>([]);
-  const [category, setCategory] = useState<PhotoCategory>('run');
+  // 'you' is a virtual folder over the same photos: the ids the matcher thinks
+  // this member appears in. It grants nothing — it filters what is already
+  // visible (migration 0049).
+  const [matchIds, setMatchIds] = useState<Set<string>>(new Set());
+  const [category, setCategory] = useState<PhotoCategory | 'you'>('run');
   const [viewing, setViewing] = useState<Photo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -54,14 +59,18 @@ export default function RunPhotos() {
   const load = useCallback(async () => {
     if (!runId) return;
 
-    const [{ data: run }, { data: rows, error: loadError }] = await Promise.all([
-      supabase.from('runs').select('title').eq('id', runId).maybeSingle(),
-      supabase
-        .from('run_photos')
-        .select('*')
-        .eq('run_id', runId)
-        .order('created_at'),
-    ]);
+    const [{ data: run }, { data: rows, error: loadError }, { data: matches }] =
+      await Promise.all([
+        supabase.from('runs').select('title').eq('id', runId).maybeSingle(),
+        supabase
+          .from('run_photos')
+          .select('*')
+          .eq('run_id', runId)
+          .order('created_at'),
+        supabase.rpc('my_photo_matches', { p_run_id: runId }),
+      ]);
+
+    setMatchIds(new Set((matches ?? []).map((m) => m.photo_id)));
 
     if (run) navigation.setOptions({ title: `Photos · ${run.title}` });
     if (loadError) {
@@ -103,12 +112,19 @@ export default function RunPhotos() {
 
   if (loading) return <Loading />;
 
-  const inCategory = photos.filter((p) => p.category === category);
-  const countFor = (c: PhotoCategory) => photos.filter((p) => p.category === c).length;
+  const matching = (c: PhotoCategory | 'you') =>
+    c === 'you' ? photos.filter((p) => matchIds.has(p.id)) : photos.filter((p) => p.category === c);
+  const inCategory = matching(category);
+  const countFor = (c: PhotoCategory | 'you') => matching(c).length;
 
   // Hide empty folders instead of offering four tabs where two do nothing —
-  // most runs will have photos in one or two of them.
-  const visibleCategories = CATEGORIES.filter((c) => countFor(c.value) > 0);
+  // most runs will have photos in one or two of them. "You" appears only when
+  // the matcher has actually found something: an empty tab promising photos of
+  // you is a broken promise, and matching may not be live yet.
+  const visibleCategories: { value: PhotoCategory | 'you'; label: string }[] = [
+    ...(countFor('you') > 0 ? [{ value: 'you' as const, label: 'You' }] : []),
+    ...CATEGORIES.filter((c) => countFor(c.value) > 0),
+  ];
 
   if (photos.length === 0) {
     return (
@@ -127,7 +143,7 @@ export default function RunPhotos() {
   const effective = visibleCategories.some((c) => c.value === category)
     ? category
     : visibleCategories[0]!.value;
-  const shown = effective === category ? inCategory : photos.filter((p) => p.category === effective);
+  const shown = effective === category ? inCategory : matching(effective);
 
   return (
     <View style={styles.screen}>
@@ -180,6 +196,17 @@ export default function RunPhotos() {
         )}
       />
 
+      <Pressable
+        onPress={() => router.push('/photos/find-me')}
+        style={styles.findMe}
+        accessibilityRole="button"
+        accessibilityLabel="Find me in photos"
+      >
+        <Text style={styles.findMeText}>
+          {matchIds.size > 0 ? 'Manage “find me in photos”' : 'Find me in photos →'}
+        </Text>
+      </Pressable>
+
       {/*
         The viewer is a plain modal rather than a pager: tap to look, tap to
         leave. Swiping between photos can come with the face-matching phase if
@@ -207,6 +234,8 @@ const CELL = (Dimensions.get('window').width - GAP * (COLUMNS - 1)) / COLUMNS;
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.base },
+  findMe: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
+  findMeText: { color: colors.action, fontSize: 14, fontWeight: '700' },
   tabs: { flexGrow: 0 },
   tabsContent: {
     gap: spacing.sm,

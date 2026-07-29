@@ -139,4 +139,102 @@ begin
     'but their name comes off every upload');
 end $$;
 
+
+-- ---------------------------------------------------------------------------
+-- Find my photos (migration 0049): the selfie is a unit, matches grant nothing.
+-- ---------------------------------------------------------------------------
+do $$
+declare
+  v_admin uuid; v_m uuid; v_other uuid; v_run uuid; v_photo uuid;
+begin
+  perform tests.act_as_system();
+  v_admin := tests.make_member('organiser-f', true);
+  v_m := tests.make_member('farida');
+  v_other := tests.make_member('gamal');
+  -- Published in the future, then moved into the past directly — publish_run
+  -- rightly refuses a run that already started.
+  v_run := tests.make_run(v_admin, null, now() + interval '2 hours');
+  update public.runs
+     set starts_at = now() - interval '3 hours',
+         ends_at   = now() - interval '2 hours',
+         status    = 'completed'
+   where id = v_run;
+
+  -- A photo in the gallery, unpublished for now.
+  insert into public.run_photos (run_id, category, storage_path, uploaded_by)
+  values (v_run, 'run', v_run || '/run/001.jpg', v_admin)
+  returning id into v_photo;
+
+  -- No selfie, no opt-in: the row is refused until the bytes exist.
+  perform tests.act_as(v_m);
+  perform tests.assert_rejects(
+    'select public.enable_photo_matching()',
+    'opting in without a selfie is refused — a face row with no face behind it');
+
+  -- The selfie bytes land under the member's own id; the policy allows no
+  -- other path, so the upload IS the identity check.
+  perform tests.act_as_system();
+  insert into storage.objects (bucket_id, name, owner)
+  values ('gallery-media', 'selfies/' || v_m, v_m);
+
+  perform tests.act_as(v_m);
+  perform public.enable_photo_matching();
+  perform tests.assert(
+    (select count(*) = 1 from public.face_optins where user_id = v_m),
+    'with the selfie in place, opting in works');
+
+  -- A match exists (written by the matcher, i.e. service role)…
+  perform tests.act_as_system();
+  insert into public.photo_matches (photo_id, user_id, confidence)
+  values (v_photo, v_m, 97.5);
+
+  -- …but grants nothing while the gallery is unpublished. Same gate as the
+  -- gallery itself: a match must never leak that an unpublished gallery exists.
+  perform tests.act_as(v_m);
+  perform tests.assert_eq(
+    (select count(*)::int from public.my_photo_matches(v_run)), 0,
+    'a match in an unpublished gallery is invisible even to its own member');
+
+  perform tests.act_as_system();
+  update public.runs set photos_published_at = now() where id = v_run;
+
+  perform tests.act_as(v_m);
+  perform tests.assert_eq(
+    (select count(*)::int from public.my_photo_matches(v_run)), 1,
+    'published, the member sees which photos are probably them');
+
+  -- Another member sees none of it — matches are the member's own.
+  perform tests.act_as(v_other);
+  perform tests.assert_eq(
+    (select count(*)::int from public.my_photo_matches(v_run)), 0,
+    'matches are visible only to the person matched');
+  perform tests.assert_eq(
+    (select count(*)::int from public.face_optins), 0,
+    'and nobody can see who else has opted in — not even that they have');
+
+  -- Opting out deletes the unit: opt-in row, matches, and the selfie bytes.
+  perform tests.act_as(v_m);
+  perform public.disable_photo_matching();
+  perform tests.act_as_system();
+  perform tests.assert(
+    (select count(*) = 0 from public.face_optins where user_id = v_m)
+    and (select count(*) = 0 from public.photo_matches where user_id = v_m)
+    and (select count(*) = 0 from storage.objects
+          where bucket_id = 'gallery-media' and name = 'selfies/' || v_m),
+    'opting out deletes the selfie, the enrolment and every match as one unit');
+
+  -- Erasure reaches the selfie bytes too, which have no FK to cascade through.
+  perform tests.act_as_system();
+  insert into storage.objects (bucket_id, name, owner)
+  values ('gallery-media', 'selfies/' || v_other, v_other);
+  perform tests.act_as(v_other);
+  perform public.enable_photo_matching();
+  perform public.erase_member(v_other);
+  perform tests.act_as_system();
+  perform tests.assert(
+    (select count(*) = 0 from storage.objects
+      where bucket_id = 'gallery-media' and name = 'selfies/' || v_other),
+    'erasing an account erases the face that came with it');
+end $$;
+
 rollback;

@@ -80,6 +80,7 @@ function RootNavigator() {
       <Stack.Screen name="shop/[id]" options={{ title: '' }} />
       <Stack.Screen name="orders" options={{ title: 'Your orders' }} />
       <Stack.Screen name="photos/[runId]" options={{ title: 'Photos' }} />
+      <Stack.Screen name="photos/find-me" options={{ title: 'Find me in photos' }} />
     </Stack>
   );
 }
