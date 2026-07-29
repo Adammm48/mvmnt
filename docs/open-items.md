@@ -93,6 +93,33 @@ that happens.
 
 ---
 
+## A number that is a guess
+
+### What a loyalty point is worth in the shop
+
+**Who:** the club owner.
+**Where:** `points_discount_minor()` in migration 0035, mirrored by
+`PIASTRES_PER_POINT` in [`packages/shared/src/shop.ts`](../packages/shared/src/shop.ts).
+
+**10 piastres a point.** That makes six months of perfect attendance worth about
+a tenth off a shirt, and a full year about a fifth.
+
+The first version used one point to one piastre because it was the roundest
+possible rule. Putting it on screen showed what that meant: 400 points — half a
+year of Saturdays — took **EGP 4** off a 450-pound shirt. Under one percent. A
+discount that small tells a member exactly what the club thinks their year was
+worth, so it was raised.
+
+The current rate is a defensible guess, not a decision. It is deliberately below
+the tier rewards, which already promise a free shirt at Competitor — points and
+tiers reward the same members, and if points alone bought the shirt the tier
+would mean nothing. Worth revisiting once real merch prices exist.
+
+**Change it in both places or neither.** The database and the app quoting
+different rates is how a shop charges something other than the number it showed.
+
+---
+
 ## Blocks Phase 3
 
 ### Payment gateway costs

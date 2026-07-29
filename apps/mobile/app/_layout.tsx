@@ -70,6 +70,9 @@ function RootNavigator() {
       <Stack.Screen name="friends/code" options={{ title: 'Your code' }} />
       <Stack.Screen name="friends/scan" options={{ title: 'Scan a code' }} />
       <Stack.Screen name="about" options={{ title: 'About' }} />
+      <Stack.Screen name="shop/index" options={{ title: 'Shop' }} />
+      <Stack.Screen name="shop/[id]" options={{ title: '' }} />
+      <Stack.Screen name="orders" options={{ title: 'Your orders' }} />
     </Stack>
   );
 }

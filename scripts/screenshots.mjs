@@ -103,6 +103,8 @@ try {
   // it is real, and that countdown is the whole safety argument.
   await shoot(phonePage, `${MOBILE}/friends/code`, 'app-friend-code');
 
+  await shoot(phonePage, `${MOBILE}/shop`, 'app-shop');
+
   // The profile, scrolled to the badges — including any hidden one this member
   // has actually earned.
   await phonePage.goto(`${MOBILE}/profile`, { waitUntil: 'networkidle' });
@@ -158,6 +160,14 @@ try {
   await desktopPage.waitForTimeout(1400);
   await desktopPage.screenshot({ path: `${OUT}/admin-members.png` });
   console.log('  admin-members.png');
+
+  // The shop from the club's side: the order queue is the top half because an
+  // organiser standing at a run with a box of shirts needs that, not the
+  // catalogue editor.
+  await desktopPage.getByRole('button', { name: 'Merch', exact: true }).click();
+  await desktopPage.waitForTimeout(1400);
+  await desktopPage.screenshot({ path: `${OUT}/admin-merch.png` });
+  console.log('  admin-merch.png');
 
   // The editor, scrolled to the map — the part worth showing.
   await desktopPage.goto(ADMIN, { waitUntil: 'networkidle' });

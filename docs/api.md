@@ -1,4 +1,4 @@
-# MVMNT API — Phases 1 and 2
+# MVMNT API — Phases 1, 2 and 3
 
 Every backend capability, with its purpose, inputs, outputs, permissions and
 errors (Engineering Principles §8).
@@ -544,6 +544,100 @@ migration.
 
 **Never inline the service role key into a cron command.** It would sit in
 `cron.job` in plain text, readable by anyone who can read that table. Use Vault.
+
+---
+
+## Sponsors
+
+### `active_placements(p_run_id uuid = null) → rows`
+
+What to show right now: only placements whose sponsor is inside their paid
+window, so an expired deal disappears on its end date without anybody
+remembering to take the banner down.
+
+### `record_placement_seen(uuid)` · `record_placement_tap(uuid)`
+
+**Reach is one member per placement per day, enforced by a primary key.** The
+obvious implementation — post an event on every render — produces a number
+nobody should believe: it counts one member opening the app eight times as
+eight people, and a client can send a million of them. What this measures is
+distinct members, which is smaller and defensible, and MVMNT can put it in
+front of a sponsor without having to explain it away.
+
+Taps count per tap, because a member tapping twice genuinely is two taps and
+nobody benefits from inflating a number that makes engagement look artificially
+high.
+
+Both are unfailable by design and return nothing: a sponsor metric must never
+be the reason a member's home screen errors.
+
+### `admin_sponsor_report(sponsor?, from?, to?) → rows` *(organiser)*
+
+Reach, taps and the period per placement. No member is identifiable in the
+output — a sponsor learns how many people saw them, never who. The console
+exports it as CSV.
+
+### `admin_send_sponsor_shoutout(sponsor, message, run?) → uuid` *(organiser)*
+
+Organiser-composed and organiser-sent, once per sponsor per day. There is
+deliberately no way for a sponsor to trigger this: the club's notification
+channel is the club's, and a sponsor who could push to it directly would be
+renting an audience rather than supporting one.
+
+---
+
+## The shop
+
+**No payment gateway is wired in.** Stripe does not serve Egypt-based
+businesses; the alternative depends on quotes the club has not obtained
+(`docs/costs.md`). An order stops at `awaiting_payment` and `dev_mark_paid()` is
+the only way past it — a function that names itself and refuses to run on a
+database with no seeded test accounts. Everything else is real, and a gateway
+webhook replaces that one function with nothing else changing.
+
+**Money is integer minor units** (piastres), never floats. Prices are copied
+onto the order rather than joined, so what somebody paid cannot change when a
+price does.
+
+### `place_order(product, quantity, size?, use_points?, recipient?, message?) → uuid`
+
+One transaction decides everything that can go wrong: stock, points, the
+friendship behind a gift, and the price.
+
+- **Stock takes a row lock** before it is counted (`FOR UPDATE`), exactly as
+  `join_run` locks a run. Two members buying the last shirt is the same problem
+  as two taking the last place on a capped run.
+- **Points leave through the ledger** as a `redemption` event, so
+  `points_total()` stays the only place a balance comes from.
+- **A gift can only reach somebody the buyer added by scanning their code in
+  person.** Without that check the gift flow is a way to send an unsolicited
+  item, and a notification, to any member whose id can be obtained — which is
+  what App Spec §4.4 exists to prevent.
+- Points are capped three ways: what the member has, what they asked to spend,
+  and what the order can absorb. Spending 500 points to save 400 piastres would
+  quietly burn 100 of them.
+
+**Errors:** `that item has sold out` / `only N left`; `choose a size`;
+`that item is not on sale yet`; `you can only gift to someone you have added as
+a friend`.
+
+### `cancel_order(uuid)` · `redeem_gift(uuid, size?, note?)` · `my_orders()`
+
+Cancelling returns the stock and the points, both written as new facts rather
+than by editing the originals — the ledger is append-only and an order that
+rewrites its own history cannot be audited.
+
+`redeem_gift` is the recipient's side (§4.6): they confirm, pick **their own**
+size, and leave a delivery note. That is the difference between being sent
+something and being handed something.
+
+### `points_discount_minor(integer) → integer`
+
+**One point is 10 piastres.** Calibrated so six months of perfect attendance is
+about a tenth off a shirt — deliberately below the tier rewards, which already
+give one outright. Mirrored by `PIASTRES_PER_POINT` in `@mvmnt/shared`; the two
+disagreeing is how a shop charges something other than the number it showed. The
+rate is the club's to change — see `docs/open-items.md`.
 
 ---
 

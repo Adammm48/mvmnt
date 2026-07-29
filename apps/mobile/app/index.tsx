@@ -9,6 +9,7 @@ import { RunCard } from '@/components/RunCard';
 import { TierProgressBar } from '@/components/TierProgressBar';
 import { TierChest, type UnclaimedTier } from '@/components/TierChest';
 import { Welcome } from '@/components/Welcome';
+import { SponsorBanner } from '@/components/SponsorBanner';
 import { clearSync, useLastSync } from '@/lib/syncStatus';
 import { EmptyState, Loading, Notice } from '@/components/Feedback';
 import { registerForPush } from '@/lib/push';
@@ -149,7 +150,7 @@ export default function Home() {
             )}
 
             {/*
-              Two ways out of the home screen, and the member's own number on
+              Three ways out of the home screen, and the member's own number on
               one of them. App Spec §2 asks for momentum to be visible without
               being demanded — this shows what they have, and never what they
               have missed.
@@ -186,7 +187,20 @@ export default function Home() {
                 <Text style={styles.chipTitle}>Friends</Text>
                 <Text style={styles.chipUnit}>See who&apos;s coming</Text>
               </Pressable>
+
+              <Pressable
+                style={styles.chip}
+                onPress={() => router.push('/shop')}
+                accessibilityRole="button"
+                accessibilityLabel="Shop"
+              >
+                <Text style={styles.chipTitle}>Shop</Text>
+                <Text style={styles.chipUnit}>Spend your points</Text>
+              </Pressable>
             </View>
+
+            {/* Below the club's own content, never above it. */}
+            <SponsorBanner />
           </View>
         }
         renderItem={({ item }) => (

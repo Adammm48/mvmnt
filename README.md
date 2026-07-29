@@ -8,12 +8,14 @@ WhatsApp, Instagram and word of mouth. This replaces that.
 
 [![CI](https://github.com/Adammm48/mvmnt/actions/workflows/ci.yml/badge.svg)](https://github.com/Adammm48/mvmnt/actions/workflows/ci.yml)
 
-> **Status: Phases 1 and 2 complete, not yet deployed.** Sign-up, geofenced
+> **Status: Phases 1–3 complete, not yet deployed.** Sign-up, geofenced
 > check-in, the notification pipeline, the organiser console, the loyalty system
-> (points, streaks, tiers, badges), the club leaderboard and the QR-only friends
-> system are built and tested. The club is not using it yet — that waits on an
-> Apple Developer account and a privacy policy, not on more code. Phases 3–5
-> (sponsors, merch, routes, photo galleries, HealthKit) are specified and
+> (points, streaks, tiers, badges), the club leaderboard, the QR-only friends
+> system, and the merch shop with gifts and sponsor placements are built and
+> tested. **No payment gateway is wired in** — Stripe does not serve Egypt-based
+> businesses and the alternative needs quotes the club has not obtained, so
+> orders stop at "reserved" and the club takes payment in person. Phases 4–5
+> (routes, live tracking, photo galleries, HealthKit) are specified and
 > deliberately unbuilt. See [docs/backlog.md](docs/backlog.md).
 >
 > Built against [`docs/spec/MVMNT_App_Spec_1.md`](docs/spec/MVMNT_App_Spec_1.md)
@@ -46,6 +48,12 @@ WhatsApp, Instagram and word of mouth. This replaces that.
 | Reaching a tier | Your badges |
 |---|---|
 | <img src="docs/screenshots/app-chest.png" width="330" alt="A chest opening to reveal the Competitor badge and its reward"> | <img src="docs/screenshots/app-profile.png" width="330" alt="Profile showing points, tier, streak and the badge grid"> |
+
+| The shop | The club's side of it |
+|---|---|
+| <img src="docs/screenshots/app-shop.png" width="330" alt="Shop showing points to spend and the club catalogue"> | <img src="docs/screenshots/admin-merch.png" width="330" alt="Merch manager with the order queue above the catalogue"> |
+
+<p align="center"><em>Points buy a discount and can be sent as a gift, but only to somebody added by scanning their code in person. No payment gateway is wired in — Stripe does not serve Egypt-based businesses — so an order reserves stock and the club takes payment in person.</em></p>
 
 <p align="center"><em>Crossing a tier is recorded server-side as an event, so the celebration survives a reinstall and cannot fire twice across two phones. It opens on a tap — this arrives thirty seconds after checking in, when the member is standing in a car park in the cold.</em></p>
 
@@ -206,10 +214,11 @@ admin CRUD gets a lighter pass.
 npm run db:test
 ```
 
-Seven suites over attendance and waitlist ordering, geofenced check-in, every RLS
+Eight suites over attendance and waitlist ordering, geofenced check-in, every RLS
 policy, notification idempotency, retention and erasure, the points, streak,
-badge, tier and decay rules, organiser role changes, and the friend-code safety
-properties. They run inside transactions and roll back, so they are safe against
+badge, tier and decay rules, organiser role changes, the friend-code safety
+properties, and the shop — stock under concurrency, points that cannot be spent
+twice, and sponsor reach that cannot be inflated by a client. They run inside transactions and roll back, so they are safe against
 a seeded database.
 
 **A recurring bug class worth naming:** four separate features shipped with a

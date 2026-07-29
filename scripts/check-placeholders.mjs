@@ -66,6 +66,16 @@ const KINDS = [
     fix: 'Fill in the business email or website in the spec header, or remove the line.',
   },
   {
+    id: 'points-rate',
+    label: 'What a loyalty point is worth in the shop',
+    pattern: /the rate is the club''s to change/,
+    files: ['supabase/migrations/20260729240000_points_are_worth_something.sql'],
+    owner: 'The club owner',
+    consequence:
+      'Currently 10 piastres a point, so six months of perfect attendance is about a tenth off a shirt. A guess, not a decision — too low and the scheme is an insult, too high and it undercuts the tier rewards.',
+    fix: 'Confirm the rate against real merch prices, then update points_discount_minor() and PIASTRES_PER_POINT together.',
+  },
+  {
     id: 'costs',
     label: 'Costs that need a real quote',
     pattern: /\[NEEDS A QUOTE\]/,

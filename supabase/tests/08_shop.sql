@@ -98,8 +98,9 @@ begin
   perform tests.act_as_system();
 
   select total_minor, points_spent into v_total, v_points from public.orders where id = v_order;
-  perform tests.assert_eq(v_total, 24500,
-    '500 points takes 500 piastres off a 250.00 shirt');
+  -- 10 piastres a point (0035): 500 points is EGP 50 off a EGP 250 shirt.
+  perform tests.assert_eq(v_total, 20000,
+    '500 points takes EGP 50 off a EGP 250 shirt');
   perform tests.assert_eq(v_points, 500, 'and the order records what was spent');
   perform tests.assert_eq(public.points_total(v_a), 0,
     'the points have actually left the member''s balance');
@@ -124,11 +125,23 @@ begin
   perform tests.assert_eq(
     (select total_minor from public.orders where id = v_order), 0,
     'points cover the whole price when there are enough');
+  -- The sticker pack is EGP 50 = 5000 piastres, so 500 points clears it. The
+  -- member must not be charged the 99,999 they offered: spending points that
+  -- bought nothing is the quiet way a loyalty scheme robs somebody.
   perform tests.assert_eq(
-    (select points_spent from public.orders where id = v_order), 5000,
+    (select points_spent from public.orders where id = v_order), 500,
     'and only the points the discount actually used are taken — not all of them');
-  perform tests.assert_eq(public.points_total(v_b), 99999 - 5000,
+  perform tests.assert_eq(public.points_total(v_b), 99999 - 500,
     'the rest stays in their balance');
+
+  -- The invariant behind all of the above, stated once: what a member is
+  -- charged in points must be exactly what bought the discount they got.
+  -- Setting the two from each other without converting is how a rate change
+  -- silently bills ten times the points.
+  perform tests.assert_eq(
+    (select points_spent * 10 from public.orders where id = v_order),
+    (select discount_minor from public.orders where id = v_order),
+    'points charged and money saved always agree at the stated rate');
 
   -- ---------------------------------------------------------------------
   -- Stock.

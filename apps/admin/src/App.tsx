@@ -7,6 +7,8 @@ import { RunEditor } from './screens/RunEditor';
 import { RunDay } from './screens/RunDay';
 import { Members } from './screens/Members';
 import { Rewards } from './screens/Rewards';
+import { Sponsors } from './screens/Sponsors';
+import { Merch } from './screens/Merch';
 import { ToastProvider } from './components/Toast';
 import { ConfirmProvider } from './components/Confirm';
 import { SIGNATURE } from '@mvmnt/shared';
@@ -16,7 +18,9 @@ export type View =
   | { name: 'editor'; runId: string | null }
   | { name: 'runday'; runId: string }
   | { name: 'members' }
-  | { name: 'rewards' };
+  | { name: 'rewards' }
+  | { name: 'sponsors' }
+  | { name: 'merch' };
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -64,7 +68,7 @@ export default function App() {
           <h1>MVMNT · ORGANISER</h1>
           <nav className="app-nav">
             <button
-              className={`link ${view.name === 'members' || view.name === 'rewards' ? '' : 'current'}`}
+              className={`link ${['members', 'rewards', 'sponsors', 'merch'].includes(view.name) ? '' : 'current'}`}
               onClick={() => setView({ name: 'list' })}
             >
               Runs
@@ -80,6 +84,18 @@ export default function App() {
               onClick={() => setView({ name: 'rewards' })}
             >
               Rewards
+            </button>
+            <button
+              className={`link ${view.name === 'merch' ? 'current' : ''}`}
+              onClick={() => setView({ name: 'merch' })}
+            >
+              Merch
+            </button>
+            <button
+              className={`link ${view.name === 'sponsors' ? 'current' : ''}`}
+              onClick={() => setView({ name: 'sponsors' })}
+            >
+              Sponsors
             </button>
           </nav>
           <div className="who">
@@ -99,6 +115,8 @@ export default function App() {
           )}
           {view.name === 'members' && <Members />}
           {view.name === 'rewards' && <Rewards />}
+          {view.name === 'merch' && <Merch />}
+          {view.name === 'sponsors' && <Sponsors />}
         </main>
         {/* The organisers open this every week, and it is the screen a sponsor
             is most likely to be shown. One line, at the very bottom. */}
