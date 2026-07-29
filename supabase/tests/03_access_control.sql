@@ -274,7 +274,23 @@ begin
     'admin'::public.member_role,
     'so the founding account still holds its role after all of that');
 
+  -- ------------------------------------------------------------------------
+  -- Structural: EVERY table in public has RLS switched on.
+  --
+  -- The posture since 0010 is "RLS on every table, no exceptions" — but each
+  -- new migration has to remember it, and a forgotten ALTER TABLE is
+  -- invisible until someone reads data they should not. This makes the next
+  -- forgotten one a red test instead of an incident.
+  -- ------------------------------------------------------------------------
   perform tests.act_as_system();
+  perform tests.assert_eq(
+    (select count(*)::int
+       from pg_class c
+       join pg_namespace n on n.oid = c.relnamespace
+      where n.nspname = 'public' and c.relkind = 'r' and not c.relrowsecurity),
+    0,
+    'every table in public has row level security enabled — a new table missing it shows up here');
+
   raise notice 'PASS 03_access_control';
 end $$;
 
