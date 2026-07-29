@@ -189,6 +189,19 @@ export function secondsUntil(expiresAt: string, now = Date.now()): number {
   return Math.max(0, Math.round((new Date(expiresAt).getTime() - now) / 1000));
 }
 
+/**
+ * Eight characters, shown as two groups of four.
+ *
+ * Grouping is not decoration: reading "K7M29XQP" aloud reliably is hard, and
+ * "K7M2 · 9XQP" is two short chunks. The separator is stripped again on the way
+ * back in, so a member can type it either way.
+ */
+export function formatFriendCode(code: string): string {
+  const clean = code.replace(/[^0-9A-Za-z]/g, '').toUpperCase();
+  if (clean.length !== 8) return clean;
+  return `${clean.slice(0, 4)} ${clean.slice(4)}`;
+}
+
 export function formatCountdown(seconds: number): string {
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;

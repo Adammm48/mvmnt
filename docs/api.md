@@ -289,13 +289,32 @@ could map the club's whole social graph — a member directory by another name.
 
 ### `my_friend_qr() → (token text, expires_at timestamptz)`
 
-Returns the live token if there is one, mints a 3-minute one otherwise. Reusing
-an unexpired token keeps the code on screen stable while it is being scanned.
+Mints a fresh **8-character** code valid for **60 seconds**, and revokes any the
+member was already showing — so the code on screen is always the only live one.
+
+**Why 40 bits is enough.** Eight characters from a 32-symbol alphabet is 1.1
+trillion codes. Against that an attacker has a 60-second window, one use per
+code, and at most a few hundred live codes across the whole club; landing on one
+needs on the order of a billion guesses per second sustained over HTTP. The old
+122-bit code bought nothing the expiry was not already buying, and cost the
+thing the feature actually depends on — nobody can read 32 hex characters aloud
+at a meeting point.
+
+The alphabet is Crockford-style with **I, L, O and U removed**: the first three
+are indistinguishable from 1 and 0 on a phone screen at arm's length. Redemption
+strips spaces and dashes and ignores case, because the fallback path is one
+person reading eight characters out and another typing them.
 
 ### `revoke_my_friend_qr() → void`
 
 Kills every code the member has ever shown (App Spec §8). Existing friendships
 are untouched — this stops future adds, it does not undo past ones. Audited.
+
+**No longer surfaced in the app.** Since 0029 each new code retires the previous
+one and codes live sixty seconds, so "if my code got out" is answered by waiting
+a minute. A button that duplicates the passage of time only adds doubt. The RPC
+remains for the organiser moderation path and for any future account-recovery
+flow.
 
 ### `add_friend_by_token(p_token text) → uuid`
 

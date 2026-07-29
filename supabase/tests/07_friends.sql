@@ -3,9 +3,10 @@
 --
 -- This is the security-sensitive half of Phase 2. The safety property App Spec
 -- §4.4 asks for — you can only be added by someone who stood in front of you —
--- rests entirely on properties of the token: it expires, it burns on use, and
--- it can be killed. None of those is visible in the UI, so if any of them
--- silently stopped holding, nothing would look wrong. They are tested here.
+-- rests entirely on properties of the code: it expires after a minute, it burns
+-- on use, each new one retires the last, and an organiser can kill it. None of
+-- those is visible in the UI, so if any of them silently stopped holding,
+-- nothing would look wrong. They are tested here.
 -- ============================================================================
 begin;
 
@@ -28,33 +29,49 @@ begin
   -- ---------------------------------------------------------------------
   -- Showing a code.
   --
-  -- Stable while it lives: a code that changed on every render would be
-  -- unscannable, because the other phone is reading it over a second or two.
+  -- Eight characters, one minute, and a fresh one every time it is asked for.
+  -- Short enough to read aloud is the point: the typed path is what the feature
+  -- falls back to when a camera will not focus at a dark meeting point.
   -- ---------------------------------------------------------------------
   perform tests.act_as(v_a);
   select token, expires_at into v_tok, v_exp from public.my_friend_qr();
   perform tests.assert(v_tok is not null, 'a member can show a friend code');
+  perform tests.assert_eq(length(v_tok), 8,
+    'eight characters — short enough to read out, which is the fallback the whole feature leans on');
   perform tests.assert(
-    v_exp > now() and v_exp <= now() + interval '3 minutes',
-    'the code expires within three minutes — that short life is what makes "in person" true');
+    v_tok ~ '^[0123456789ABCDEFGHJKMNPQRSTVWXYZ]{8}$',
+    'from the unambiguous alphabet: no I, L, O or U to be misread off a screen');
+  perform tests.assert(
+    v_exp > now() and v_exp <= now() + interval '60 seconds',
+    'and lives one minute — the short life is what makes "in person" true, not the length');
 
+  -- Every fresh code retires the last, so the one on screen is the only live
+  -- one. This is what replaced the member-facing "turn off my code" button.
   select token into v_tok2 from public.my_friend_qr();
-  perform tests.assert_eq(v_tok2, v_tok,
-    'showing the code again reuses the live one rather than minting a new one');
+  perform tests.assert(v_tok2 <> v_tok, 'asking again mints a new code');
+  perform tests.act_as(v_b);
+  perform tests.assert_rejects(
+    format('select public.add_friend_by_token(%L)', v_tok),
+    'and the previous one stops working immediately');
+  perform tests.act_as(v_a);
+  v_tok := v_tok2;
 
   -- ---------------------------------------------------------------------
   -- Scanning it.
   -- ---------------------------------------------------------------------
   perform tests.act_as(v_b);
   perform tests.assert_rejects(
-    format('select public.add_friend_by_token(%L)', v_tok || 'x'),
-    'a made-up token is not accepted');
+    format('select public.add_friend_by_token(%L)', 'ZZZZZZZZ'),
+    'a made-up code is not accepted');
 
-  v_owner := public.add_friend_by_token(v_tok);
+  -- Typing is the fallback path, so what a person types has to work: lower
+  -- case, and the space the app puts between the two groups when it shows it.
+  v_owner := public.add_friend_by_token(
+    lower(substr(v_tok, 1, 4) || ' ' || substr(v_tok, 5, 4)));
   perform tests.assert_eq(v_owner, v_a, 'scanning a code returns whose code it was');
 
   -- Single use. A code photographed over a shoulder must not keep working for
-  -- the rest of its three minutes.
+  -- the rest of its minute.
   perform tests.act_as(v_c);
   perform tests.assert_rejects(
     format('select public.add_friend_by_token(%L)', v_tok),

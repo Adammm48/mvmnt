@@ -2,15 +2,13 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import { supabase } from '@/lib/supabase';
-import { Button } from '@/components/Button';
 import { Loading, Notice } from '@/components/Feedback';
-import { confirmDestructive } from '@/lib/confirm';
 import {
   colors,
   radius,
   spacing,
   typography,
-  formatCountdown,
+  formatFriendCode,
   secondsUntil,
   toMemberMessage,
 } from '@mvmnt/shared';
@@ -18,32 +16,46 @@ import {
 /**
  * Your friend code.
  *
- * The countdown under the code is not decoration. A permanent friend code would
- * be a username you could paste into WhatsApp, and "QR only" would mean nothing;
- * the three-minute life is the entire mechanism that makes adding someone an
- * in-person act. So the member sees it running down, and the copy says why.
+ * Two ways to hand it over, both on screen at once:
  *
- * The code refreshes itself when it expires rather than going dead, because a
- * member holding their phone out at a meeting point should not have to notice
- * and re-tap.
+ *   · the QR, for the camera
+ *   · **the code itself, in text**, for reading out
+ *
+ * The second was missing, which quietly broke the fallback the whole feature
+ * leans on. A camera that will not focus in low light is the normal case at a
+ * winter meeting point, and until now the only answer was a code the member
+ * could not see.
+ *
+ * It rolls every 60 seconds for as long as this screen is open. That is the
+ * entire safety mechanism — a code read out over the phone to somebody at home
+ * is dead before they can type it — and it also replaces the old "turn off my
+ * code" button: waiting a minute now does the same job, and a button that
+ * duplicates the passage of time only adds doubt.
  */
 export default function FriendCodeScreen() {
   const [token, setToken] = useState<string | null>(null);
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
   const [remaining, setRemaining] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [note, setNote] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const stopped = useRef(false);
+  const inFlight = useRef(false);
 
   const fetchCode = useCallback(async () => {
+    // The timer and the first load can both fire at the boundary. Without this
+    // latch the screen mints two codes and shows the older one, which is the
+    // one that has already been revoked.
+    if (inFlight.current) return;
+    inFlight.current = true;
+
     const { data, error: rpcError } = await supabase.rpc('my_friend_qr');
+    inFlight.current = false;
+
     if (rpcError) {
       setError(toMemberMessage(rpcError));
       return;
     }
     const row = (data ?? [])[0];
     if (!row) return;
+
     setToken(row.token);
     setExpiresAt(row.expires_at);
     setRemaining(secondsUntil(row.expires_at));
@@ -51,11 +63,7 @@ export default function FriendCodeScreen() {
   }, []);
 
   useEffect(() => {
-    stopped.current = false;
     fetchCode();
-    return () => {
-      stopped.current = true;
-    };
   }, [fetchCode]);
 
   useEffect(() => {
@@ -64,89 +72,61 @@ export default function FriendCodeScreen() {
     const timer = setInterval(() => {
       const left = secondsUntil(expiresAt);
       setRemaining(left);
-      // Roll over a beat early, so there is never a moment where the code on
-      // screen has quietly stopped working.
-      if (left <= 1 && !stopped.current && !busy) fetchCode();
+      // Roll a beat early, so there is never a moment where the code on screen
+      // has quietly stopped working.
+      if (left <= 1) fetchCode();
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [expiresAt, fetchCode, busy]);
-
-  async function turnOff() {
-    const confirmed = await confirmDestructive({
-      title: 'Turn off your code?',
-      message:
-        'Any code you have already shown stops working straight away. Friends you already have are not affected — this only stops new people adding you until you show a fresh code.',
-      confirmLabel: 'Turn it off',
-    });
-    if (!confirmed) return;
-
-    setBusy(true);
-    const { error: revokeError } = await supabase.rpc('revoke_my_friend_qr');
-    setBusy(false);
-
-    if (revokeError) {
-      setError(toMemberMessage(revokeError));
-      return;
-    }
-    setToken(null);
-    setExpiresAt(null);
-    setNote('Your old codes no longer work. Tap below when you want a new one.');
-  }
+  }, [expiresAt, fetchCode]);
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
       {error && <Notice tone="error" message={error} />}
-      {note && !error && <Notice tone="info" message={note} />}
 
       {token ? (
         <>
           <View style={styles.codeCard}>
             {/*
-              White plate behind the code on purpose: QR scanners want dark
-              modules on a light field, and the app's dark base would make this
-              slow or impossible to read across a table.
+              White plate behind the code: scanners want dark modules on a light
+              field, and the app's dark base would make this slow to read across
+              a table.
             */}
-            <QRCode value={token} size={228} backgroundColor="#FFFFFF" color={colors.base} />
+            <QRCode value={token} size={216} backgroundColor="#FFFFFF" color={colors.base} />
+          </View>
+
+          <View style={styles.textCode}>
+            <Text style={styles.textCodeLabel}>Or read this out</Text>
+            <Text style={styles.textCodeValue} selectable accessibilityLabel={`Your code is ${token.split('').join(' ')}`}>
+              {formatFriendCode(token)}
+            </Text>
           </View>
 
           <View style={styles.countdownRow}>
-            <Text style={styles.countdown}>{formatCountdown(remaining)}</Text>
-            <Text style={styles.countdownLabel}>until this code refreshes</Text>
+            <Text style={[styles.countdown, remaining <= 10 && styles.countdownLow]}>
+              {remaining}s
+            </Text>
+            <Text style={styles.countdownLabel}>until a new code replaces this one</Text>
           </View>
         </>
       ) : (
         <View style={styles.placeholder}>
-          {error || note ? (
-            <Button label="Show a new code" onPress={fetchCode} />
-          ) : (
-            <Loading label="Making your code" />
-          )}
+          <Loading label="Making your code" />
         </View>
       )}
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>How this works</Text>
         <Text style={styles.body}>
-          Hold this up and let the other person scan it with MVMNT. It works once, and only for a
-          few minutes — so a screenshot sent to someone who was not there is useless by the time it
-          arrives. That is what keeps this to people you have actually met.
+          Let them scan the square, or read the eight characters out. It works once, and only for a
+          minute — so a screenshot sent to somebody who was not there is already dead when it
+          arrives. That is what keeps your friends to people you have actually met.
         </Text>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>If your code got out</Text>
         <Text style={styles.body}>
-          Turn it off and nobody can use a code you have already shown. Friends you already have stay
-          exactly as they are.
+          A fresh code replaces this one every minute, and the old one stops working the moment it
+          does. If you think somebody captured your screen, just wait a minute — there is nothing to
+          switch off.
         </Text>
-        <Button
-          label="Turn off my code"
-          variant="destructive"
-          onPress={turnOff}
-          loading={busy}
-          disabled={!token && !expiresAt}
-        />
       </View>
     </ScrollView>
   );
@@ -162,8 +142,31 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
   },
   placeholder: { minHeight: 220, justifyContent: 'center' },
+  textCode: {
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.baseElevated,
+    borderRadius: radius.lg,
+    paddingVertical: spacing.md,
+  },
+  textCodeLabel: {
+    fontSize: 12,
+    color: colors.textOnDarkMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    fontWeight: '700',
+  },
+  textCodeValue: {
+    ...typography.dataLarge,
+    fontSize: 34,
+    color: colors.textOnDark,
+    letterSpacing: 4,
+  },
   countdownRow: { alignItems: 'center', gap: 2 },
-  countdown: { ...typography.dataLarge, color: colors.textOnDark },
+  countdown: { ...typography.dataLarge, fontSize: 26, color: colors.textOnDark },
+  // The last ten seconds go amber, so somebody mid-way through reading it out
+  // knows to wait for the next one rather than being cut off.
+  countdownLow: { color: colors.highlight },
   countdownLabel: { fontSize: 13, color: colors.textOnDarkMuted },
   section: { gap: spacing.sm },
   sectionTitle: { fontSize: 18, fontWeight: '700', color: colors.textOnDark },

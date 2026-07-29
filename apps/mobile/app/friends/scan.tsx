@@ -41,7 +41,7 @@ export default function ScanScreen() {
     async (raw: string) => {
       const token = extractToken(raw);
       if (!token) {
-        setError('That does not look like an MVMNT code.');
+        setError('That does not look like an MVMNT code — it should be 8 characters.');
         claiming.current = false;
         return;
       }
@@ -123,13 +123,14 @@ export default function ScanScreen() {
         <Text style={styles.body}>
           {Platform.OS === 'web'
             ? 'Scanning works best in the app. On the web, ask them to read their code out.'
-            : 'If the light is bad or the camera will not focus, they can read it out instead.'}
+            : 'If the light is bad or the camera will not focus, they can read it out instead.'}{' '}
+          Spaces and capitals do not matter.
         </Text>
         <TextInput
           style={styles.input}
           value={manual}
           onChangeText={setManual}
-          placeholder="32-character code"
+          placeholder="8-character code"
           placeholderTextColor={colors.textOnDarkMuted}
           autoCapitalize="none"
           autoCorrect={false}

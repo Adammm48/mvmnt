@@ -5,6 +5,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppState } from 'react-native';
 import { AuthProvider, useAuth } from '@/lib/auth';
 import { Loading } from '@/components/Feedback';
+import { ConfirmHost } from '@/components/ConfirmHost';
 import { flush } from '@/lib/checkInQueue';
 import { colors } from '@mvmnt/shared';
 
@@ -68,6 +69,9 @@ export default function RootLayout() {
       <AuthProvider>
         <StatusBar style="light" />
         <RootNavigator />
+        {/* One host for every confirmation in the app. See lib/confirm.ts for
+            why neither platform dialog could be trusted with this. */}
+        <ConfirmHost />
       </AuthProvider>
     </SafeAreaProvider>
   );
