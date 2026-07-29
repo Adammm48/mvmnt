@@ -202,6 +202,15 @@ export default function ProfileScreen() {
       {error && <Notice tone="error" message={error} />}
       {success && !error && <Notice tone="success" message={success} />}
 
+      <Pressable
+        onPress={() => router.push('/stats')}
+        style={styles.statsLink}
+        accessibilityRole="button"
+        accessibilityLabel="See all your stats"
+      >
+        <Text style={styles.statsLinkText}>All your stats →</Text>
+      </Pressable>
+
       {standing && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Where you are</Text>
@@ -360,6 +369,8 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
+  statsLink: { alignSelf: 'flex-end' },
+  statsLinkText: { color: colors.action, fontSize: 14, fontWeight: '700' },
   screen: { flex: 1, backgroundColor: colors.base },
   content: { padding: spacing.md, gap: spacing.lg, paddingBottom: spacing.xxl },
   section: { gap: spacing.sm },

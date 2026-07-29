@@ -109,17 +109,26 @@ never an inflatable view count and never a name.
   `SECURITY DEFINER` function must pin its search path. A future migration
   that forgets either fails CI instead of shipping a hole.
 
-## Phase 5 — groundwork (the halves that need no accounts)
+## Phase 5 — built to the edge of the missing accounts
 
-- **Kilometres with the club** on the profile: attendance × each run's
-  stated distance, own data only, no GPS trace behind it. The honest number
-  a run club means by "you've run 120K with us".
-- **[ADR 0005](decisions/0005-phase-5-health-and-faces.md)** fixes the
-  Phase 5 design before the accounts exist: health data is display-only and
-  never stored server-side (the policy's "we do not collect health data"
-  stays true); face-matching is bought not built, opt-in by selfie,
-  deletable as a unit, and priced at publish time rather than per view.
-  The precise account list it is blocked on is in open-items.
+- **Find me in photos**: a member takes one selfie in-app (never from the
+  library), and published galleries grow a "You" tab of photos the matcher
+  thinks they are in. Opting out deletes the selfie, the enrolment and
+  every match as one unit — the club forgets the face. The only missing
+  piece is the recognition-service account: the matcher Edge Function
+  refuses loudly until its key exists, and the app says "matching is not
+  switched on yet" instead of pretending. The day you sign up for a
+  provider, matching goes live with no code change on the app side.
+- **Your stats**: the club half (runs, kilometres, streak, tier) works
+  today, from attendance alone. The phone half (steps, pace, heart rate)
+  renders through one adapter seam that currently — honestly — reports no
+  health source exists, and promises on-screen that those numbers will
+  never reach the club's servers ([ADR 0005](decisions/0005-phase-5-health-and-faces.md)).
+- **Consent is recorded, not remembered**: first open asks 18+ and photo
+  permission separately, stores both with the policy version, and the photo
+  answer is a plain switch in the profile forever after. The app account is
+  18+ (a minor cannot consent to their own data); under-18s run with the
+  club and an organiser checks them in.
 
 ## The bug pattern worth remembering
 

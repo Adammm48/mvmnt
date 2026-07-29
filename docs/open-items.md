@@ -146,6 +146,28 @@ Phase 3 — sponsors, and the merch catalogue itself — can be built without th
 
 ---
 
+## Switches Phase 5 fully on
+
+### A face-recognition service account
+
+**Who:** Adam, when the club wants "find me in photos" live.
+**Where:** set `FACE_PROVIDER_KEY` on the hosted project and finish the
+provider block in `supabase/functions/match-faces/index.ts` (marked
+REPLACE ME).
+
+Everything else is built: opt-in selfies, the match rows, the "You" tab,
+unit deletion, erasure. AWS Rekognition is the reference choice (ADR 0005);
+the cost model is per published gallery, not per view — a few dollars a
+month at this club's photo volume, but it is a budget decision and a data
+processing agreement, so it is yours.
+
+### The Apple Developer + Play Console accounts (again)
+
+The same accounts that unlock push and the stores also unlock the phone half
+of Your stats — HealthKit needs the entitlement, Health Connect needs the
+Play declaration. The adapter seam is `apps/mobile/src/lib/health.ts`
+(marked REPLACE ME); nothing above it changes.
+
 ## Owed to the spec
 
 ### Load test against the hosted project, if a big event recurs
