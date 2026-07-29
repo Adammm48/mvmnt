@@ -253,6 +253,15 @@ begin
 
       continue when w > v_first or w % v_every <> 0;
 
+      -- Even the regulars miss one occasionally, and without this the monthly
+      -- board is a wall of exact ties: everyone in a band attends the same four
+      -- runs and scores identically. A deterministic pseudo-skip (roughly one
+      -- run in seven, varying per member and week) is what a real month looks
+      -- like — and it is what makes the monthly board a ranking rather than a
+      -- list. Deterministic rather than random so a reset reproduces the same
+      -- demo database.
+      continue when (n * 3 + w * 5) % 7 = 0;
+
       insert into public.run_attendance (
         run_id, user_id, queued_at, signed_up_at, checked_in_at, check_in_method
       )
