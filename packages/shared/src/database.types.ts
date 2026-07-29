@@ -540,6 +540,7 @@ export type Database = {
           created_at: string
           display_name: string
           id: string
+          is_founder: boolean
           leaderboard_opt_out: boolean
           role: Database["public"]["Enums"]["member_role"]
           updated_at: string
@@ -549,6 +550,7 @@ export type Database = {
           created_at?: string
           display_name: string
           id: string
+          is_founder?: boolean
           leaderboard_opt_out?: boolean
           role?: Database["public"]["Enums"]["member_role"]
           updated_at?: string
@@ -558,6 +560,7 @@ export type Database = {
           created_at?: string
           display_name?: string
           id?: string
+          is_founder?: boolean
           leaderboard_opt_out?: boolean
           role?: Database["public"]["Enums"]["member_role"]
           updated_at?: string
@@ -962,6 +965,7 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: undefined
       }
+      admin_member_detail: { Args: { p_user_id: string }; Returns: Json }
       admin_members: {
         Args: { p_limit?: number; p_search?: string }
         Returns: {
@@ -970,6 +974,7 @@ export type Database = {
           email: string
           friend_code_active: boolean
           friend_count: number
+          is_founder: boolean
           joined_at: string
           last_run_at: string
           leaderboard_opt_out: boolean
@@ -983,6 +988,13 @@ export type Database = {
       }
       admin_remove_check_in: {
         Args: { p_run_id: string; p_user_id: string }
+        Returns: undefined
+      }
+      admin_set_member_role: {
+        Args: {
+          p_role: Database["public"]["Enums"]["member_role"]
+          p_user_id: string
+        }
         Returns: undefined
       }
       attendance_state: {

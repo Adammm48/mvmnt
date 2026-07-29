@@ -10,7 +10,7 @@ import {
   type CheckInMethod,
 } from '@mvmnt/shared';
 import { useToast } from '../components/Toast';
-import { MemberModeration } from '../components/MemberModeration';
+import { MemberDetail } from '../components/MemberDetail';
 
 type Attendee = {
   id: string;
@@ -271,11 +271,7 @@ export function RunDay({ runId, onBack }: { runId: string; onBack: () => void })
 
         {moderating?.user_id && (
           <div style={{ marginTop: 16 }}>
-            <MemberModeration
-              userId={moderating.user_id}
-              displayName={moderating.display_name}
-              onDone={() => setModerating(null)}
-            />
+            <MemberDetail userId={moderating.user_id} onChanged={load} />
           </div>
         )}
       </div>

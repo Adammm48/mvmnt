@@ -46,6 +46,9 @@ If you have a question about your data, or want it deleted, contact us at
   - **Friends you have added in person, by scanning each other's code,** can see
     whether you are coming to the next run — nothing else, and you can remove
     them at any time without them being told.
+- **The club's organisers can see your full record**, including your email and
+  your run history. They run the club; everything they do to your account is
+  logged.
 - Your check-in coordinates are **permanently deleted after 30 days**,
   automatically.
 - You can **delete your account from inside the app**, at any time, without
@@ -130,13 +133,16 @@ phone, in person. The code expires after three minutes and works once, so a code
 that is screenshotted and forwarded is useless. Either of you can remove the
 other at any time, from your side alone, and the other person is not told.
 
-**Organisers can see:** who has signed up and who has checked in, so they can
-run the event and account for everyone; and a list of club members with their
-name, email, points and when they last ran, so they can answer a question about
-someone who is not on today's run. They can also check people in manually,
-correct someone's points with a written reason, and switch off a member's friend
-code if it is reported as being misused. Each of those actions is recorded in an
-audit log.
+**Organisers can see everything the club holds about a member:** name, email,
+the runs they have signed up for and attended, their points and how each was
+earned, their badges, the friends they have added, which devices they have
+registered, and every notification the club has sent them. Organisers run the
+club and are trusted with its records.
+
+They can also check people in manually, correct someone's points with a written
+reason, switch off a member's friend code if it is reported as being misused,
+and make another member an organiser. Every one of those actions is recorded in
+an audit log, and any organiser can read that log.
 
 Members have no equivalent list. There is no way for one member to look another
 one up.

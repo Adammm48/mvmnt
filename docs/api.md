@@ -312,6 +312,55 @@ apart, and the only way to reply to a complaint.
 Reads are not audited — logging every keystroke of a search would bury the
 writes that matter. The two actions below are.
 
+### `admin_member_detail(p_user_id uuid) → jsonb` *(organiser)*
+
+Everything the database knows about one member, as a single document: profile,
+badges, **friends by name**, friend-code status, registered devices, last 20
+runs with how each check-in happened and whether its location evidence still
+exists, last 20 points events with whether each still counts, last 20
+notifications with delivery status, and every organiser action ever taken on
+the account.
+
+One call rather than eight, because the console would otherwise have to
+assemble and keep eight results in step.
+
+**Friends are returned by name, not as a count.** That is a genuine widening —
+a friendship is a fact about two people, so listing it exposes a little of
+somebody who is not the member being looked at. It is here because the owner
+asked for it explicitly (2026-07-29: *"the organiser has all the trust, don't
+hide anything from him"*), and because an organiser handling a complaint about
+unwanted adds otherwise cannot see what was actually added. Organiser-only; no
+member can reach any part of it.
+
+### `admin_set_member_role(p_user_id uuid, p_role member_role) → void` *(organiser)*
+
+Promote a member to organiser, or demote one back. **One tier only** — an
+organiser can do everything another organiser can, including promoting more.
+That is the owner's decision, on the basis that anyone holding the account is
+someone they trust; there is no approval flow, cooldown or second signature.
+
+Two refusals:
+
+| Message | Cause |
+|---|---|
+| `the club owner's account cannot be demoted` | The target is the founding account |
+| `this is the last organiser — promote someone else first` | Lockout backstop; only reachable if the founding account has been erased |
+
+**The founding account** is `profiles.is_founder`, at most one row (partial
+unique index). It claims itself: the first account ever promoted to admin gets
+the flag, which is what makes it work on a brand-new project where migrations
+run before a single account exists. If that account is erased the rule re-arms
+for the next promotion, so a club can never end up with no protected way in.
+
+The guard is on the **table**, not only in this function — `profiles` is
+directly updatable by an admin through PostgREST, so an RPC-only check would be
+sidestepped by a plain `PATCH`. Neither the role nor the flag itself can be
+changed on the founding account through the API. The `auth.uid() is null`
+exemption remains: that is the same bootstrap path that created the first admin,
+and anyone with direct database access can already do anything.
+[`03_access_control.sql`](../supabase/tests/03_access_control.sql) asserts every
+one of these, through both the RPC and a direct write.
+
 ### `admin_adjust_points(p_user_id uuid, p_points integer, p_note text) → void` *(organiser)*
 
 Settles a points dispute without hand-editing a ledger. Recorded as an

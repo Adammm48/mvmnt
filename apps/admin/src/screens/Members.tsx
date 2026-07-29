@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { toMemberMessage, TIER_LABEL, type Database } from '@mvmnt/shared';
-import { MemberModeration } from '../components/MemberModeration';
+import { MemberDetail } from '../components/MemberDetail';
 
 type Member = Database['public']['Functions']['admin_members']['Returns'][number];
 
@@ -142,15 +142,7 @@ export function Members() {
 
         {openId && (
           <div style={{ marginTop: 16 }}>
-            <MemberModeration
-              userId={openId}
-              displayName={members.find((m) => m.user_id === openId)?.display_name ?? 'this member'}
-              codeActive={members.find((m) => m.user_id === openId)?.friend_code_active}
-              onDone={() => {
-                setOpenId(null);
-                load(search);
-              }}
-            />
+            <MemberDetail userId={openId} onChanged={() => load(search)} />
           </div>
         )}
       </div>

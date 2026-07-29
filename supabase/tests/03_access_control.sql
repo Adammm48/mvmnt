@@ -9,7 +9,7 @@ begin;
 
 do $$
 declare
-  v_admin uuid; v_a uuid; v_b uuid;
+  v_admin uuid; v_a uuid; v_b uuid; v_founder uuid;
   v_pub uuid; v_draft uuid;
 begin
   perform tests.act_as_system();
@@ -182,6 +182,97 @@ begin
   perform tests.assert_eq(
     (select count(*)::int from public.profiles), 1,
     'and still reads exactly one profile directly — their own');
+
+  perform tests.assert_rejects(
+    format('select public.admin_member_detail(%L)', v_b),
+    'a member cannot read another member''s full record');
+
+  -- ---------------------------------------------------------------------
+  -- Organiser roles.
+  --
+  -- The most security-sensitive write in the schema: it does not break a
+  -- feature when it goes wrong, it hands over every member's data or locks the
+  -- club out of its own console. The owner chose an open model — one organiser,
+  -- no approvals — on the basis that anyone holding the account is trusted. The
+  -- founding account being un-demotable is what makes that safe to leave open.
+  -- ---------------------------------------------------------------------
+  perform tests.act_as(v_a);
+  perform tests.assert_rejects(
+    format('select public.admin_set_member_role(%L, ''admin'')', v_a),
+    'a member cannot promote themselves');
+  perform tests.assert_rejects(
+    format('update public.profiles set role = ''admin'' where id = %L', v_a),
+    'nor by writing the column directly — the guard is on the table, not the RPC');
+
+  -- The founding account claims itself on the first promotion, with no
+  -- migration and no manual step.
+  --
+  -- Cleared first because the seeded database already has a founder, and this
+  -- has to be tested from the state a brand-new project is actually in. As the
+  -- system there is no authenticated caller — the same bootstrap path that
+  -- creates the very first admin.
+  perform tests.act_as_system();
+  update public.profiles set is_founder = false where is_founder;
+
+  v_founder := tests.make_member('club owner', true);
+  perform tests.assert(
+    (select is_founder from public.profiles where id = v_founder),
+    'the first account promoted to admin becomes the founding account');
+  perform tests.assert_eq(
+    (select count(*)::int from public.profiles where is_founder), 1,
+    'and there is exactly one');
+
+  perform tests.act_as(v_admin);
+  perform public.admin_set_member_role(v_a, 'admin');
+  perform tests.assert_eq(
+    (select role from public.profiles where id = v_a),
+    'admin'::public.member_role,
+    'an organiser can promote a member');
+
+  perform tests.assert(
+    not (select is_founder from public.profiles where id = v_a),
+    'a promoted organiser does not become a second founder');
+
+  -- A second organiser is a full organiser: no junior tier, per the owner.
+  perform tests.act_as(v_a);
+  perform public.admin_set_member_role(v_b, 'admin');
+  perform tests.assert_eq(
+    (select role from public.profiles where id = v_b),
+    'admin'::public.member_role,
+    'and the organiser they promoted can promote others — one tier, by design');
+
+  perform public.admin_set_member_role(v_b, 'member');
+  perform tests.assert_eq(
+    (select role from public.profiles where id = v_b),
+    'member'::public.member_role,
+    'and demote them again');
+
+  -- The one rule the owner asked for.
+  perform tests.assert_rejects(
+    format('select public.admin_set_member_role(%L, ''member'')', v_founder),
+    'the founding account cannot be demoted by another organiser');
+
+  perform tests.act_as(v_founder);
+  perform tests.assert_rejects(
+    format('select public.admin_set_member_role(%L, ''member'')', v_founder),
+    'nor by itself — this is the guaranteed way back into the console');
+
+  perform tests.assert_rejects(
+    format('update public.profiles set role = ''member'' where id = %L', v_founder),
+    'nor by writing the column directly');
+
+  perform tests.assert_rejects(
+    format('update public.profiles set is_founder = false where id = %L', v_founder),
+    'and the flag itself cannot be cleared, which would be a one-step way round it');
+
+  perform tests.assert_rejects(
+    format('update public.profiles set is_founder = true where id = %L', v_a),
+    'nor moved to another account');
+
+  perform tests.assert_eq(
+    (select role from public.profiles where id = v_founder),
+    'admin'::public.member_role,
+    'so the founding account still holds its role after all of that');
 
   perform tests.act_as_system();
   raise notice 'PASS 03_access_control';
