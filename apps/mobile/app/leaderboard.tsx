@@ -1,11 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { FlatList, Image, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { supabase } from '@/lib/supabase';
 import { StandingCard } from '@/components/StandingCard';
 import { TierLadder } from '@/components/TierLadder';
-import { ShareCard } from '@/components/ShareCard';
+import { ShareSheet } from '@/components/ShareSheet';
 import { Button } from '@/components/Button';
-import { shareStandingCard } from '@/lib/share';
 import { useAuth } from '@/lib/auth';
 import { EmptyState, Loading, Notice } from '@/components/Feedback';
 import {
@@ -39,7 +38,7 @@ import {
  */
 export default function LeaderboardScreen() {
   const { profile } = useAuth();
-  const cardRef = useRef<View>(null);
+  const [sharing, setSharing] = useState(false);
   const [window, setWindow] = useState<LeaderboardWindow>('all_time');
   const [rows, setRows] = useState<LeaderboardRow[]>([]);
   const [standing, setStanding] = useState<Standing | null>(null);
@@ -89,96 +88,86 @@ export default function LeaderboardScreen() {
   const tied = sharedRanks(rows);
 
   return (
-    <FlatList
-      style={styles.screen}
-      data={rows}
-      keyExtractor={(row) => row.user_id}
-      contentContainerStyle={styles.list}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={() => load(true)}
-          tintColor={colors.textOnDarkMuted}
+    <>
+      {sharing && standing && (
+        <ShareSheet
+          standing={lifetime ?? standing}
+          displayName={profile?.display_name ?? 'A runner'}
+          onClose={() => setSharing(false)}
         />
-      }
-      ListHeaderComponent={
-        <View style={styles.header}>
-          {error && <Notice tone="error" message={error} />}
-          {standing && <StandingCard standing={standing} lifetime={lifetime ?? undefined} />}
+      )}
+      <FlatList
+        style={styles.screen}
+        data={rows}
+        keyExtractor={(row) => row.user_id}
+        contentContainerStyle={styles.list}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => load(true)}
+            tintColor={colors.textOnDarkMuted}
+          />
+        }
+        ListHeaderComponent={
+          <View style={styles.header}>
+            {error && <Notice tone="error" message={error} />}
+            {standing && <StandingCard standing={standing} lifetime={lifetime ?? undefined} />}
 
-          <View style={styles.toggle}>
-            <Segment
-              label="All time"
-              active={window === 'all_time'}
-              onPress={() => setWindow('all_time')}
-            />
-            <Segment
-              label="This month"
-              active={window === 'month'}
-              onPress={() => setWindow('month')}
-            />
-          </View>
+            <View style={styles.toggle}>
+              <Segment
+                label="All time"
+                active={window === 'all_time'}
+                onPress={() => setWindow('all_time')}
+              />
+              <Segment
+                label="This month"
+                active={window === 'month'}
+                onPress={() => setWindow('month')}
+              />
+            </View>
 
-          <Text style={styles.caption}>
-            Top 100. Points come from showing up — checking in to a run earns them, and a streak of
-            consecutive weeks adds a little more.
-          </Text>
+            <Text style={styles.caption}>
+              Top 100. Points come from showing up — checking in to a run earns them, and a streak
+              of consecutive weeks adds a little more.
+            </Text>
 
-          {/* Only for the podium, and only for the member who is on it. A note
+            {/* Only for the podium, and only for the member who is on it. A note
               congratulating somebody else is not a note for you. */}
-          {standing && standing.rank <= 3 && standing.points > 0 && (
-            <Text style={styles.podium}>{adamSays('top_three', { stability: 'daily' })}</Text>
-          )}
-        </View>
-      }
-      renderItem={({ item }) => <Row row={item} shared={tied.has(item.rank)} />}
-      ItemSeparatorComponent={() => <View style={styles.separator} />}
-      ListFooterComponent={
-        standing ? (
-          <View style={styles.ladder}>
-            <View style={styles.shareRow}>
-              <Button
-                label="Share your standing"
-                variant="secondary"
-                onPress={() =>
-                  shareStandingCard(
-                    cardRef,
-                    `${(lifetime ?? standing).points} points and ${(lifetime ?? standing).runs_attended} runs with MVMNT. Powered by MVMNT — built by Adam Elbasiony.`,
-                  )
-                }
-              />
-            </View>
-
-            <TierLadder
-              current={(lifetime ?? standing).tier}
-              points={(lifetime ?? standing).points}
-              rewards={rewards}
-            />
-
-            {/*
-              Rendered off-screen rather than conditionally, because capturing a
-              view requires it to be laid out. Positioned far off rather than
-              hidden with opacity — a zero-opacity view still captures blank on
-              some Android builds.
-            */}
-            <View style={styles.offscreen} pointerEvents="none">
-              <ShareCard
-                ref={cardRef}
-                standing={lifetime ?? standing}
-                displayName={profile?.display_name ?? 'A runner'}
-              />
-            </View>
+            {standing && standing.rank <= 3 && standing.points > 0 && (
+              <Text style={styles.podium}>{adamSays('top_three', { stability: 'daily' })}</Text>
+            )}
           </View>
-        ) : null
-      }
-      ListEmptyComponent={
-        <EmptyState
-          title="Nobody on the board yet"
-          body="The first check-in of the season puts someone here. It may as well be you."
-          voice="empty_board"
-        />
-      }
-    />
+        }
+        renderItem={({ item }) => <Row row={item} shared={tied.has(item.rank)} />}
+        ItemSeparatorComponent={() => <View style={styles.separator} />}
+        ListFooterComponent={
+          standing ? (
+            <View style={styles.ladder}>
+              <View style={styles.shareRow}>
+                <Button
+                  label="Share your standing"
+                  variant="secondary"
+                  onPress={() => setSharing(true)}
+                />
+              </View>
+
+              <TierLadder
+                current={(lifetime ?? standing).tier}
+                points={(lifetime ?? standing).points}
+                rewards={rewards}
+              />
+            </View>
+          ) : null
+        }
+        ListEmptyComponent={
+          <EmptyState
+            title="Nobody on the board yet"
+            body="The first check-in of the season puts someone here. It may as well be you."
+            voice="empty_board"
+          />
+        }
+      />
+    </>
   );
 }
 
@@ -222,7 +211,9 @@ function Row({ row, shared }: { row: LeaderboardRow; shared: boolean }) {
         <Image source={{ uri: row.avatar_url }} style={styles.avatar} />
       ) : (
         <View style={[styles.avatar, styles.avatarFallback]}>
-          <Text style={styles.avatarInitial}>{row.display_name.trim().charAt(0).toUpperCase()}</Text>
+          <Text style={styles.avatarInitial}>
+            {row.display_name.trim().charAt(0).toUpperCase()}
+          </Text>
         </View>
       )}
 
@@ -245,7 +236,6 @@ const styles = StyleSheet.create({
   header: { gap: spacing.md, marginBottom: spacing.md },
   ladder: { marginTop: spacing.xl },
   shareRow: { marginBottom: spacing.lg },
-  offscreen: { position: 'absolute', left: -10000, top: 0 },
   caption: { fontSize: 13, color: colors.textOnDarkMuted, lineHeight: 19 },
   podium: { fontSize: 14, color: colors.highlight, fontStyle: 'italic' },
 
