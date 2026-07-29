@@ -228,12 +228,20 @@ admin CRUD gets a lighter pass.
 npm run db:test
 ```
 
-Eight suites over attendance and waitlist ordering, geofenced check-in, every RLS
+Ten suites over attendance and waitlist ordering, geofenced check-in, every RLS
 policy, notification idempotency, retention and erasure, the points, streak,
 badge, tier and decay rules, organiser role changes, the friend-code safety
-properties, and the shop — stock under concurrency, points that cannot be spent
-twice, and sponsor reach that cannot be inflated by a client. They run inside transactions and roll back, so they are safe against
-a seeded database.
+properties, the shop — stock under concurrency, points that cannot be spent
+twice, sponsor reach that cannot be inflated by a client — the photo
+galleries' bytes gate (an object with no registered row is invisible, not
+leaked), and live positions (one row per member so a trail cannot exist, and
+the three ways a dot dies). They run inside transactions and roll back, so
+they are safe against a seeded database.
+
+Two of the checks are structural rather than behavioural: every table in
+`public` must have RLS enabled, and every `SECURITY DEFINER` function must pin
+its `search_path` — so the next migration that forgets either fails the suite
+instead of shipping a hole.
 
 **A recurring bug class worth naming:** four separate features shipped with a
 platform call that failed silently — `Alert` (`static alert() {}` on web),
