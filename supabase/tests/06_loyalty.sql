@@ -525,6 +525,38 @@ begin
   perform tests.act_as_system();
 
   -- ---------------------------------------------------------------------
+  -- Every total in the app agrees.
+  --
+  -- The predicate deciding which ledger rows count lived in four copies, and
+  -- they drifted: points_total() counted absence penalties while the
+  -- leaderboard did not, so a member's own points and their board points
+  -- disagreed. Nothing errored — both numbers looked plausible on their own.
+  -- ---------------------------------------------------------------------
+  perform tests.act_as(v_dec);
+  perform tests.assert_eq(
+    (select points from public.my_standing()),
+    public.points_total(v_dec),
+    'a member''s standing matches their own points total, after a penalty');
+
+  perform tests.act_as(v_a);
+  perform tests.assert_eq(
+    (select points from public.my_standing()),
+    public.points_total(v_a),
+    'and after an organiser adjustment');
+
+  perform tests.act_as(v_c);
+  perform tests.assert_eq(
+    (select points from public.my_standing()),
+    public.points_total(v_c),
+    'and after check-ins and streak bonuses');
+
+  perform tests.assert_eq(
+    (select points from public.leaderboard() where is_me),
+    public.points_total(v_c),
+    'and the public board shows that same number, not a second opinion');
+  perform tests.act_as_system();
+
+  -- ---------------------------------------------------------------------
   -- The ledger is append-only.
   -- ---------------------------------------------------------------------
   perform tests.assert_rejects(

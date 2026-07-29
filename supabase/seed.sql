@@ -270,3 +270,23 @@ update public.member_tier_reached
    set acknowledged_at = null
  where user_id = '00000000-0000-0000-0000-000000000009'
    and tier = 'competitor';
+
+
+-- ---------------------------------------------------------------------------
+-- The shop, and a sponsor.
+--
+-- Placeholder items in placeholder prices. Real catalogue and pricing are an
+-- App Spec §11 open item ("current sponsor agreements and merch
+-- catalogue/pricing, to replace placeholder data").
+-- ---------------------------------------------------------------------------
+insert into public.products (name, description, price_minor, status, stock, sizes, sort_order) values
+  ('MVMNT Club Tee',      'The Saturday uniform. Soft cotton, club crest front and centre.', 45000, 'in_stock',   25, array['S','M','L','XL'], 1),
+  ('MVMNT Cap',           'Keeps the Cairo sun honest.',                                     30000, 'in_stock',   40, '{}',                    2),
+  ('MVMNT Bottle',        'One litre, fits the bridge railing at the meeting point.',        20000, 'in_stock', null, '{}',                    3),
+  ('Winter Running Jacket','Coming when the weather turns.',                                 120000, 'coming_soon', null, array['S','M','L','XL'], 4);
+
+insert into public.sponsors (name, url, active_from, created_by) values
+  ('Cairo Runners Supply', 'https://example.test/crs', current_date - 30, '00000000-0000-0000-0000-000000000001');
+
+insert into public.sponsor_placements (sponsor_id, type)
+select id, 'home_banner' from public.sponsors where name = 'Cairo Runners Supply';

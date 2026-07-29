@@ -458,6 +458,94 @@ export type Database = {
           },
         ]
       }
+      orders: {
+        Row: {
+          buyer_id: string | null
+          created_at: string
+          currency: string
+          delivery_note: string | null
+          discount_minor: number
+          gift_message: string | null
+          id: string
+          is_gift: boolean
+          points_spent: number
+          product_id: string | null
+          product_name: string
+          quantity: number
+          recipient_id: string | null
+          redeemed_at: string | null
+          size: string | null
+          status: Database["public"]["Enums"]["order_status"]
+          total_minor: number
+          unit_price_minor: number
+          updated_at: string
+        }
+        Insert: {
+          buyer_id?: string | null
+          created_at?: string
+          currency?: string
+          delivery_note?: string | null
+          discount_minor?: number
+          gift_message?: string | null
+          id?: string
+          is_gift?: boolean
+          points_spent?: number
+          product_id?: string | null
+          product_name: string
+          quantity?: number
+          recipient_id?: string | null
+          redeemed_at?: string | null
+          size?: string | null
+          status?: Database["public"]["Enums"]["order_status"]
+          total_minor: number
+          unit_price_minor: number
+          updated_at?: string
+        }
+        Update: {
+          buyer_id?: string | null
+          created_at?: string
+          currency?: string
+          delivery_note?: string | null
+          discount_minor?: number
+          gift_message?: string | null
+          id?: string
+          is_gift?: boolean
+          points_spent?: number
+          product_id?: string | null
+          product_name?: string
+          quantity?: number
+          recipient_id?: string | null
+          redeemed_at?: string | null
+          size?: string | null
+          status?: Database["public"]["Enums"]["order_status"]
+          total_minor?: number
+          unit_price_minor?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_buyer_id_fkey"
+            columns: ["buyer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       point_events: {
         Row: {
           awarded_at: string
@@ -568,6 +656,84 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      product_waitlist: {
+        Row: {
+          joined_at: string
+          product_id: string
+          user_id: string
+        }
+        Insert: {
+          joined_at?: string
+          product_id: string
+          user_id: string
+        }
+        Update: {
+          joined_at?: string
+          product_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_waitlist_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_waitlist_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          created_at: string
+          currency: string
+          description: string | null
+          id: string
+          image_url: string | null
+          name: string
+          price_minor: number
+          sizes: string[]
+          sort_order: number
+          status: Database["public"]["Enums"]["product_status"]
+          stock: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          name: string
+          price_minor: number
+          sizes?: string[]
+          sort_order?: number
+          status?: Database["public"]["Enums"]["product_status"]
+          stock?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          name?: string
+          price_minor?: number
+          sizes?: string[]
+          sort_order?: number
+          status?: Database["public"]["Enums"]["product_status"]
+          stock?: number | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -861,6 +1027,129 @@ export type Database = {
           },
         ]
       }
+      sponsor_impressions: {
+        Row: {
+          placement_id: string
+          seen_on: string
+          taps: number
+          user_id: string
+        }
+        Insert: {
+          placement_id: string
+          seen_on: string
+          taps?: number
+          user_id: string
+        }
+        Update: {
+          placement_id?: string
+          seen_on?: string
+          taps?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sponsor_impressions_placement_id_fkey"
+            columns: ["placement_id"]
+            isOneToOne: false
+            referencedRelation: "sponsor_placements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sponsor_impressions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sponsor_placements: {
+        Row: {
+          created_at: string
+          id: string
+          run_id: string | null
+          sponsor_id: string
+          type: Database["public"]["Enums"]["placement_type"]
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          run_id?: string | null
+          sponsor_id: string
+          type: Database["public"]["Enums"]["placement_type"]
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          run_id?: string | null
+          sponsor_id?: string
+          type?: Database["public"]["Enums"]["placement_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sponsor_placements_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "run_attendance_counts"
+            referencedColumns: ["run_id"]
+          },
+          {
+            foreignKeyName: "sponsor_placements_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sponsor_placements_sponsor_id_fkey"
+            columns: ["sponsor_id"]
+            isOneToOne: false
+            referencedRelation: "sponsors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sponsors: {
+        Row: {
+          active_from: string
+          active_to: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          logo_url: string | null
+          name: string
+          url: string | null
+        }
+        Insert: {
+          active_from?: string
+          active_to?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          logo_url?: string | null
+          name: string
+          url?: string | null
+        }
+        Update: {
+          active_from?: string
+          active_to?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          logo_url?: string | null
+          name?: string
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sponsors_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tier_rewards: {
         Row: {
           is_placeholder: boolean
@@ -1023,6 +1312,17 @@ export type Database = {
         Args: { p_tier: Database["public"]["Enums"]["member_tier"] }
         Returns: undefined
       }
+      active_placements: {
+        Args: { p_run_id?: string }
+        Returns: {
+          logo_url: string
+          name: string
+          placement_id: string
+          sponsor_id: string
+          type: Database["public"]["Enums"]["placement_type"]
+          url: string
+        }[]
+      }
       add_friend_by_token: { Args: { p_token: string }; Returns: string }
       admin_adjust_points: {
         Args: { p_note: string; p_points: number; p_user_id: string }
@@ -1061,6 +1361,10 @@ export type Database = {
         Args: { p_run_id: string; p_user_id: string }
         Returns: undefined
       }
+      admin_send_sponsor_shoutout: {
+        Args: { p_message: string; p_run_id?: string; p_sponsor_id: string }
+        Returns: string
+      }
       admin_set_member_role: {
         Args: {
           p_role: Database["public"]["Enums"]["member_role"]
@@ -1076,6 +1380,21 @@ export type Database = {
         }
         Returns: undefined
       }
+      admin_sponsor_report: {
+        Args: { p_from?: string; p_sponsor_id?: string; p_to?: string }
+        Returns: {
+          first_seen: string
+          last_seen: string
+          placement_id: string
+          reach: number
+          run_date: string
+          run_title: string
+          sponsor_id: string
+          sponsor_name: string
+          taps: number
+          type: Database["public"]["Enums"]["placement_type"]
+        }[]
+      }
       attendance_state: {
         Args: {
           checked_in_at: string
@@ -1085,6 +1404,7 @@ export type Database = {
         Returns: Database["public"]["Enums"]["attendance_state"]
       }
       backfill_loyalty: { Args: never; Returns: Json }
+      cancel_order: { Args: { p_order_id: string }; Returns: undefined }
       cancel_run: {
         Args: { p_reason?: string; p_run_id: string }
         Returns: undefined
@@ -1107,6 +1427,7 @@ export type Database = {
         Args: { p_now?: string; p_user_id: string }
         Returns: number
       }
+      dev_mark_paid: { Args: { p_order_id: string }; Returns: undefined }
       end_run: { Args: { p_run_id: string }; Returns: undefined }
       erase_member: { Args: { p_user_id: string }; Returns: undefined }
       is_admin: { Args: { uid?: string }; Returns: boolean }
@@ -1156,6 +1477,26 @@ export type Database = {
           state: Database["public"]["Enums"]["attendance_state"]
         }[]
       }
+      my_orders: {
+        Args: never
+        Returns: {
+          created_at: string
+          currency: string
+          direction: string
+          gift_message: string
+          id: string
+          image_url: string
+          is_gift: boolean
+          other_party: string
+          points_spent: number
+          product_name: string
+          quantity: number
+          redeemed_at: string
+          size: string
+          status: Database["public"]["Enums"]["order_status"]
+          total_minor: number
+        }[]
+      }
       my_standing: {
         Args: { p_window?: string }
         Returns: {
@@ -1179,6 +1520,18 @@ export type Database = {
           tier: Database["public"]["Enums"]["member_tier"]
         }[]
       }
+      place_order: {
+        Args: {
+          p_gift_message?: string
+          p_product_id: string
+          p_quantity?: number
+          p_recipient_id?: string
+          p_size?: string
+          p_use_points?: number
+        }
+        Returns: string
+      }
+      points_discount_minor: { Args: { p_points: number }; Returns: number }
       points_to_next_tier: { Args: { p_points: number }; Returns: number }
       points_total: {
         Args: { p_since?: string; p_user_id: string }
@@ -1190,6 +1543,18 @@ export type Database = {
       }
       publish_run: { Args: { p_run_id: string }; Returns: undefined }
       purge_expired_location_data: { Args: never; Returns: number }
+      record_placement_seen: {
+        Args: { p_placement_id: string }
+        Returns: undefined
+      }
+      record_placement_tap: {
+        Args: { p_placement_id: string }
+        Returns: undefined
+      }
+      redeem_gift: {
+        Args: { p_delivery_note?: string; p_order_id: string; p_size?: string }
+        Returns: undefined
+      }
       register_push_token: {
         Args: { p_platform: string; p_token: string }
         Returns: undefined
@@ -1237,7 +1602,22 @@ export type Database = {
         | "waitlist_promoted"
         | "friend_poke"
         | "badge_earned"
-      point_kind: "check_in" | "streak_bonus" | "adjustment" | "absence"
+        | "sponsor_shoutout"
+        | "gift_received"
+      order_status:
+        | "awaiting_payment"
+        | "paid"
+        | "ready"
+        | "fulfilled"
+        | "cancelled"
+      placement_type: "home_banner" | "run_badge" | "push_mention"
+      point_kind:
+        | "check_in"
+        | "streak_bonus"
+        | "adjustment"
+        | "absence"
+        | "redemption"
+      product_status: "in_stock" | "coming_soon" | "retired"
       run_status:
         | "draft"
         | "published"
@@ -1403,8 +1783,25 @@ export const Constants = {
         "waitlist_promoted",
         "friend_poke",
         "badge_earned",
+        "sponsor_shoutout",
+        "gift_received",
       ],
-      point_kind: ["check_in", "streak_bonus", "adjustment", "absence"],
+      order_status: [
+        "awaiting_payment",
+        "paid",
+        "ready",
+        "fulfilled",
+        "cancelled",
+      ],
+      placement_type: ["home_banner", "run_badge", "push_mention"],
+      point_kind: [
+        "check_in",
+        "streak_bonus",
+        "adjustment",
+        "absence",
+        "redemption",
+      ],
+      product_status: ["in_stock", "coming_soon", "retired"],
       run_status: [
         "draft",
         "published",
