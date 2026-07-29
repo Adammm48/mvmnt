@@ -154,17 +154,52 @@ Expo's push throughput once `push_delivery` is switched on. Neither blocks
 normal Saturdays; both are due before another 2,500-person event.
 
 
-### The end-of-build whole-system review
+### ~~The end-of-build whole-system review~~ — DONE, 2026-07-29
 
-**Who:** Adam triggers it; the review itself is a multi-model council run.
-**Where:** App Spec §0 — "At the end of all phases, run /llm-council once on
-the whole system as a final review."
+Run and recorded: [council report](council/2026-07-29-whole-system-report.md),
+[full transcript](council/2026-07-29-whole-system-transcript.md). It found
+three real security holes (all fixed in migration 0045) and one launch
+blocker that was not on this list — see below.
 
-The per-decision reviews happened (Phase 2's council on the data model;
-ADR 0004 standing in for the live-location council on the owner's
-instruction), but the one-shot review of the complete system has not. Worth
-running before the first real member signs in — it is the last chance to
-catch something structural while everything is still cheap to change.
+---
+
+## Blocks the first real Saturday
+
+### An email provider for sign-in codes
+
+**Who:** Adam. **Cost:** roughly $0–20/month.
+
+The whole login path is a 6-digit emailed code, and the only SMTP configured
+anywhere in this repo is the local test double. Supabase's built-in sender is
+rate-limited (2/hour on this config) and unauthenticated senders get
+spam-filtered. 150 members signing in on one Saturday morning hit that wall
+with no second door.
+
+Pick a provider (Resend, Postmark and SendGrid all have free tiers big enough
+for this club), verify the sending domain, and set it on the hosted project.
+The council ranked this above every other open item including the privacy
+policy — it is cheap, it is unavoidable, and nothing else works without it.
+
+### The hosted Supabase project, in a chosen region
+
+**Who:** Adam. **Do it while the database is still empty.**
+
+Nothing has ever run outside a laptop. Creating the project is minutes;
+choosing the region is a legal answer under Egypt's PDPL rather than a
+preference, and it is also the first of the privacy policy's four open
+questions. Migrating an empty schema is trivial. Migrating real member data
+later is not.
+
+### A dry-run Saturday before the real one
+
+**Who:** Adam plus 8–10 trusted members.
+
+The council's central recommendation. Every silent-failure bug in this
+project's history was found by somebody *using* the app, never by tests —
+and the three security holes the council found were found by reading, not
+by use. One small real Saturday on the real infrastructure, with real
+phones at a real meeting point, is the cheapest instrument that turns
+unknown-unknowns into a list.
 
 ---
 
