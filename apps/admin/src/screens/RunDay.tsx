@@ -11,6 +11,7 @@ import {
 } from '@mvmnt/shared';
 import { useToast } from '../components/Toast';
 import { MemberDetail } from '../components/MemberDetail';
+import { LiveMap } from '../components/LiveMap';
 
 type Attendee = {
   id: string;
@@ -182,6 +183,16 @@ export function RunDay({ runId, onBack }: { runId: string; onBack: () => void })
           </div>
         </div>
       </div>
+
+      {/* Only while the run is actually on — before and after, there is
+          nothing to see and the card would just be an empty map. */}
+      {run.status === 'in_progress' && (
+        <LiveMap
+          runId={runId}
+          meetingPoint={{ lat: run.meeting_point_lat, lng: run.meeting_point_lng }}
+          route={(run.route as [number, number][] | null) ?? null}
+        />
+      )}
 
       <div className="card">
         <div className="field">
