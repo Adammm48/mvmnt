@@ -298,6 +298,35 @@ export type Database = {
           },
         ]
       }
+      member_tier_reached: {
+        Row: {
+          acknowledged_at: string | null
+          reached_at: string
+          tier: Database["public"]["Enums"]["member_tier"]
+          user_id: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          reached_at?: string
+          tier: Database["public"]["Enums"]["member_tier"]
+          user_id: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          reached_at?: string
+          tier?: Database["public"]["Enums"]["member_tier"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_tier_reached_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_deliveries: {
         Row: {
           attempts: number
@@ -984,6 +1013,10 @@ export type Database = {
       }
     }
     Functions: {
+      acknowledge_tier: {
+        Args: { p_tier: Database["public"]["Enums"]["member_tier"] }
+        Returns: undefined
+      }
       add_friend_by_token: { Args: { p_token: string }; Returns: string }
       admin_adjust_points: {
         Args: { p_note: string; p_points: number; p_user_id: string }
@@ -1117,6 +1150,15 @@ export type Database = {
           streak_weeks: number
           tier: Database["public"]["Enums"]["member_tier"]
           total_members: number
+        }[]
+      }
+      my_unclaimed_tiers: {
+        Args: never
+        Returns: {
+          is_placeholder: boolean
+          reached_at: string
+          reward: string
+          tier: Database["public"]["Enums"]["member_tier"]
         }[]
       }
       points_to_next_tier: { Args: { p_points: number }; Returns: number }

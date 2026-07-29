@@ -1,0 +1,126 @@
+import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import Constants from 'expo-constants';
+import { colors, radius, spacing, CONTACT_LINKS, SIGNATURE } from '@mvmnt/shared';
+
+/**
+ * Who made this.
+ *
+ * The old "made by" signature from games, in the one place it belongs: a page
+ * somebody chooses to open. Everywhere else in the app the voice is a line
+ * here and there; this is where the whole answer lives, so nothing else has to
+ * carry it.
+ *
+ * The contact links are PLACEHOLDERS and say so on screen. A plausible-looking
+ * URL that 404s in front of 300 members is worse than an obviously unfinished
+ * one, so they are visibly wrong until they are filled in.
+ */
+export default function AboutScreen() {
+  const version = Constants.expoConfig?.version ?? '0.1.0';
+
+  return (
+    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+      <View style={styles.hero}>
+        <Text style={styles.wordmark}>MVMNT</Text>
+        <Text style={styles.tagline}>Run together.</Text>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.builtBy}>Built by</Text>
+        <Text style={styles.name}>{SIGNATURE.name}</Text>
+        <Text style={styles.role}>{SIGNATURE.role}</Text>
+        <Text style={styles.study}>{SIGNATURE.study}</Text>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.body}>
+          MVMNT ran on WhatsApp threads, Instagram stories and word of mouth — three hundred people
+          every Saturday, and once two and a half thousand on one start line. This app is that,
+          without the group chat.
+        </Text>
+        <Text style={styles.body}>
+          It was built for the club rather than sold to it. Every rule that matters — who gets a
+          place, who is on the waitlist, what counts as being there — lives in one place and is
+          tested, so the app you use on a Saturday morning does the same thing every Saturday
+          morning.
+        </Text>
+        <Text style={styles.body}>{SIGNATURE.hello}</Text>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Get in touch</Text>
+        {CONTACT_LINKS.map((link) => (
+          <Pressable
+            key={link.label}
+            style={styles.link}
+            accessibilityRole="link"
+            accessibilityLabel={link.label}
+            onPress={() => {
+              // Placeholders are deliberately not opened — sending somebody to a
+              // dead address is worse than the button doing nothing.
+              if (!link.placeholder) Linking.openURL(link.url);
+            }}
+          >
+            <Text style={styles.linkLabel}>{link.label}</Text>
+            <Text style={styles.linkValue}>
+              {link.placeholder ? 'coming soon' : link.url.replace(/^https?:\/\//, '')}
+            </Text>
+          </Pressable>
+        ))}
+        {CONTACT_LINKS.some((l) => l.placeholder) && (
+          <Text style={styles.hint}>
+            These are not live yet. They will point somewhere real before the club starts using the
+            app properly.
+          </Text>
+        )}
+      </View>
+
+      <View style={styles.footer}>
+        <Text style={styles.signature}>{SIGNATURE.footer}</Text>
+        <Text style={styles.version}>Version {version}</Text>
+      </View>
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: colors.base },
+  content: { padding: spacing.md, gap: spacing.lg, paddingBottom: spacing.xxl },
+  hero: { alignItems: 'center', paddingVertical: spacing.lg, gap: 2 },
+  wordmark: { fontSize: 40, fontWeight: '900', color: colors.textOnDark, letterSpacing: 6 },
+  tagline: { fontSize: 15, color: colors.textOnDarkMuted },
+  card: {
+    backgroundColor: colors.baseElevated,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    alignItems: 'center',
+    gap: 2,
+  },
+  builtBy: {
+    fontSize: 12,
+    color: colors.textOnDarkMuted,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    fontWeight: '700',
+  },
+  name: { fontSize: 26, fontWeight: '900', color: colors.textOnDark, letterSpacing: -0.4 },
+  role: { fontSize: 14, color: colors.action, fontWeight: '700' },
+  study: { fontSize: 13, color: colors.textOnDarkMuted, marginTop: 4 },
+  section: { gap: spacing.sm },
+  sectionTitle: { fontSize: 18, fontWeight: '700', color: colors.textOnDark },
+  body: { fontSize: 15, color: colors.textOnDarkMuted, lineHeight: 23 },
+  link: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: colors.baseElevated,
+    borderRadius: radius.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+  },
+  linkLabel: { fontSize: 15, fontWeight: '700', color: colors.textOnDark },
+  linkValue: { fontSize: 13, color: colors.textOnDarkMuted },
+  hint: { fontSize: 13, color: colors.textOnDarkMuted, lineHeight: 19 },
+  footer: { alignItems: 'center', gap: 4, marginTop: spacing.lg },
+  signature: { fontSize: 14, color: colors.textOnDarkMuted },
+  version: { fontSize: 12, color: colors.textOnDarkMuted, opacity: 0.7 },
+});

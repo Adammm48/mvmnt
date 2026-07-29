@@ -10,6 +10,7 @@ import { Celebration } from '@/components/Celebration';
 import { getCurrentFix } from '@/lib/location';
 import { enqueue, hasPendingFor, removePendingFor } from '@/lib/checkInQueue';
 import {
+  adamSays,
   colors,
   radius,
   spacing,
@@ -229,7 +230,7 @@ export default function RunDetail() {
       <View style={styles.body}>
         {run.description ? <Text style={styles.description}>{run.description}</Text> : null}
 
-      {celebrate && <Celebration message={celebrate} />}
+      {celebrate && <Celebration message={celebrate} voice={`Adam says: ${adamSays('checked_in')}`} />}
 
       {cancelled && (
         <Notice

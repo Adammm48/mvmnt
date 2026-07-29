@@ -20,7 +20,19 @@ import { colors, radius, spacing } from '@mvmnt/shared';
 const PIECES = 14;
 const CONFETTI_COLORS = [colors.action, colors.success, colors.highlight, '#FFFFFF'];
 
-export function Celebration({ message }: { message: string }) {
+export function Celebration({
+  message,
+  /**
+   * A second line, in the author's voice. Checking in is the single best moment
+   * in the app — somebody is standing at a meeting point at 7am having actually
+   * done the thing — so it is the one place a personal line is earned rather
+   * than inserted.
+   */
+  voice,
+}: {
+  message: string;
+  voice?: string;
+}) {
   const pop = useRef(new Animated.Value(0)).current;
   const pieces = useRef(
     Array.from({ length: PIECES }, () => new Animated.Value(0)),
@@ -104,6 +116,7 @@ export function Celebration({ message }: { message: string }) {
         <Text style={styles.message} accessibilityLiveRegion="polite">
           {message}
         </Text>
+        {voice ? <Text style={styles.voice}>{voice}</Text> : null}
       </Animated.View>
     </View>
   );
@@ -124,4 +137,12 @@ const styles = StyleSheet.create({
   },
   tick: { fontSize: 34, fontWeight: '900', color: colors.base },
   message: { fontSize: 16, fontWeight: '800', color: colors.base, textAlign: 'center' },
+  voice: {
+    fontSize: 13,
+    color: colors.base,
+    opacity: 0.75,
+    textAlign: 'center',
+    fontStyle: 'italic',
+    marginTop: 2,
+  },
 });

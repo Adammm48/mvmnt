@@ -120,6 +120,20 @@ since the geofence radius is measured from these coordinates.
   **Rewards** edits them; no deploy needed. Until they are confirmed the club is
   promising nothing, which is the correct state to launch in but not to stay in.
 
+- **The author's voice is in-app only, deliberately.** The catalogue in
+  `packages/shared/src/voice.ts` covers greetings, achievements, empty states,
+  loading, errors and rare easter eggs, and every one of them appears inside the
+  app. It is **not** in push notifications, and that is a decision rather than an
+  omission: those go out under the club's name to the club's members, so a
+  developer signature there stops being a signature and becomes advertising in
+  somebody else's channel. Easy to change — the copy is in
+  `app_private.render_notification` — but it should be the owner's call and the
+  club's, not a default.
+- **The contact links are placeholders and render as "coming soon".** Portfolio,
+  GitHub, LinkedIn and email in `voice.ts` are obviously-wrong URLs and the About
+  page refuses to open them. A plausible-looking address that 404s in front of
+  300 members is worse than one that is visibly unfinished. Replace before launch.
+
 ---
 
 ## Open questions carried forward

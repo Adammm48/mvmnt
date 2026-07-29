@@ -13,7 +13,7 @@ declare
   v_run uuid; v_run2 uuid; v_wk uuid;
   v_pts integer; v_rows integer; v_streak integer;
   v_now timestamptz := now();
-  v_rank integer; v_total integer; v_dec uuid;
+  v_rank integer; v_total integer; v_dec uuid; v_tiered uuid;
 begin
   perform tests.act_as_system();
   v_admin := tests.make_member('organiser', true);
@@ -404,6 +404,76 @@ begin
     (select count(*)::int from public.effective_point_events
       where user_id = v_dec and kind = 'absence'), 1,
     'an absence charge counts even though there is no check-in behind it');
+
+  -- ---------------------------------------------------------------------
+  -- Crossing a tier is recorded once, when it happens.
+  --
+  -- Derived state cannot answer "did something just happen?", and a value
+  -- cached on the device answers it differently on every phone. So the crossing
+  -- is an event, and the celebration is driven from the database.
+  -- ---------------------------------------------------------------------
+  v_tiered := tests.make_member('tess');
+
+  perform tests.assert_eq(
+    (select count(*)::int from public.member_tier_reached where user_id = v_tiered), 0,
+    'a new member has crossed nothing');
+
+  -- Straight to Competitor with one adjustment.
+  perform tests.act_as(v_admin);
+  perform public.admin_adjust_points(v_tiered, 200, 'seeding a tier crossing for the test');
+  perform tests.act_as_system();
+
+  perform tests.assert_eq(
+    (select count(*)::int from public.member_tier_reached
+      where user_id = v_tiered and tier = 'competitor'), 1,
+    'crossing a tier records it');
+  perform tests.assert(
+    (select acknowledged_at is null from public.member_tier_reached
+      where user_id = v_tiered and tier = 'competitor'),
+    'and leaves it unacknowledged, so the app can celebrate it');
+
+  -- Rookie is never recorded: everybody is Rookie from their first point, and
+  -- a chest for arriving where you already were is noise.
+  perform tests.assert_eq(
+    (select count(*)::int from public.member_tier_reached
+      where user_id = v_tiered and tier = 'rookie'), 0,
+    'Rookie is not celebrated — it is where everyone starts');
+
+  -- Falling back and climbing again must not re-award. Points can go down now,
+  -- and a reward you can farm by resting is not a reward.
+  perform tests.act_as(v_admin);
+  perform public.admin_adjust_points(v_tiered, -100, 'dropping them back below the line');
+  perform public.admin_adjust_points(v_tiered, 100, 'and back over it');
+  perform tests.act_as_system();
+
+  perform tests.assert_eq(
+    (select count(*)::int from public.member_tier_reached
+      where user_id = v_tiered and tier = 'competitor'), 1,
+    'dropping out of a tier and climbing back does not hand out a second chest');
+
+  -- And the drop itself is not celebrated. Sliding from Competitor down to
+  -- Runner is not "reaching Runner", and a chest for it would be congratulating
+  -- somebody on a demotion.
+  perform tests.assert_eq(
+    (select count(*)::int from public.member_tier_reached
+      where user_id = v_tiered and tier = 'runner'), 0,
+    'falling to a lower tier is never recorded as reaching it');
+
+  -- The member sees their own, and acknowledging clears it.
+  perform tests.act_as(v_tiered);
+  perform tests.assert_eq(
+    (select count(*)::int from public.my_unclaimed_tiers()), 1,
+    'the member has one unclaimed tier');
+
+  perform public.acknowledge_tier('competitor');
+  perform tests.assert_eq(
+    (select count(*)::int from public.my_unclaimed_tiers()), 0,
+    'and acknowledging it clears it, so the chest shows once');
+
+  perform tests.assert_eq(
+    (select count(*)::int from public.member_tier_reached where user_id = v_a), 0,
+    'and one member cannot see another member''s tier history');
+  perform tests.act_as_system();
 
   -- ---------------------------------------------------------------------
   -- The ledger is append-only.

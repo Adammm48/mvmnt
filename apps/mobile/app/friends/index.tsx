@@ -165,6 +165,7 @@ export default function FriendsScreen() {
         <EmptyState
           title="No friends yet"
           body="Next time you are at a run, show your code and get theirs. Then you will see who is coming before you set off."
+          voice="empty_friends"
         />
       }
     />

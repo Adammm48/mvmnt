@@ -135,6 +135,7 @@ export default function LeaderboardScreen() {
         <EmptyState
           title="Nobody on the board yet"
           body="The first check-in of the season puts someone here. It may as well be you."
+          voice="empty_board"
         />
       }
     />

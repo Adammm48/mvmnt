@@ -236,3 +236,25 @@ begin
     end loop;
   end loop;
 end $$;
+
+
+-- ---------------------------------------------------------------------------
+-- Tier history, already seen.
+--
+-- The seeded attendance above climbs members through the tiers, and each
+-- crossing is recorded as an unshown celebration (migration 0027). Left alone,
+-- opening the app as any seeded member means a stack of chests for tiers they
+-- "reached" months ago — the migration's own backfill cannot prevent it, because
+-- migrations run before this file exists.
+--
+-- One member is deliberately left with an unclaimed Competitor tier, so the
+-- chest can actually be seen without hand-editing the database.
+-- ---------------------------------------------------------------------------
+update public.member_tier_reached
+   set acknowledged_at = reached_at
+ where acknowledged_at is null;
+
+update public.member_tier_reached
+   set acknowledged_at = null
+ where user_id = '00000000-0000-0000-0000-000000000009'
+   and tier = 'competitor';

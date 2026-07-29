@@ -15,6 +15,7 @@ import {
   spacing,
   toMemberMessage,
   MIN_TOUCH_TARGET,
+  SIGNATURE,
   type Badge,
   type Standing,
 } from '@mvmnt/shared';
@@ -274,6 +275,18 @@ export default function ProfileScreen() {
         <Button label="Sign out" variant="secondary" onPress={signOut} />
         <Button label="Delete my account" variant="destructive" onPress={confirmDelete} />
       </View>
+
+      {/* The signature. One line, at the bottom, on the screen a member reaches
+          when they are already poking around — memorable without being in the
+          way of anybody trying to get to a run. */}
+      <Pressable
+        onPress={() => router.push('/about')}
+        accessibilityRole="button"
+        accessibilityLabel="About MVMNT and who built it"
+        style={styles.madeBy}
+      >
+        <Text style={styles.madeByText}>{SIGNATURE.footer}</Text>
+      </Pressable>
     </ScrollView>
   );
 }
@@ -319,6 +332,8 @@ const styles = StyleSheet.create({
   badgeLocked: { backgroundColor: 'transparent', borderColor: '#333B4D' },
   badgeMark: { fontSize: 18, color: colors.highlight },
   badgeMarkLocked: { color: colors.textOnDarkMuted },
+  madeBy: { alignItems: 'center', paddingVertical: spacing.lg },
+  madeByText: { fontSize: 13, color: colors.textOnDarkMuted, textDecorationLine: 'underline' },
   badgeLabel: { flex: 1, fontSize: 13, fontWeight: '700', color: colors.textOnDark },
   badgeLabelLocked: { color: colors.textOnDarkMuted, fontWeight: '400' },
 });

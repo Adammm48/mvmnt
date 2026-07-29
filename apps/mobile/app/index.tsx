@@ -6,6 +6,8 @@ import { useAuth } from '@/lib/auth';
 import { useRuns } from '@/lib/useRuns';
 import { supabase } from '@/lib/supabase';
 import { RunCard } from '@/components/RunCard';
+import { TierProgressBar } from '@/components/TierProgressBar';
+import { TierChest, type UnclaimedTier } from '@/components/TierChest';
 import { EmptyState, Loading, Notice } from '@/components/Feedback';
 import { registerForPush } from '@/lib/push';
 import {
@@ -14,6 +16,8 @@ import {
   spacing,
   typography,
   toMemberMessage,
+  adamSays,
+  greetingSlot,
   TIER_COLOR,
   TIER_LABEL,
   type Standing,
@@ -24,6 +28,7 @@ export default function Home() {
   const router = useRouter();
   const { items, loading, refreshing, error, reload } = useRuns(session?.user.id);
   const [standing, setStanding] = useState<Standing | null>(null);
+  const [chest, setChest] = useState<UnclaimedTier | null>(null);
 
   // Registering on every launch is what keeps a handed-down device pointed at
   // its current owner — register_push_token() reassigns on conflict.
@@ -39,6 +44,11 @@ export default function Home() {
       supabase
         .rpc('my_standing', { p_window: 'all_time' })
         .then(({ data }) => setStanding((data ?? [])[0] ?? null));
+      // Anything they crossed since they last looked. Oldest first, so somebody
+      // returning after two rungs sees them in the order they earned them.
+      supabase
+        .rpc('my_unclaimed_tiers')
+        .then(({ data }) => setChest((data ?? [])[0] ?? null));
     }, [reload]),
   );
 
@@ -48,6 +58,16 @@ export default function Home() {
 
   return (
     <View style={styles.screen}>
+      {chest && (
+        <TierChest
+          award={chest}
+          onClaim={async () => {
+            await supabase.rpc('acknowledge_tier', { p_tier: chest.tier });
+            const { data } = await supabase.rpc('my_unclaimed_tiers');
+            setChest((data ?? [])[0] ?? null);
+          }}
+        />
+      )}
       <FlatList
         data={items}
         keyExtractor={(item) => item.run.id}
@@ -77,6 +97,20 @@ export default function Home() {
                 <Text style={styles.profileLink}>Profile</Text>
               </Pressable>
             </View>
+            {/* One line a day, chosen for this member. It does not reshuffle
+                while they look at it — see voice.ts. */}
+            <Text style={styles.adam}>
+              Adam says: {adamSays(greetingSlot(), { userId: session?.user.id, stability: 'daily' })}
+            </Text>
+
+            {standing && (
+              <TierProgressBar
+                tier={standing.tier}
+                points={standing.points}
+                pointsToNext={standing.points_to_next_tier}
+              />
+            )}
+
             {error && <Notice tone="error" message={toMemberMessage({ message: error })} />}
 
             {/*
@@ -133,6 +167,8 @@ export default function Home() {
           <EmptyState
             title="Nothing on the calendar yet"
             body="The moment the organisers drop the next run, it lands here and we'll ping you. Won't be long."
+            voice="empty_runs"
+            userId={session?.user.id}
           />
         }
       />
@@ -172,4 +208,5 @@ const styles = StyleSheet.create({
   chipValue: { ...typography.dataLarge, fontSize: 24, color: colors.textOnDark },
   chipUnit: { fontSize: 13, fontWeight: '400', color: colors.textOnDarkMuted },
   chipTier: { fontSize: 10, fontWeight: '800', letterSpacing: 0.6 },
+  adam: { fontSize: 14, color: colors.textOnDarkMuted, lineHeight: 20, fontStyle: 'italic' },
 });
