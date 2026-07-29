@@ -69,6 +69,16 @@ right state to launch in and the wrong one to stay in.
 No deploy needed: an organiser edits these and members see the change
 immediately.
 
+### The spec's own contact line
+
+**Who:** the club owner.
+**Where:** [`docs/spec/MVMNT_App_Spec_1.md`](spec/MVMNT_App_Spec_1.md), line 4.
+
+The build spec itself carries `[business email or website — add here]`, unfilled
+since before this project started. Harmless to the running app, but a public
+repo with an obviously unfinished line in its founding document looks
+unfinished.
+
 ### Adam's contact links
 
 **Who:** Adam.

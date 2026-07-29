@@ -6,6 +6,32 @@ is confirmed working, so items land here rather than being pulled forward.
 
 ---
 
+## Where the build diverged from the written spec
+
+Two places ship differently from `docs/spec/MVMNT_App_Spec_1.md`, both changed on
+the owner's explicit instruction after the original build, and both recorded here
+rather than silently overriding the document.
+
+- **Loyalty tiers.** App Spec §4.3 specifies three: Starter → Core → Elite. Owner
+  instruction, 2026-07-29: five instead — Rookie, Runner, Competitor, Elite,
+  Legend — reachable end to end in six months, with points that can also fall
+  after two consecutive missed runs. See migration `20260729120000_five_tiers.sql`
+  and the commit that introduced decay.
+- **Friend codes.** App Spec §4.4 and §8 describe a QR code a member can
+  regenerate or invalidate by hand. Owner instruction, 2026-07-29: the code is
+  now always 8 characters, expires after 60 seconds, and mints a fresh one
+  automatically for as long as the screen is open — the manual
+  regenerate/invalidate control was removed because the short life makes it
+  redundant. See migration `20260729180000_short_friend_codes.sql`.
+
+Both changes satisfy the *intent* behind the original spec language — App Spec
+§8's "regenerated or invalidated... if they think it has been shared without
+consent" is answered by the code already expiring in a minute rather than by a
+button. Recorded here so a future reader comparing the spec to the code is not
+left thinking one of them is wrong.
+
+---
+
 ## Health stats — HealthKit / Health Connect · **Phase 5**
 
 **Asked for:** 2026-07-27 — *"I want stats pulled from Apple Health or equivalent to show them their

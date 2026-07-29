@@ -15,6 +15,15 @@ WhatsApp, Instagram and word of mouth. This replaces that.
 > Apple Developer account and a privacy policy, not on more code. Phases 3–5
 > (sponsors, merch, routes, photo galleries, HealthKit) are specified and
 > deliberately unbuilt. See [docs/backlog.md](docs/backlog.md).
+>
+> Built against [`docs/spec/MVMNT_App_Spec_1.md`](docs/spec/MVMNT_App_Spec_1.md)
+> and [`docs/spec/MVMNT_Engineering_Principles.md`](docs/spec/MVMNT_Engineering_Principles.md),
+> the two documents that set what to build and how. A few things shipped
+> differently from what the spec says, on the owner's explicit instruction after
+> the fact — five loyalty tiers instead of three, and a 60-second single-use
+> friend code instead of a persistent regenerable one. Both are recorded in the
+> commit history and in `docs/backlog.md` rather than silently overriding the
+> spec.
 
 ---
 

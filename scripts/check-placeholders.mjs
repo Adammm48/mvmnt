@@ -56,6 +56,16 @@ const KINDS = [
     fix: 'Answer each marked question, then get the policy reviewed.',
   },
   {
+    id: 'spec-contact',
+    label: "The spec's own contact line",
+    pattern: /\[business email or website — add here\]/,
+    files: ['docs/spec/MVMNT_App_Spec_1.md'],
+    owner: 'The club owner',
+    consequence:
+      'The build spec itself has no way to reach the club. Harmless to the running app, but a public repo showing an unfilled contact line looks unfinished.',
+    fix: 'Fill in the business email or website in the spec header, or remove the line.',
+  },
+  {
     id: 'costs',
     label: 'Costs that need a real quote',
     pattern: /\[NEEDS A QUOTE\]/,
