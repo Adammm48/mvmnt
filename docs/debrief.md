@@ -75,8 +75,10 @@ never an inflatable view count and never a name.
 
 - **Routes**: you draw the route by clicking along the streets in the
   console; publishing it is a separate act that notifies exactly the people
-  signed up, once. Members see the shape, distance and start/finish — no map
-  SDK, no API key.
+  signed up, once. Members see it on a real map, on the same streets you
+  clicked — still with no map SDK and no API key. (The first version drew the
+  shape alone on a dark card. You called it correctly: without streets under
+  it, it represented nothing.)
 - **Photo galleries**: your Drive folders (pre-run / run / after / camera)
   per run, in a **private** bucket. Nothing is visible until you publish;
   publishing tells exactly the people who checked in, once; every image is a

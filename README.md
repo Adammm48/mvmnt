@@ -44,9 +44,9 @@ WhatsApp, Instagram and word of mouth. This replaces that.
 
 | The member's app | The run detail |
 |---|---|
-| <img src="docs/screenshots/app-home.png" width="330" alt="Home screen showing upcoming runs as photo cards"> | <img src="docs/screenshots/app-run-detail.png" width="330" alt="Run detail with the route drawn as a shape, meeting point and check-in"> |
+| <img src="docs/screenshots/app-home.png" width="330" alt="Home screen showing upcoming runs as photo cards"> | <img src="docs/screenshots/app-run-detail.png" width="330" alt="Run detail with the route drawn on a map, meeting point and check-in"> |
 
-<p align="center"><em>The route on the run detail is the organiser's drawing, rendered as a shape with SVG rather than a tiled map — what a member wants the night before is the loop and the distance, not street names, and it costs no map SDK, no API key and no per-platform rendering to QA.</em></p>
+<p align="center"><em>The route is the organiser's drawing on real OpenStreetMap tiles, through the same Web Mercator projection the console draws on — so the line a member sees sits on the streets the organiser clicked. No map SDK, no API key and no native module: tiles are images, and the projection is fifty lines of arithmetic. The first version drew the shape alone on a dark card; it was accurate about distance and answered nothing about where the club actually runs.</em></p>
 
 | The board | The friend code |
 |---|---|
