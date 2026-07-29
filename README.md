@@ -8,7 +8,7 @@ WhatsApp, Instagram and word of mouth. This replaces that.
 
 [![CI](https://github.com/Adammm48/mvmnt/actions/workflows/ci.yml/badge.svg)](https://github.com/Adammm48/mvmnt/actions/workflows/ci.yml)
 
-> **Status: Phases 1–4 complete, not yet deployed.** Sign-up, geofenced
+> **Status: all five phases built, not yet deployed.** Sign-up, geofenced
 > check-in, the notification pipeline, the organiser console, the loyalty system
 > (points, streaks, tiers, badges), the club leaderboard, the QR-only friends
 > system, and the merch shop with gifts and sponsor placements are built and
@@ -18,8 +18,12 @@ WhatsApp, Instagram and word of mouth. This replaces that.
 > trail ([ADR 0004](docs/decisions/0004-live-tracking.md)). **No payment
 > gateway is wired in** — Stripe does not serve Egypt-based businesses and the
 > alternative needs quotes the club has not obtained, so orders stop at
-> "reserved" and the club takes payment in person. Phase 5 (HealthKit, AI
-> face-matching) is specified and deliberately unbuilt. See
+> "reserved" and the club takes payment in person. Phase 5 is built to the
+> edge of the accounts only the club can create: "find me in photos" works
+> end to end and waits on a recognition-service key, and health stats render
+> through a device-only seam that waits on the store accounts — each edge
+> fails loudly rather than pretending. Consent (18+, photographs) is asked
+> in-app and recorded with the policy version. See
 > [docs/backlog.md](docs/backlog.md), and [docs/debrief.md](docs/debrief.md)
 > for the whole build in one read — every phase, the bugs worth remembering,
 > and the owner's to-do list.

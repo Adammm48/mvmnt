@@ -188,6 +188,28 @@ and every admin RPC ask this; none decides for itself.
 
 ---
 
+### Consent — `accept_consent(version, age_confirmed, photo_ok)` · `set_photo_objection(objects)`
+
+First open of the app records what was accepted, which document version, and
+when, in an append-only `consent_events` ledger (migration 0048). Under-18 is
+**refused rather than recorded** — a minor cannot consent to their own data,
+so no valid row exists to write; the app account is 18+, and under-18s run
+with the club with an organiser checking them in. The photo answer is a
+standing switch: withdrawal as easy as consent, no-op writes fabricate no
+history, and organisers see the objection in the members directory because
+the person publishing a gallery is the only one who can act on it.
+
+### Find me in photos — `enable_photo_matching()` · `disable_photo_matching()` · `my_photo_matches(run_id)`
+
+Migration 0049, ADR 0005 §2. Opt-in is one in-app selfie stored at
+`selfies/<own id>` — the only storage path the member can write, readable by
+nobody else including organisers. Matches are rows written by the
+`match-faces` Edge Function at gallery publish time (the provider bills per
+image, so the club pays per gallery, never per view) and are gated by the
+same `photos_published_at` check as the gallery. `disable_photo_matching()`
+deletes the selfie, enrolment and matches as one unit. The Edge Function
+refuses loudly until `FACE_PROVIDER_KEY` exists.
+
 ## Loyalty and the leaderboard
 
 Points are earned by checking in, never by signing up — the club's currency is
