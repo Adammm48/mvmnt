@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "mobile-web",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "--workspace", "@mvmnt/mobile", "web"],
+      "port": 8081,
+      "autoPort": false
+    }
+  ]
+}

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { FlatList, Image, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { supabase } from '@/lib/supabase';
 import { StandingCard } from '@/components/StandingCard';
+import { TierLadder } from '@/components/TierLadder';
 import { EmptyState, Loading, Notice } from '@/components/Feedback';
 import {
   colors,
@@ -15,6 +16,7 @@ import {
   type LeaderboardRow,
   type LeaderboardWindow,
   type Standing,
+  type TierReward,
 } from '@mvmnt/shared';
 
 /**
@@ -37,6 +39,7 @@ export default function LeaderboardScreen() {
   // Always fetched, because tier, badges progress, runs and streak are lifetime
   // facts that the month view still has to state correctly.
   const [lifetime, setLifetime] = useState<Standing | null>(null);
+  const [rewards, setRewards] = useState<TierReward[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,12 +49,13 @@ export default function LeaderboardScreen() {
       if (isRefresh) setRefreshing(true);
       setError(null);
 
-      const [board, mine, allTime] = await Promise.all([
+      const [board, mine, allTime, tiers] = await Promise.all([
         supabase.rpc('leaderboard', { p_window: window }),
         supabase.rpc('my_standing', { p_window: window }),
         window === 'all_time'
           ? Promise.resolve({ data: null, error: null })
           : supabase.rpc('my_standing', { p_window: 'all_time' }),
+        supabase.from('tier_rewards').select('*'),
       ]);
 
       if (board.error || mine.error) {
@@ -60,6 +64,7 @@ export default function LeaderboardScreen() {
         setRows(board.data ?? []);
         setStanding((mine.data ?? [])[0] ?? null);
         setLifetime((allTime.data ?? [])[0] ?? null);
+        setRewards(tiers.data ?? []);
       }
 
       setLoading(false);
@@ -115,6 +120,17 @@ export default function LeaderboardScreen() {
       }
       renderItem={({ item }) => <Row row={item} shared={tied.has(item.rank)} />}
       ItemSeparatorComponent={() => <View style={styles.separator} />}
+      ListFooterComponent={
+        standing ? (
+          <View style={styles.ladder}>
+            <TierLadder
+              current={(lifetime ?? standing).tier}
+              points={(lifetime ?? standing).points}
+              rewards={rewards}
+            />
+          </View>
+        ) : null
+      }
       ListEmptyComponent={
         <EmptyState
           title="Nobody on the board yet"
@@ -186,6 +202,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.base },
   list: { padding: spacing.md, paddingBottom: spacing.xxl, flexGrow: 1 },
   header: { gap: spacing.md, marginBottom: spacing.md },
+  ladder: { marginTop: spacing.xl },
   caption: { fontSize: 13, color: colors.textOnDarkMuted, lineHeight: 19 },
 
   toggle: {

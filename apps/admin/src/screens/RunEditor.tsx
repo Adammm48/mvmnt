@@ -4,6 +4,7 @@ import { CLUB_TIMEZONE, toMemberMessage, type Run } from '@mvmnt/shared';
 import { MediaUpload } from '../components/MediaUpload';
 import { MeetingPointPicker } from '../components/MeetingPointPicker';
 import { useToast } from '../components/Toast';
+import { useConfirm } from '../components/Confirm';
 
 type Props = { runId: string | null; onDone: () => void };
 
@@ -21,6 +22,7 @@ const DEFAULT_LNG = 31.2357;
  */
 export function RunEditor({ runId, onDone }: Props) {
   const toast = useToast();
+  const confirm = useConfirm();
   const [run, setRun] = useState<Run | null>(null);
   const [loading, setLoading] = useState(runId !== null);
   const [busy, setBusy] = useState(false);
@@ -153,11 +155,14 @@ export function RunEditor({ runId, onDone }: Props) {
     // it its first-ever appearance to members as "cancelled" — see migration
     // 0013. The confirmation and the reason prompt reflect that difference.
     const stillDraft = run.status === 'draft';
-    const confirmed = window.confirm(
-      stillDraft
-        ? `Delete the draft "${run.title}"? It was never published, so nobody will be told — but this can't be undone.`
-        : `Cancel "${run.title}"? Everyone who signed up will be notified straight away. This can't be undone.`,
-    );
+    const confirmed = await confirm({
+      title: stillDraft ? `Delete the draft "${run.title}"?` : `Cancel "${run.title}"?`,
+      message: stillDraft
+        ? "It was never published, so nobody will be told — but this can't be undone."
+        : "Everyone who signed up will be notified straight away. This can't be undone.",
+      confirmLabel: stillDraft ? 'Delete the draft' : 'Cancel the run',
+      tone: 'danger',
+    });
     if (!confirmed) return;
 
     let reason: string | null = '';

@@ -139,13 +139,15 @@ export function Members() {
             </table>
           </div>
         )}
-
-        {openId && (
-          <div style={{ marginTop: 16 }}>
-            <MemberDetail userId={openId} onChanged={() => load(search)} />
-          </div>
-        )}
       </div>
+
+      {openId && (
+        <MemberDetail
+          userId={openId}
+          onChanged={() => load(search)}
+          onClose={() => setOpenId(null)}
+        />
+      )}
     </>
   );
 }

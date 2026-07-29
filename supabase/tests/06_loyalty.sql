@@ -13,7 +13,7 @@ declare
   v_run uuid; v_run2 uuid; v_wk uuid;
   v_pts integer; v_rows integer; v_streak integer;
   v_now timestamptz := now();
-  v_rank integer; v_total integer;
+  v_rank integer; v_total integer; v_dec uuid;
 begin
   perform tests.act_as_system();
   v_admin := tests.make_member('organiser', true);
@@ -147,15 +147,33 @@ begin
   -- ---------------------------------------------------------------------
   -- Tiers — thresholds and the always-forward framing.
   -- ---------------------------------------------------------------------
-  perform tests.assert_eq(public.tier_for_points(0),    'starter'::public.member_tier, '0 points is Starter');
-  perform tests.assert_eq(public.tier_for_points(499),  'starter'::public.member_tier, '499 is still Starter');
-  perform tests.assert_eq(public.tier_for_points(500),  'core'::public.member_tier,    '500 reaches Core');
-  perform tests.assert_eq(public.tier_for_points(1000), 'elite'::public.member_tier,   '1000 reaches Elite');
+  perform tests.assert_eq(public.tier_for_points(0),   'rookie'::public.member_tier,     '0 points is Rookie');
+  perform tests.assert_eq(public.tier_for_points(59),  'rookie'::public.member_tier,     '59 is still Rookie');
+  perform tests.assert_eq(public.tier_for_points(60),  'runner'::public.member_tier,     '60 reaches Runner');
+  perform tests.assert_eq(public.tier_for_points(150), 'competitor'::public.member_tier, '150 reaches Competitor');
+  perform tests.assert_eq(public.tier_for_points(290), 'elite'::public.member_tier,      '290 reaches Elite');
+  perform tests.assert_eq(public.tier_for_points(480), 'legend'::public.member_tier,     '480 reaches Legend');
 
-  perform tests.assert_eq(public.points_to_next_tier(450), 50,
+  -- The ladder is calibrated so that never missing a Saturday for six months
+  -- reaches the top: 26 runs at 10 points, plus a streak bonus climbing 2 a
+  -- week to a cap of 10. If either of those rules changes, this breaks — which
+  -- is the point, because the tier thresholds would silently stop meaning what
+  -- the owner asked for.
+  perform tests.assert_eq(
+    (select sum(10 + app_private.points_for_streak(w))::int
+       from generate_series(1, 26) w),
+    490,
+    'six months of never missing is worth 490 points');
+  perform tests.assert_eq(
+    public.tier_for_points(
+      (select sum(10 + app_private.points_for_streak(w))::int from generate_series(1, 26) w)),
+    'legend'::public.member_tier,
+    '...which is Legend — the six-month ladder the owner asked for');
+
+  perform tests.assert_eq(public.points_to_next_tier(50), 10,
     'distance to the next tier is stated as points to go');
   perform tests.assert(
-    public.points_to_next_tier(1200) is null,
+    public.points_to_next_tier(500) is null,
     'at the top there is no next tier — null, not zero, so the UI can celebrate rather than show a dead target');
 
   -- ---------------------------------------------------------------------
@@ -295,6 +313,97 @@ begin
   perform tests.assert_eq(
     public.points_total(v_a), 50,
     'a second adjustment is allowed and nets correctly');
+
+  -- ---------------------------------------------------------------------
+  -- Points ease back when somebody stops coming.
+  --
+  -- The rule that makes a six-month ladder mean anything: without it every
+  -- regular is Legend forever by their second season. It is also the only rule
+  -- in the app that takes something away from a member, so the shape of it
+  -- matters more than the arithmetic — the first miss is free, and nobody can
+  -- be driven below zero.
+  -- ---------------------------------------------------------------------
+  v_dec := tests.make_member('dana');
+
+  -- Dana attends one run, then stops.
+  --
+  -- The timings sit inside the last few days on purpose. The seeded database
+  -- carries a year of completed runs, and anchoring this fixture further back
+  -- would count those as misses too — the count is against the club's real
+  -- schedule, which in this database is not empty.
+  v_wk := tests.make_run(v_admin, null, v_now + interval '2 hours');
+  update public.runs
+     set starts_at = v_now - interval '3 days',
+         ends_at   = v_now - interval '3 days' + interval '1 hour',
+         status    = 'completed'
+   where id = v_wk;
+  insert into public.run_attendance (run_id, user_id, queued_at, signed_up_at, checked_in_at, check_in_method)
+  values (v_wk, v_dec, v_now - interval '3 days', v_now - interval '3 days',
+          v_now - interval '3 days', 'admin');
+
+  perform tests.assert_eq(public.points_total(v_dec), 10, 'dana earned one run''s points');
+
+  -- The club runs again and she misses it. One miss costs nothing.
+  v_wk := tests.make_run(v_admin, null, v_now + interval '2 hours');
+  update public.runs set starts_at = v_now - interval '2 days',
+                         ends_at   = v_now - interval '2 days' + interval '1 hour'
+   where id = v_wk;
+  update public.runs set status = 'completed' where id = v_wk;
+
+  perform tests.assert_eq(
+    public.points_total(v_dec), 10,
+    'missing one run costs nothing — a wedding, a night shift, a cold');
+
+  -- The second consecutive miss is where it starts.
+  v_wk := tests.make_run(v_admin, null, v_now + interval '2 hours');
+  update public.runs set starts_at = v_now - interval '36 hours',
+                         ends_at   = v_now - interval '36 hours' + interval '1 hour'
+   where id = v_wk;
+  update public.runs set status = 'completed' where id = v_wk;
+
+  perform tests.assert_eq(
+    public.points_total(v_dec), 0,
+    'the second consecutive miss costs a run''s worth');
+  perform tests.assert_eq(
+    (select count(*)::int from public.point_events where user_id = v_dec and kind = 'absence'), 1,
+    'and is recorded in the ledger rather than silently subtracted');
+
+  -- Re-completing the same run must not charge twice.
+  perform app_private.apply_absence_decay(v_wk);
+  perform tests.assert_eq(
+    (select count(*)::int from public.point_events where user_id = v_dec and kind = 'absence'), 1,
+    'the same run cannot charge a member twice — a retried tick is safe');
+
+  -- The floor. Dana is already at zero; missing more must not push her under.
+  v_wk := tests.make_run(v_admin, null, v_now + interval '2 hours');
+  update public.runs set starts_at = v_now - interval '24 hours',
+                         ends_at   = v_now - interval '24 hours' + interval '1 hour'
+   where id = v_wk;
+  update public.runs set status = 'completed' where id = v_wk;
+
+  perform tests.assert_eq(
+    public.points_total(v_dec), 0,
+    'nobody is driven below zero — a member coming back starts where they left off, not in debt');
+
+  -- Somebody who has never attended is not "missing" runs.
+  v_wk := tests.make_run(v_admin, null, v_now + interval '2 hours');
+  update public.runs set starts_at = v_now - interval '12 hours',
+                         ends_at   = v_now - interval '12 hours' + interval '1 hour'
+   where id = v_wk;
+  update public.runs set status = 'completed' where id = v_wk;
+
+  perform tests.assert_eq(
+    (select count(*)::int from public.point_events
+      where user_id = v_admin and kind = 'absence'), 0,
+    'a member who has never checked in is not penalised — they have not started, not stopped');
+
+  -- Absence is not tied to a check-in, so it must survive the validity rule
+  -- that governs run-linked awards. If it did not, every penalty would be
+  -- filtered straight back out and the feature would do nothing.
+  perform tests.assert_eq(
+    (select count(*)::int from public.effective_point_events
+      where user_id = v_dec and kind = 'absence'), 1,
+    'an absence charge counts even though there is no check-in behind it');
 
   -- ---------------------------------------------------------------------
   -- The ledger is append-only.

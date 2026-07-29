@@ -217,11 +217,60 @@ A member's own visibility, and only their own. Deliberately its own function
 rather than a column update: this is a privacy control, not a preference, and it
 is audited.
 
-### `tier_for_points(integer)` · `points_to_next_tier(integer)` · `runs_attended(uuid)` · `current_streak_weeks(uuid, timestamptz)`
+### Tiers
 
-Pure helpers, exposed so the apps display the same numbers the ranking uses.
+Five, owner-decided: **Rookie · Runner · Competitor · Elite · Legend**.
+
+| Tier | From | Roughly |
+|---|---|---|
+| Rookie | 0 | where everyone starts |
+| Runner | 60 | ~5 runs, a month |
+| Competitor | 150 | ~10 runs, two and a half months |
+| Elite | 290 | ~16 runs, four months |
+| Legend | 480 | 26 runs — six months of not missing |
+
+The top is calibrated, not guessed: a check-in is 10 points and the streak bonus
+climbs 2 a week to a cap of 10, so twenty-six consecutive weeks is worth exactly
+490. [`06_loyalty.sql`](../supabase/tests/06_loyalty.sql) asserts that sum, so
+changing either rule breaks the test rather than silently moving the ladder.
+
 `points_to_next_tier` returns **null** at the top rather than zero, so the UI can
 celebrate rather than render a dead target.
+
+### Absence — points ease back
+
+A ceiling reachable in six months only means something if points can also fall;
+otherwise every regular is Legend by their second season and the top rung
+measures how long ago somebody joined.
+
+- **The first miss is free.** One missed Saturday is a wedding or a cold.
+- **From the second consecutive miss, −10 per run** — exactly what a check-in is
+  worth.
+- **Never below zero.** Somebody returning after months away starts where they
+  left off, not in debt.
+- **Nobody is notified.** A push saying "you have lost 10 points" is the message
+  App Spec §2 exists to prevent. It is visible on their own profile if they look.
+
+Applied by a trigger on the run reaching `completed`, not from the two functions
+that complete runs — absence has no event of its own, so the run ending is the
+event. Idempotent via the same partial unique index as every other award.
+
+`consecutive_missed_runs(uuid, timestamptz)` counts against the **club's
+schedule**, not weeks: a fortnight when the club did not run is not a miss.
+
+### `tier_rewards` · `admin_set_tier_reward(member_tier, text, boolean)` *(organiser)*
+
+What each tier is worth, as free text. Nothing in the app redeems it — it is a
+promise the club keeps in person. A table rather than a constant because these
+will change, and a text edit that needs a developer and an App Store review is a
+text edit that does not happen.
+
+`is_placeholder` is a real state: members see "being confirmed" beside an idea
+the club has not agreed yet, so a draft never reads as a firm offer.
+
+### `runs_attended(uuid)` · `current_streak_weeks(uuid, timestamptz)`
+
+Pure helpers, exposed so the apps display the same numbers the ranking uses.
 
 ---
 

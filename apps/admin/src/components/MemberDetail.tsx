@@ -1,7 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { formatRunDate, toMemberMessage, TIER_LABEL, type MemberTier } from '@mvmnt/shared';
+import {
+  formatRunDate,
+  toMemberMessage,
+  describePointKind,
+  TIER_LABEL,
+  type MemberTier,
+} from '@mvmnt/shared';
 import { useToast } from './Toast';
+import { useConfirm } from './Confirm';
 
 /**
  * Everything the database knows about one member.
@@ -61,12 +68,15 @@ const shortDate = (iso: string) =>
 export function MemberDetail({
   userId,
   onChanged,
+  onClose,
 }: {
   userId: string;
   /** Called after anything that changes what the directory row should say. */
   onChanged: () => void;
+  onClose: () => void;
 }) {
   const toast = useToast();
+  const confirm = useConfirm();
   const [detail, setDetail] = useState<Detail | null>(null);
   const [busy, setBusy] = useState(false);
   const [points, setPoints] = useState('');
@@ -85,7 +95,15 @@ export function MemberDetail({
     load();
   }, [load]);
 
-  if (!detail?.profile) return <div className="card">Loading…</div>;
+  if (!detail?.profile) {
+    return (
+      <div className="modal-backdrop drawer-backdrop" onClick={onClose}>
+        <div className="drawer" onClick={(e) => e.stopPropagation()}>
+          Loading…
+        </div>
+      </div>
+    );
+  }
   const p = detail.profile;
 
   // PromiseLike, not Promise: supabase-js returns a thenable query builder that
@@ -104,12 +122,16 @@ export function MemberDetail({
   }
 
   async function disableCode() {
-    const ok = window.confirm(
-      `Disable ${p.display_name}'s friend code?\n\n` +
+    const ok = await confirm({
+      title: `Disable ${p.display_name}'s friend code?`,
+      message:
         'Every code they have shown stops working immediately. Friendships they already have are ' +
         'untouched — and they can show a fresh code straight afterwards, so this stops a code that ' +
-        'is circulating right now rather than stopping them adding friends.\n\nRecorded in the audit log.',
-    );
+        'is circulating right now rather than stopping them adding friends.\n\n' +
+        'Recorded in the audit log.',
+      confirmLabel: 'Disable the code',
+      tone: 'danger',
+    });
     if (!ok) return;
     if (await run('Disabling the code', () =>
       supabase.rpc('admin_disable_member_qr', { p_user_id: userId }),
@@ -144,14 +166,21 @@ export function MemberDetail({
   }
 
   async function setRole(role: 'admin' | 'member') {
-    const ok = window.confirm(
-      role === 'admin'
-        ? `Make ${p.display_name} an organiser?\n\nThey will be able to create and cancel runs, ` +
-            `check people in, see every member, correct points, and make other people organisers ` +
-            `too. There is one level of organiser — there is no limited version.`
-        : `Remove ${p.display_name} as an organiser?\n\nThey go back to being an ordinary member ` +
-            `and lose access to this console. Their runs, points and history are untouched.`,
-    );
+    const ok = await confirm({
+      title:
+        role === 'admin'
+          ? `Make ${p.display_name} an organiser?`
+          : `Remove ${p.display_name} as an organiser?`,
+      message:
+        role === 'admin'
+          ? 'They will be able to create and cancel runs, check people in, see every member, ' +
+            'correct points, and make other people organisers too.\n\n' +
+            'There is one level of organiser — there is no limited version.'
+          : 'They go back to being an ordinary member and lose access to this console. ' +
+            'Their runs, points and history are untouched.',
+      confirmLabel: role === 'admin' ? 'Make organiser' : 'Remove access',
+      tone: role === 'admin' ? 'normal' : 'danger',
+    });
     if (!ok) return;
     if (await run('That change', () =>
       supabase.rpc('admin_set_member_role', { p_user_id: userId, p_role: role }),
@@ -163,185 +192,198 @@ export function MemberDetail({
   }
 
   return (
-    <div className="card" style={{ background: 'var(--sunken)' }}>
-      <div className="row">
-        <div>
-          <strong style={{ fontSize: 17 }}>{p.display_name}</strong>
-          {p.is_founder && <span className="pill" style={{ marginLeft: 8 }}>club owner</span>}
-          {p.role === 'admin' && !p.is_founder && (
-            <span className="pill" style={{ marginLeft: 8 }}>organiser</span>
-          )}
-          <div className="subtitle" style={{ fontSize: 13 }}>
-            {p.email} · joined {shortDate(p.joined_at)}
+    <div
+      className="modal-backdrop drawer-backdrop"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label={`${p.display_name} — full record`}
+    >
+      {/* stopPropagation so a click inside the drawer does not read as a click
+          on the backdrop, which closes it. */}
+      <div className="drawer" onClick={(e) => e.stopPropagation()}>
+        <div className="drawer-head">
+          <div>
+            <strong style={{ fontSize: 17 }}>{p.display_name}</strong>
+            {p.is_founder && <span className="pill" style={{ marginLeft: 8 }}>club owner</span>}
+            {p.role === 'admin' && !p.is_founder && (
+              <span className="pill" style={{ marginLeft: 8 }}>organiser</span>
+            )}
+            <div className="subtitle" style={{ fontSize: 13 }}>
+              {p.email} · joined {shortDate(p.joined_at)}
+            </div>
+          </div>
+          <div className="stats">
+            <div>
+              <div className="stat">{p.points.toLocaleString()}</div>
+              <div className="stat-label">{TIER_LABEL[p.tier]}</div>
+            </div>
+            <div>
+              <div className="stat">{p.runs_attended}</div>
+              <div className="stat-label">Runs</div>
+            </div>
+            <div>
+              <div className="stat">{p.streak_weeks}</div>
+              <div className="stat-label">Week streak</div>
+            </div>
+            <button className="link" onClick={onClose}>
+              Close
+            </button>
           </div>
         </div>
-        <div className="stats">
-          <div>
-            <div className="stat">{p.points.toLocaleString()}</div>
-            <div className="stat-label">{TIER_LABEL[p.tier]}</div>
-          </div>
-          <div>
-            <div className="stat">{p.runs_attended}</div>
-            <div className="stat-label">Runs</div>
-          </div>
-          <div>
-            <div className="stat">{p.streak_weeks}</div>
-            <div className="stat-label">Week streak</div>
-          </div>
-        </div>
-      </div>
 
-      <Section title="Recent runs">
-        <MiniTable
-          empty="They have never signed up for a run."
-          rows={detail.recent_runs.map((r) => [
-            r.title,
-            formatRunDate(r.starts_at),
-            r.state === 'checked_in'
-              ? r.check_in_method === 'admin'
-                ? 'Checked in by an organiser'
-                : 'Checked in at the meeting point'
-              : r.state === 'signed_up'
-                ? 'Signed up'
-                : r.state === 'waitlisted'
-                  ? 'Waitlisted'
-                  : 'Withdrew',
-            // Coordinates are purged at 30 days, so a blank here on an older run
-            // is the retention rule working rather than something missing.
-            r.has_location_evidence ? 'Location on file' : '—',
-          ])}
-        />
-      </Section>
-
-      <Section title={`Points — ${p.points.toLocaleString()} counting`}>
-        <MiniTable
-          empty="No points yet."
-          rows={detail.points_ledger.map((e) => [
-            e.kind === 'adjustment' ? 'Organiser adjustment' : e.kind === 'streak' ? 'Streak bonus' : 'Check-in',
-            `${e.points > 0 ? '+' : ''}${e.points}`,
-            shortDate(e.awarded_at),
-            // A revoked check-in leaves its ledger row in place and stops it
-            // counting, so a total that looks short is explainable from here.
-            e.still_counting ? (e.note ?? '') : 'No longer counts — check-in removed',
-          ])}
-        />
-      </Section>
-
-      <Section title={`Friends (${detail.friends.length})`}>
-        <MiniTable
-          empty="They have not added anyone."
-          rows={detail.friends.map((f) => [
-            f.display_name,
-            f.they_initiated ? 'They scanned' : 'Was scanned',
-            shortDate(f.since),
-            '',
-          ])}
-        />
-      </Section>
-
-      {detail.badges.length > 0 && (
-        <Section title="Badges">
+        <Section title="Recent runs">
           <MiniTable
-            empty=""
-            rows={detail.badges.map((b) => [b.label, shortDate(b.earned_at), '', ''])}
+            empty="They have never signed up for a run."
+            rows={detail.recent_runs.map((r) => [
+              r.title,
+              formatRunDate(r.starts_at),
+              r.state === 'checked_in'
+                ? r.check_in_method === 'admin'
+                  ? 'Checked in by an organiser'
+                  : 'Checked in at the meeting point'
+                : r.state === 'signed_up'
+                  ? 'Signed up'
+                  : r.state === 'waitlisted'
+                    ? 'Waitlisted'
+                    : 'Withdrew',
+              // Coordinates are purged at 30 days, so a blank here on an older run
+              // is the retention rule working rather than something missing.
+              r.has_location_evidence ? 'Location on file' : '—',
+            ])}
           />
         </Section>
-      )}
 
-      <Section title="Notifications sent">
-        <MiniTable
-          empty="Nothing has been sent to them yet."
-          rows={detail.notifications.map((n) => [
-            n.title,
-            shortDate(n.created_at),
-            n.status === 'skipped' ? 'No device registered' : n.status,
-            '',
-          ])}
-        />
-        <div className="hint">
-          {detail.devices.length === 0
-            ? 'No phone registered, so they receive nothing until they open the app and allow notifications.'
-            : `${detail.devices.length} device${detail.devices.length === 1 ? '' : 's'} registered.`}
-        </div>
-      </Section>
-
-      <Section title="Organiser actions on this account">
-        <MiniTable
-          empty="Nothing has been done to this account."
-          rows={detail.admin_actions.map((a) => [
-            a.action.replace(/_/g, ' '),
-            shortDate(a.at),
-            a.by ?? 'system',
-            JSON.stringify(a.metadata) === '{}' ? '' : JSON.stringify(a.metadata),
-          ])}
-        />
-      </Section>
-
-      <hr style={{ border: 0, borderTop: '1px solid var(--border)', margin: '22px 0' }} />
-
-      <div className="field">
-        <label>Friend code</label>
-        <div className="hint">
-          {detail.friend_code.active
-            ? 'They have a live code right now. Turning it off stops anyone using it.'
-            : 'No live code at the moment — codes expire after three minutes on their own, so there may be nothing to turn off.'}{' '}
-          Note that they can show a fresh code immediately afterwards; this stops a code that is
-          circulating, not their ability to add friends.
-        </div>
-        <button className="danger" onClick={disableCode} disabled={busy} style={{ marginTop: 8 }}>
-          Disable their friend code
-        </button>
-      </div>
-
-      <div className="field">
-        <label htmlFor={`points-${userId}`}>Points correction</label>
-        <div className="hint">
-          For settling a dispute — a check-in that was missed, or one that should not have counted.
-        </div>
-        <div className="inline" style={{ marginTop: 8 }}>
-          <input
-            id={`points-${userId}`}
-            type="number"
-            value={points}
-            onChange={(e) => setPoints(e.target.value)}
-            placeholder="e.g. 10"
-            style={{ maxWidth: 110 }}
+        <Section title={`Points — ${p.points.toLocaleString()} counting`}>
+          <MiniTable
+            empty="No points yet."
+            rows={detail.points_ledger.map((e) => [
+              describePointKind(e.kind),
+              `${e.points > 0 ? '+' : ''}${e.points}`,
+              shortDate(e.awarded_at),
+              // A revoked check-in leaves its ledger row in place and stops it
+              // counting, so a total that looks short is explainable from here.
+              e.still_counting ? (e.note ?? '') : 'No longer counts — check-in removed',
+            ])}
           />
-          <input
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder="Why — this is kept on the record"
-            style={{ flex: 1, minWidth: 220 }}
+        </Section>
+
+        <Section title={`Friends (${detail.friends.length})`}>
+          <MiniTable
+            empty="They have not added anyone."
+            rows={detail.friends.map((f) => [
+              f.display_name,
+              f.they_initiated ? 'They scanned' : 'Was scanned',
+              shortDate(f.since),
+              '',
+            ])}
           />
-          <button onClick={adjustPoints} disabled={busy}>
-            Apply
+        </Section>
+
+        {detail.badges.length > 0 && (
+          <Section title="Badges">
+            <MiniTable
+              empty=""
+              rows={detail.badges.map((b) => [b.label, shortDate(b.earned_at), '', ''])}
+            />
+          </Section>
+        )}
+
+        <Section title="Notifications sent">
+          <MiniTable
+            empty="Nothing has been sent to them yet."
+            rows={detail.notifications.map((n) => [
+              n.title,
+              shortDate(n.created_at),
+              n.status === 'skipped' ? 'No device registered' : n.status,
+              '',
+            ])}
+          />
+          <div className="hint">
+            {detail.devices.length === 0
+              ? 'No phone registered, so they receive nothing until they open the app and allow notifications.'
+              : `${detail.devices.length} device${detail.devices.length === 1 ? '' : 's'} registered.`}
+          </div>
+        </Section>
+
+        <Section title="Organiser actions on this account">
+          <MiniTable
+            empty="Nothing has been done to this account."
+            rows={detail.admin_actions.map((a) => [
+              a.action.replace(/_/g, ' '),
+              shortDate(a.at),
+              a.by ?? 'system',
+              JSON.stringify(a.metadata) === '{}' ? '' : JSON.stringify(a.metadata),
+            ])}
+          />
+        </Section>
+
+        <hr style={{ border: 0, borderTop: '1px solid var(--border)', margin: '22px 0' }} />
+
+        <div className="field">
+          <label>Friend code</label>
+          <div className="hint">
+            {detail.friend_code.active
+              ? 'They have a live code right now. Turning it off stops anyone using it.'
+              : 'No live code at the moment — codes expire after three minutes on their own, so there may be nothing to turn off.'}{' '}
+            Note that they can show a fresh code immediately afterwards; this stops a code that is
+            circulating, not their ability to add friends.
+          </div>
+          <button className="danger" onClick={disableCode} disabled={busy} style={{ marginTop: 8 }}>
+            Disable their friend code
           </button>
         </div>
-      </div>
 
-      <div className="field">
-        <label>Organiser access</label>
-        {p.is_founder ? (
+        <div className="field">
+          <label htmlFor={`points-${userId}`}>Points correction</label>
           <div className="hint">
-            This is the club owner&apos;s original account. It cannot be removed as an organiser by
-            anyone — including itself — so there is always a guaranteed way into this console.
+            For settling a dispute — a check-in that was missed, or one that should not have counted.
           </div>
-        ) : (
-          <>
-            <div className="hint">
-              There is one level of organiser. Anyone made an organiser can do everything you can,
-              including making other people organisers.
-            </div>
-            <button
-              className={p.role === 'admin' ? 'danger' : 'primary'}
-              onClick={() => setRole(p.role === 'admin' ? 'member' : 'admin')}
-              disabled={busy}
-              style={{ marginTop: 8 }}
-            >
-              {p.role === 'admin' ? 'Remove as organiser' : 'Make organiser'}
+          <div className="inline" style={{ marginTop: 8 }}>
+            <input
+              id={`points-${userId}`}
+              type="number"
+              value={points}
+              onChange={(e) => setPoints(e.target.value)}
+              placeholder="e.g. 10"
+              style={{ maxWidth: 110 }}
+            />
+            <input
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Why — this is kept on the record"
+              style={{ flex: 1, minWidth: 220 }}
+            />
+            <button onClick={adjustPoints} disabled={busy}>
+              Apply
             </button>
-          </>
-        )}
+          </div>
+        </div>
+
+        <div className="field">
+          <label>Organiser access</label>
+          {p.is_founder ? (
+            <div className="hint">
+              This is the club owner&apos;s original account. It cannot be removed as an organiser by
+              anyone — including itself — so there is always a guaranteed way into this console.
+            </div>
+          ) : (
+            <>
+              <div className="hint">
+                There is one level of organiser. Anyone made an organiser can do everything you can,
+                including making other people organisers.
+              </div>
+              <button
+                className={p.role === 'admin' ? 'danger' : 'primary'}
+                onClick={() => setRole(p.role === 'admin' ? 'member' : 'admin')}
+                disabled={busy}
+                style={{ marginTop: 8 }}
+              >
+                {p.role === 'admin' ? 'Remove as organiser' : 'Make organiser'}
+              </button>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -41,7 +41,7 @@ export function StandingCard({
   const base = lifetime ?? standing;
   const windowed = lifetime !== undefined;
   const tier = base.tier;
-  const fraction = tierProgressFraction(base.points_to_next_tier);
+  const fraction = tierProgressFraction(tier, base.points_to_next_tier);
   const gap = describeGapToNextRank(standing.points_to_next_rank);
 
   return (

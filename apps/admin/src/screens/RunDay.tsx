@@ -268,13 +268,15 @@ export function RunDay({ runId, onBack }: { runId: string; onBack: () => void })
             </table>
           </div>
         )}
-
-        {moderating?.user_id && (
-          <div style={{ marginTop: 16 }}>
-            <MemberDetail userId={moderating.user_id} onChanged={load} />
-          </div>
-        )}
       </div>
+
+      {moderating?.user_id && (
+        <MemberDetail
+          userId={moderating.user_id}
+          onChanged={load}
+          onClose={() => setModerating(null)}
+        />
+      )}
     </>
   );
 }

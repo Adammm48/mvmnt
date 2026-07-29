@@ -17,28 +17,52 @@ export type Standing = Database['public']['Functions']['my_standing']['Returns']
 export type LeaderboardRow = Database['public']['Functions']['leaderboard']['Returns'][number];
 export type FriendRow = Database['public']['Functions']['my_friends']['Returns'][number];
 export type Badge = Database['public']['Tables']['badges']['Row'];
+export type TierReward = Database['public']['Tables']['tier_rewards']['Row'];
 export type MemberBadge = Database['public']['Tables']['member_badges']['Row'];
 
 /** The two windows public.leaderboard() and public.my_standing() accept. */
 export type LeaderboardWindow = 'all_time' | 'month';
 
 export const TIER_LABEL: Record<MemberTier, string> = {
-  starter: 'Starter',
-  core: 'Core',
+  rookie: 'Rookie',
+  runner: 'Runner',
+  competitor: 'Competitor',
   elite: 'Elite',
+  legend: 'Legend',
 };
+
+/**
+ * Where each tier begins. Mirrors public.tier_for_points().
+ *
+ * Duplicated here only to draw a progress bar — the database decides what tier
+ * anyone actually is, and if these ever drift the bar is slightly wrong rather
+ * than a member wrongly promoted.
+ */
+export const TIER_FLOOR: Record<MemberTier, number> = {
+  rookie: 0,
+  runner: 60,
+  competitor: 150,
+  elite: 290,
+  legend: 480,
+};
+
+export const TIER_ORDER: MemberTier[] = ['rookie', 'runner', 'competitor', 'elite', 'legend'];
 
 /**
  * Tier colours.
  *
- * Elite gets the highlight yellow, which the palette caps at small elements —
- * at larger sizes yellow reads as anxious rather than optimistic (App Spec §2),
- * so this belongs on a pill and nothing bigger.
+ * Five rungs need five colours a member can tell apart at pill size, and the
+ * palette only carries three accents. Rookie and Legend are the two additions,
+ * and they exist for this and nothing else — the same cap the palette puts on
+ * the highlight yellow applies to all of them: small elements only. At larger
+ * sizes these read as decoration rather than status (App Spec §2).
  */
 export const TIER_COLOR: Record<MemberTier, string> = {
-  starter: '#A8AEBF',
-  core: '#3DDC84',
+  rookie: '#A8AEBF',
+  runner: '#5FB0F5',
+  competitor: '#3DDC84',
   elite: '#FFC93C',
+  legend: '#C77DFF',
 };
 
 /**
@@ -54,22 +78,45 @@ export function describeTierProgress(tier: MemberTier, pointsToNext: number | nu
 }
 
 function nextTier(tier: MemberTier): MemberTier {
-  return tier === 'starter' ? 'core' : 'elite';
+  return TIER_ORDER[Math.min(TIER_ORDER.indexOf(tier) + 1, TIER_ORDER.length - 1)]!;
 }
 
 /**
  * How far through the current tier a member is, 0–1, for the progress bar.
  *
- * The 500-point span mirrors public.tier_for_points(); it is duplicated here
- * only to draw a bar, and the database remains the authority on what tier
- * anyone actually is. A drift between the two makes a bar slightly wrong, not a
- * member wrongly promoted.
+ * The bands are different widths — the first is 60 points and the last is 190 —
+ * so this measures against the member's own band rather than a fixed span. A
+ * single constant here would have drawn a Rookie at 5 points as almost finished
+ * and an Elite at 400 as barely started.
  */
-const TIER_SPAN = 500;
-
-export function tierProgressFraction(pointsToNext: number | null): number {
+export function tierProgressFraction(tier: MemberTier, pointsToNext: number | null): number {
   if (pointsToNext === null) return 1;
-  return Math.min(1, Math.max(0, (TIER_SPAN - pointsToNext) / TIER_SPAN));
+  const span = TIER_FLOOR[nextTier(tier)] - TIER_FLOOR[tier];
+  if (span <= 0) return 1;
+  return Math.min(1, Math.max(0, (span - pointsToNext) / span));
+}
+
+/**
+ * What a ledger row is, in words.
+ *
+ * `absence` is the one that needs care. It is a real deduction and hiding it
+ * would be dishonest, but the wording stays factual rather than scolding —
+ * App Spec §2 rules out guilt as a motivator, and a member reading their own
+ * history should not find the app telling them off.
+ */
+export function describePointKind(kind: string): string {
+  switch (kind) {
+    case 'check_in':
+      return 'Turned up';
+    case 'streak_bonus':
+      return 'Streak bonus';
+    case 'adjustment':
+      return 'Organiser adjustment';
+    case 'absence':
+      return 'Away from the club';
+    default:
+      return kind;
+  }
 }
 
 /**

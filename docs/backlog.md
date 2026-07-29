@@ -111,6 +111,17 @@ since the geofence radius is measured from these coordinates.
 
 ---
 
+## Waiting on the owner
+
+- **The tier rewards are placeholders.** 2026-07-29: *"I will tell you what the
+  reward for each tier is later — remind me."* All five are seeded with
+  plausible copy and flagged `is_placeholder`, so members currently see them
+  marked **being confirmed** rather than as offers. Organiser console →
+  **Rewards** edits them; no deploy needed. Until they are confirmed the club is
+  promising nothing, which is the correct state to launch in but not to stay in.
+
+---
+
 ## Open questions carried forward
 
 - **Supabase project region** — see [ADR 0002 §8](decisions/0002-check-in-location-and-retention.md).

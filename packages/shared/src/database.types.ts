@@ -826,6 +826,38 @@ export type Database = {
           },
         ]
       }
+      tier_rewards: {
+        Row: {
+          is_placeholder: boolean
+          reward: string
+          tier: Database["public"]["Enums"]["member_tier"]
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          is_placeholder?: boolean
+          reward: string
+          tier: Database["public"]["Enums"]["member_tier"]
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          is_placeholder?: boolean
+          reward?: string
+          tier?: Database["public"]["Enums"]["member_tier"]
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tier_rewards_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       effective_point_events: {
@@ -997,6 +1029,14 @@ export type Database = {
         }
         Returns: undefined
       }
+      admin_set_tier_reward: {
+        Args: {
+          p_is_placeholder?: boolean
+          p_reward: string
+          p_tier: Database["public"]["Enums"]["member_tier"]
+        }
+        Returns: undefined
+      }
       attendance_state: {
         Args: {
           checked_in_at: string
@@ -1019,6 +1059,10 @@ export type Database = {
           p_run_id: string
         }
         Returns: Database["public"]["Enums"]["attendance_state"]
+      }
+      consecutive_missed_runs: {
+        Args: { p_as_of?: string; p_user_id: string }
+        Returns: number
       }
       current_streak_weeks: {
         Args: { p_now?: string; p_user_id: string }
@@ -1118,7 +1162,7 @@ export type Database = {
       check_in_method: "geofence" | "qr" | "admin"
       delivery_status: "pending" | "logged" | "sent" | "failed" | "skipped"
       member_role: "member" | "admin"
-      member_tier: "starter" | "core" | "elite"
+      member_tier: "rookie" | "runner" | "competitor" | "elite" | "legend"
       notification_audience:
         | "all_members"
         | "run_signed_up"
@@ -1133,7 +1177,7 @@ export type Database = {
         | "waitlist_promoted"
         | "friend_poke"
         | "badge_earned"
-      point_kind: "check_in" | "streak_bonus" | "adjustment"
+      point_kind: "check_in" | "streak_bonus" | "adjustment" | "absence"
       run_status:
         | "draft"
         | "published"
@@ -1283,7 +1327,7 @@ export const Constants = {
       check_in_method: ["geofence", "qr", "admin"],
       delivery_status: ["pending", "logged", "sent", "failed", "skipped"],
       member_role: ["member", "admin"],
-      member_tier: ["starter", "core", "elite"],
+      member_tier: ["rookie", "runner", "competitor", "elite", "legend"],
       notification_audience: [
         "all_members",
         "run_signed_up",
@@ -1300,7 +1344,7 @@ export const Constants = {
         "friend_poke",
         "badge_earned",
       ],
-      point_kind: ["check_in", "streak_bonus", "adjustment"],
+      point_kind: ["check_in", "streak_bonus", "adjustment", "absence"],
       run_status: [
         "draft",
         "published",
