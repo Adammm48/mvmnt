@@ -1,4 +1,4 @@
-# MVMNT API — Phases 1, 2 and 3
+# MVMNT API
 
 Every backend capability, with its purpose, inputs, outputs, permissions and
 errors (Engineering Principles §8).
@@ -202,6 +202,13 @@ total re-derives from valid check-ins, so an organiser undoing a mistaken
 check-in silently and correctly takes the points back.
 
 ### `points_total(p_user_id uuid = auth.uid(), p_since timestamptz = null) → integer`
+
+### `my_distance_meters() → bigint`
+
+Kilometres with the club: the sum of stated distances of completed runs the
+caller checked in to. Own data only, and no GPS trace or health data behind
+it — attendance × the run's advertised distance is the club's honest number
+(App Spec §4.7's club-side half; the personal half is Phase 5, ADR 0005).
 
 ### `my_standing(p_window text = 'all_time') → row`
 
