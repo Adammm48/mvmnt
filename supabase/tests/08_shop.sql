@@ -209,9 +209,10 @@ begin
       where type = 'gift_received' and target_user_id = v_c), 0,
     'nothing is sent while the order is still unpaid');
 
-  perform tests.act_as(v_a);
-  perform public.dev_mark_paid(v_gift);
+  -- As the system, not as the buyer: dev_mark_paid stands in for a
+  -- server-to-server payment webhook and is service_role only (migration 0045).
   perform tests.act_as_system();
+  perform public.dev_mark_paid(v_gift);
 
   perform tests.assert_eq(
     (select count(*)::int from public.notification_events
@@ -275,6 +276,57 @@ begin
       where n.nspname = 'public' and p.proname = 'dev_mark_paid')
       like '%mvmnt.test%',
     'dev_mark_paid checks it is on a development database before doing anything');
+
+  -- A member must not be able to mark anybody's order paid — not their own,
+  -- and certainly not somebody else's. Before migration 0045 the grant was to
+  -- `authenticated` and the body never checked the buyer, so a single seeded
+  -- @mvmnt.test account on a live database would have handed every member a
+  -- free-shirt button.
+  perform tests.act_as(v_a);
+  perform tests.assert_rejects(
+    format('select public.dev_mark_paid(%L)', v_gift),
+    'a member cannot mark an order paid — the payment stand-in is service_role only');
+  perform tests.act_as_system();
+
+  -- ---------------------------------------------------------------------
+  -- The buyer is locked, so points cannot be spent twice (migration 0045).
+  --
+  -- place_order() locked the product row but never the member, so two orders
+  -- for two DIFFERENT products took two different locks, both read the same
+  -- full balance, and both spent it. A single-session test cannot reproduce
+  -- the race, so this asserts the invariant the lock exists to protect —
+  -- spending the balance twice in a row leaves the ledger at zero, not
+  -- negative — and that the lock itself is present in the function.
+  -- ---------------------------------------------------------------------
+  perform tests.assert(
+    (select prosrc from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+      where n.nspname = 'public' and p.proname = 'place_order')
+      like '%from public.profiles where id = v_me for update%',
+    'place_order takes a lock on the buyer, not only on the product');
+
+  declare
+    v_p1 uuid; v_p2 uuid; v_left integer;
+  begin
+    perform tests.act_as_system();
+    insert into public.products (name, price_minor, status, stock)
+    values ('Lock Test A', 100000, 'in_stock', 10) returning id into v_p1;
+    insert into public.products (name, price_minor, status, stock)
+    values ('Lock Test B', 100000, 'in_stock', 10) returning id into v_p2;
+
+    perform tests.act_as(v_admin);
+    perform public.admin_adjust_points(v_b, 300, 'points for the double-spend test');
+
+    perform tests.act_as(v_b);
+    perform public.place_order(v_p1, 1, null, 300);
+    perform public.place_order(v_p2, 1, null, 300);
+
+    perform tests.act_as_system();
+    v_left := public.points_total(v_b);
+    perform tests.assert(
+      v_left >= 0,
+      'spending the same balance on two orders cannot drive the ledger negative');
+  end;
+  perform tests.act_as_system();
 
   -- ---------------------------------------------------------------------
   -- Sponsor reach cannot be inflated.

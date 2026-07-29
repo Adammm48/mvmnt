@@ -103,6 +103,29 @@ begin
   perform tests.assert_rejects(
     format('select public.check_in(%L, %s, %s, 50)', v_run, v_far_lat, v_lng),
     'a 2 km distance is not excused by a 50 m accuracy allowance');
+
+  -- ------------------------------------------------------------------------
+  -- The allowance is bounded (migration 0045).
+  --
+  -- p_accuracy_m is client input and was subtracted from the distance with no
+  -- ceiling, so one authenticated call with an absurd accuracy checked you in
+  -- from anywhere on Earth — and attendance is the currency the whole loyalty
+  -- and shop system is denominated in. Generous is right; unbounded was not.
+  -- ------------------------------------------------------------------------
+  perform tests.assert_rejects(
+    format('select public.check_in(%L, %s, %s, 9999999)', v_run, v_far_lat, v_lng),
+    'an absurd accuracy claim cannot teleport a member into the geofence');
+
+  perform tests.assert_rejects(
+    format('select public.check_in(%L, %s, %s, 100000)', v_run, v_far_lat, v_lng),
+    'and neither can a merely enormous one');
+
+  -- A negative claim must not make the check STRICTER by accident — that would
+  -- turn a malformed client into a member who cannot check in at all.
+  perform tests.assert_eq(
+    public.check_in(v_run, v_near_lat, v_lng, -500),
+    'checked_in'::public.attendance_state,
+    'a nonsensical negative accuracy is floored, not subtracted the wrong way');
   perform tests.act_as_system();
 
   -- ---------------------------------------------------------------------
