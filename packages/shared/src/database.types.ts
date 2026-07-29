@@ -1604,6 +1604,10 @@ export type Database = {
         Args: { p_run_id: string; p_user_id: string }
         Returns: Database["public"]["Enums"]["attendance_state"]
       }
+      admin_clear_gift_message: {
+        Args: { p_order_id: string }
+        Returns: undefined
+      }
       admin_disable_member_qr: {
         Args: { p_user_id: string }
         Returns: undefined
@@ -1636,6 +1640,22 @@ export type Database = {
       admin_remove_check_in: {
         Args: { p_run_id: string; p_user_id: string }
         Returns: undefined
+      }
+      admin_reports: {
+        Args: never
+        Returns: {
+          buyer_name: string
+          created_at: string
+          gift_message: string
+          id: string
+          kind: string
+          photo_path: string
+          reason: string
+          recipient_name: string
+          reporter_name: string
+          run_title: string
+          target_id: string
+        }[]
       }
       admin_resolve_report: {
         Args: { p_report_id: string }

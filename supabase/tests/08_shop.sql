@@ -402,7 +402,6 @@ begin
   raise notice 'PASS 08_shop';
 end $$;
 
-rollback;
 
 -- ---------------------------------------------------------------------------
 -- The audit council's merch fixes (migrations 0052/0053).
@@ -495,4 +494,65 @@ begin
     (select resolved_at is not null and resolved_by is not null
        from public.content_reports where id = v_r),
     'resolving records who and when');
+
+  -- -------------------------------------------------------------------------
+  -- The queue itself (migration 0056): enriched, admin-only, and its one
+  -- moderation action on gift text.
+  -- -------------------------------------------------------------------------
+  declare
+    v_prod uuid; v_order uuid; v_qr text;
+  begin
+    -- A gift with a message, then a report against that message.
+    perform tests.act_as_system();
+    insert into public.products (name, price_minor, status, stock)
+    values ('Report Test Shirt', 40000, 'in_stock', 5) returning id into v_prod;
+    -- The two members become friends the honest way: one shows a code, the
+    -- other scans it. place_order refuses a gift to a stranger.
+    perform tests.act_as(v_a);
+    select token into v_qr from public.my_friend_qr();
+    perform tests.act_as(v_b);
+    perform public.add_friend_by_token(v_qr);
+
+    perform tests.act_as(v_a);
+    v_order := public.place_order(v_prod, 1, null, 0, v_b, 'a rude message, allegedly');
+
+    perform tests.act_as(v_b);
+    perform public.report_content('gift_message', v_order::text, 'the note is unkind');
+
+    -- The queue shows the message text and both names to the organiser…
+    perform tests.act_as(v_admin);
+    perform tests.assert_eq(
+      (select gift_message from public.admin_reports()
+        where kind = 'gift_message' and target_id = v_order::text),
+      'a rude message, allegedly',
+      'the queue carries the reported content so the organiser can judge it');
+
+    -- …and to nobody else.
+    perform tests.act_as(v_a);
+    perform tests.assert_rejects(
+      'select * from public.admin_reports()',
+      'the moderation queue is organiser-only');
+
+    -- The one column an organiser may blank.
+    perform tests.act_as(v_admin);
+    perform public.admin_clear_gift_message(v_order);
+    perform tests.act_as_system();
+    perform tests.assert(
+      (select gift_message is null from public.orders where id = v_order),
+      'clearing a reported gift message blanks the text');
+    perform tests.assert(
+      (select status from public.orders where id = v_order) = 'awaiting_payment',
+      'and touches nothing else about the order');
+    perform tests.assert(
+      exists (select 1 from public.audit_log where action = 'clear_gift_message'),
+      'moderation is audited like every other organiser act');
+  end;
 end $$;
+
+-- Everything above runs inside the single transaction opened at the top of this
+-- file. The rollback belongs HERE, at the end — it briefly sat straight after
+-- the first block, which left the two blocks below it running in autocommit.
+-- They committed their fixture members, so the suite passed once after a reset
+-- and failed on a duplicate email every run after that, and the runner's
+-- promise to leave the database as it found it was quietly false.
+rollback;

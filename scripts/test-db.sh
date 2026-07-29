@@ -47,6 +47,34 @@ if ! out=$(run_sql "$ROOT/supabase/tests/00_helpers.sql"); then
   exit 1
 fi
 
+# Every suite must wrap itself in one transaction and roll back at the very
+# END of the file. Twice now, a block appended after the rollback ran in
+# autocommit, committed its fixture members, and made the whole suite pass once
+# after a reset and fail on a duplicate email for ever after — a test suite that
+# corrupts the database it tests. Structural check rather than a convention
+# nobody can see being broken.
+structural=0
+for f in "$ROOT"/supabase/tests/[0-9]*.sql; do
+  name=$(basename "$f")
+  [ "$name" = "00_helpers.sql" ] && continue
+  rl=$(grep -n '^rollback;' "$f" | tail -1 | cut -d: -f1)
+  if [ -z "$rl" ]; then
+    echo "  $name: no 'rollback;' — the suite would commit its fixtures" >&2
+    structural=1
+    continue
+  fi
+  # Anything but blank lines and comments after the rollback runs uncontained.
+  stray=$(awk -v r="$rl" 'NR>r && /[^[:space:]]/ && !/^[[:space:]]*--/ {c++} END{print c+0}' "$f")
+  if [ "$stray" -gt 0 ]; then
+    echo "  $name: $stray line(s) of SQL after 'rollback;' — they will autocommit" >&2
+    structural=1
+  fi
+done
+if [ "$structural" -ne 0 ]; then
+  echo "Fix the transaction wrapping above before the suite can be trusted." >&2
+  exit 1
+fi
+
 failed=0
 for f in "$ROOT"/supabase/tests/[0-9]*.sql; do
   name=$(basename "$f")

@@ -364,7 +364,6 @@ begin
     'erasing a member erases their consent record with them');
 end $$;
 
-rollback;
 
 -- ---------------------------------------------------------------------------
 -- Avatars (migration 0051): own folder only, and erasure removes the face.
@@ -407,3 +406,9 @@ begin
       where bucket_id = 'avatars' and name like v_a || '/%'), 0,
     'erasing a member deletes their avatar files — the face does not outlive the person');
 end $$;
+
+-- The rollback belongs at the END of the file, after every block. It sat
+-- higher up for a while, which left the consent tests below it committing
+-- their fixture members — the suite then passed once after a reset and failed
+-- on a duplicate email on every run after that. Same bug as 08_shop.
+rollback;

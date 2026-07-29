@@ -8,6 +8,7 @@ import { RunDay } from './screens/RunDay';
 import { Members } from './screens/Members';
 import { Rewards } from './screens/Rewards';
 import { Sponsors } from './screens/Sponsors';
+import { Reports } from './screens/Reports';
 import { Merch } from './screens/Merch';
 import { ToastProvider } from './components/Toast';
 import { ConfirmProvider } from './components/Confirm';
@@ -20,6 +21,7 @@ export type View =
   | { name: 'members' }
   | { name: 'rewards' }
   | { name: 'sponsors' }
+  | { name: 'reports' }
   | { name: 'merch' };
 
 export default function App() {
@@ -68,7 +70,7 @@ export default function App() {
           <h1>MVMNT · ORGANISER</h1>
           <nav className="app-nav">
             <button
-              className={`link ${['members', 'rewards', 'sponsors', 'merch'].includes(view.name) ? '' : 'current'}`}
+              className={`link ${['members', 'rewards', 'sponsors', 'merch', 'reports'].includes(view.name) ? '' : 'current'}`}
               onClick={() => setView({ name: 'list' })}
             >
               Runs
@@ -97,6 +99,12 @@ export default function App() {
             >
               Sponsors
             </button>
+            <button
+              className={`link ${view.name === 'reports' ? 'current' : ''}`}
+              onClick={() => setView({ name: 'reports' })}
+            >
+              Reports
+            </button>
           </nav>
           <div className="who">
             <span>{session.user.email}</span>
@@ -117,6 +125,7 @@ export default function App() {
           {view.name === 'rewards' && <Rewards />}
           {view.name === 'merch' && <Merch />}
           {view.name === 'sponsors' && <Sponsors />}
+          {view.name === 'reports' && <Reports />}
         </main>
         {/* The organisers open this every week, and it is the screen a sponsor
             is most likely to be shown. One line, at the very bottom. */}
