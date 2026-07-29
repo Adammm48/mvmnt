@@ -291,6 +291,20 @@ begin
     0,
     'every table in public has row level security enabled — a new table missing it shows up here');
 
+  -- Same idea for the other classic footgun: a SECURITY DEFINER function
+  -- without a pinned search_path resolves names in the caller's path, which
+  -- is a privilege escalation waiting for a hostile temp table. Every one of
+  -- ours pins it; this keeps that true.
+  perform tests.assert_eq(
+    (select count(*)::int
+       from pg_proc p
+       join pg_namespace n on n.oid = p.pronamespace
+      where n.nspname in ('public', 'app_private') and p.prosecdef
+        and (p.proconfig is null or not exists (
+          select 1 from unnest(p.proconfig) cfg where cfg like 'search_path=%'))),
+    0,
+    'every SECURITY DEFINER function pins search_path — a new one without it shows up here');
+
   raise notice 'PASS 03_access_control';
 end $$;
 
