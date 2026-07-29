@@ -947,6 +947,55 @@ export type Database = {
           },
         ]
       }
+      run_photos: {
+        Row: {
+          category: Database["public"]["Enums"]["photo_category"]
+          created_at: string
+          id: string
+          run_id: string
+          storage_path: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["photo_category"]
+          created_at?: string
+          id?: string
+          run_id: string
+          storage_path: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["photo_category"]
+          created_at?: string
+          id?: string
+          run_id?: string
+          storage_path?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "run_photos_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "run_attendance_counts"
+            referencedColumns: ["run_id"]
+          },
+          {
+            foreignKeyName: "run_photos_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "run_photos_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       runs: {
         Row: {
           cancellation_reason: string | null
@@ -965,6 +1014,7 @@ export type Database = {
           meeting_point_lng: number
           meeting_point_name: string
           pace_groups: string[]
+          photos_published_at: string | null
           published_at: string | null
           route: Json | null
           route_published_at: string | null
@@ -990,6 +1040,7 @@ export type Database = {
           meeting_point_lng: number
           meeting_point_name: string
           pace_groups?: string[]
+          photos_published_at?: string | null
           published_at?: string | null
           route?: Json | null
           route_published_at?: string | null
@@ -1015,6 +1066,7 @@ export type Database = {
           meeting_point_lng?: number
           meeting_point_name?: string
           pace_groups?: string[]
+          photos_published_at?: string | null
           published_at?: string | null
           route?: Json | null
           route_published_at?: string | null
@@ -1363,6 +1415,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      admin_publish_gallery: { Args: { p_run_id: string }; Returns: string }
       admin_publish_route: { Args: { p_run_id: string }; Returns: string }
       admin_remove_check_in: {
         Args: { p_run_id: string; p_user_id: string }
@@ -1616,12 +1669,14 @@ export type Database = {
         | "sponsor_shoutout"
         | "gift_received"
         | "route_published"
+        | "photos_ready"
       order_status:
         | "awaiting_payment"
         | "paid"
         | "ready"
         | "fulfilled"
         | "cancelled"
+      photo_category: "pre_run" | "run" | "after" | "camera"
       placement_type: "home_banner" | "run_badge" | "push_mention"
       point_kind:
         | "check_in"
@@ -1798,6 +1853,7 @@ export const Constants = {
         "sponsor_shoutout",
         "gift_received",
         "route_published",
+        "photos_ready",
       ],
       order_status: [
         "awaiting_payment",
@@ -1806,6 +1862,7 @@ export const Constants = {
         "fulfilled",
         "cancelled",
       ],
+      photo_category: ["pre_run", "run", "after", "camera"],
       placement_type: ["home_banner", "run_badge", "push_mention"],
       point_kind: [
         "check_in",

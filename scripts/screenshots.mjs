@@ -104,6 +104,16 @@ try {
   await shoot(phonePage, `${MOBILE}/run/${runId[0].id}`, 'app-run-detail');
   await shoot(phonePage, `${MOBILE}/leaderboard`, 'app-leaderboard');
 
+  // The photo gallery, on the finished run whose gallery the seed publishes.
+  const galleryRun = await (
+    await fetch(`${API}/rest/v1/runs?select=id&title=eq.Last%20Saturday%206K&limit=1`, {
+      headers: { apikey: ANON, Authorization: `Bearer ${member.access_token}` },
+    })
+  ).json();
+  if (galleryRun[0]) {
+    await shoot(phonePage, `${MOBILE}/photos/${galleryRun[0].id}`, 'app-gallery');
+  }
+
   // The friend code. The QR is live data, so the shot has to be taken from the
   // running app rather than mocked — which also means the countdown underneath
   // it is real, and that countdown is the whole safety argument.

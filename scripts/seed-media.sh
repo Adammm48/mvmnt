@@ -70,3 +70,61 @@ if [ -f "$MEDIA/saturday-6k.mp4" ]; then
 fi
 
 echo "  seeded run cover images"
+
+# ---------------------------------------------------------------------------
+# A published gallery on the most recent finished run, so the member flow —
+# run detail → "See the photos" → the grid — works straight off a reset.
+#
+# Uploads go to the PRIVATE gallery-media bucket (path, not public URL), and
+# each one is registered as a run_photos row, because the row is what member
+# access is gated on. Publication is stamped directly rather than through
+# admin_publish_gallery(): the RPC would also enqueue a real photos-ready
+# notification, and seed data should not leave sends in the queue.
+# ---------------------------------------------------------------------------
+GALLERY_RUN_ID=$(curl -s "$API/rest/v1/runs?title=eq.Last%20Saturday%206K&select=id&limit=1" \
+  -H "Authorization: Bearer $SERVICE" -H "apikey: $SERVICE" | sed -n 's/.*"id":"\([^"]*\)".*/\1/p')
+
+if [ -n "$GALLERY_RUN_ID" ]; then
+  upload_gallery() {
+    local file="$1" object="$2"
+    curl -s -o /dev/null -X POST "$API/storage/v1/object/gallery-media/$object" \
+      -H "Authorization: Bearer $SERVICE" \
+      -H "Content-Type: image/jpeg" \
+      -H "x-upsert: true" \
+      --data-binary "@$file"
+  }
+
+  declare -a GALLERY=(
+    "pre_run|gallery-pre-run-1.jpg"
+    "pre_run|gallery-pre-run-2.jpg"
+    "run|gallery-run-1.jpg"
+    "run|gallery-run-2.jpg"
+    "run|gallery-run-3.jpg"
+    "after|gallery-after-1.jpg"
+    "after|gallery-after-2.jpg"
+    "camera|gallery-camera-1.jpg"
+  )
+
+  for pair in "${GALLERY[@]}"; do
+    category="${pair%%|*}"
+    name="${pair##*|}"
+    [ -f "$MEDIA/$name" ] || continue
+    object="$GALLERY_RUN_ID/$category/$name"
+    upload_gallery "$MEDIA/$name" "$object"
+    curl -s -o /dev/null -X POST "$API/rest/v1/run_photos?on_conflict=storage_path" \
+      -H "Authorization: Bearer $SERVICE" \
+      -H "apikey: $SERVICE" \
+      -H "Content-Type: application/json" \
+      -H "Prefer: return=minimal,resolution=merge-duplicates" \
+      -d "{\"run_id\":\"$GALLERY_RUN_ID\",\"category\":\"$category\",\"storage_path\":\"$object\"}"
+  done
+
+  curl -s -o /dev/null -X PATCH "$API/rest/v1/runs?id=eq.$GALLERY_RUN_ID" \
+    -H "Authorization: Bearer $SERVICE" \
+    -H "apikey: $SERVICE" \
+    -H "Content-Type: application/json" \
+    -H "Prefer: return=minimal" \
+    -d "{\"photos_published_at\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}"
+
+  echo "  seeded a published gallery on Last Saturday 6K"
+fi

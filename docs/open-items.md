@@ -18,17 +18,19 @@ like a placeholder, and then it never gets fixed — it just ships.
 
 ## Blocks release
 
-### Privacy policy — three open questions
+### Privacy policy — four open questions
 
 **Who:** the club owner, with legal advice.
 **Where:** [`docs/privacy-policy.md`](privacy-policy.md), marked `[TO CONFIRM BEFORE PUBLICATION]`.
 
 Both app stores require a published privacy policy at a public URL, and it
-cannot be published with open questions inside it. The three are: which region
+cannot be published with open questions inside it. The four are: which region
 the Supabase project is hosted in (a cross-border transfer question under
 Egypt's PDPL), whether under-18s attend club runs (which changes consent
-requirements and the store age rating), and whether MVMNT must register as a
-data controller.
+requirements and the store age rating), whether MVMNT must register as a
+data controller, and how consent to be photographed at runs is obtained today
+(the galleries shipped with a takedown route, but the consent side is club
+practice, not software).
 
 This is the item most likely to hold up a launch, and it is writing and advice
 rather than engineering — so it can start now and run in parallel with

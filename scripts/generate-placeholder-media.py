@@ -173,8 +173,27 @@ def build_clip(still: pathlib.Path, name: str, seconds: int = 5, fps: int = 25) 
     return path
 
 
+# Gallery placeholders: same abstract style, one per Drive folder plus spares,
+# each seeded differently so the grid reads as a set of photos rather than one
+# image repeated. Still deliberately not photographs of people.
+GALLERY = [
+    ("gallery-pre-run-1", (255, 158, 110), (255, 90, 54), (255, 201, 60)),
+    ("gallery-pre-run-2", (255, 138, 76), (214, 88, 92), (255, 201, 60)),
+    ("gallery-run-1", (38, 74, 106), (255, 90, 54), (61, 220, 132)),
+    ("gallery-run-2", (255, 90, 54), (27, 31, 42), (255, 201, 60)),
+    ("gallery-run-3", (214, 88, 92), (38, 74, 106), (255, 201, 60)),
+    ("gallery-after-1", (255, 201, 60), (255, 138, 76), (255, 90, 54)),
+    ("gallery-after-2", (58, 65, 82), (27, 31, 42), (61, 220, 132)),
+    ("gallery-camera-1", (27, 31, 42), (38, 74, 106), (255, 90, 54)),
+]
+
+
 if __name__ == "__main__":
     for scene in SCENES:
+        path = build(*scene)
+        print(f"{path.name}  {path.stat().st_size // 1024}KB")
+
+    for scene in GALLERY:
         path = build(*scene)
         print(f"{path.name}  {path.stat().st_size // 1024}KB")
 

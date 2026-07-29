@@ -130,6 +130,28 @@ signal, dead battery, phone in a bag — **you can still attend and still be
 checked in.** Ask an organiser and they will check you in by hand. Declining
 location does not lock you out of anything.
 
+### Run photos
+
+The club takes photos at runs — before, during and after — and publishes them
+as an in-app gallery for that run.
+
+- Galleries are visible **only to signed-in members**, and only once the club
+  publishes them. There are no public links: every image is fetched through a
+  short-lived link tied to your own signed-in session, so a copied URL stops
+  working almost immediately and works for nobody else.
+- Photos are **not linked to your account**. The app does not tag you, record
+  that you appear in a photo, or match faces. Deleting your account therefore
+  does not remove club photos you happen to appear in — the app has no way of
+  knowing which ones those are.
+- **If you want a photo of yourself taken down, ask an organiser** and they
+  will remove it — organisers can delete any photo from a gallery, and the file
+  is deleted with it, not just hidden.
+
+> **[TO CONFIRM BEFORE PUBLICATION]** How consent to be photographed is
+> obtained at runs today (announcement at the start? a line at sign-up?), and
+> whether that needs to be formalised under Egypt's PDPL. The takedown route
+> above exists in the software either way.
+
 ### Notifications
 
 If you turn on notifications, we store a device token so we can send them. It is

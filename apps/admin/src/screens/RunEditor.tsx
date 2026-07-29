@@ -4,6 +4,7 @@ import { CLUB_TIMEZONE, toMemberMessage, type Run } from '@mvmnt/shared';
 import { MediaUpload } from '../components/MediaUpload';
 import { MeetingPointPicker } from '../components/MeetingPointPicker';
 import { RouteDrawer } from '../components/RouteDrawer';
+import { GalleryManager } from '../components/GalleryManager';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/Confirm';
 
@@ -90,7 +91,13 @@ export function RunEditor({ runId, onDone }: Props) {
 
   // --- validation, surfaced before anything is attempted ------------------
   const startsAtIso = date && time ? clubTimeToIso(date, time) : null;
-  const startsInPast = startsAtIso !== null && new Date(startsAtIso) <= new Date();
+  // A completed run's start is in the past by definition. The organiser opens
+  // its editor to manage the photos, not to reschedule history — scolding them
+  // about the date (and disabling Save) made the gallery feel broken.
+  const startsInPast =
+    run?.status !== 'completed' &&
+    startsAtIso !== null &&
+    new Date(startsAtIso) <= new Date();
   const problems: string[] = [];
   if (!title.trim()) problems.push('Give the run a title.');
   if (!date) problems.push('Pick a date.');
@@ -474,6 +481,22 @@ export function RunEditor({ runId, onDone }: Props) {
             hint="A few seconds. It plays muted and on a loop, so it mustn't rely on sound."
             currentUrl={run.cover_video_url}
             onChanged={reload}
+          />
+        </section>
+      )}
+
+      {run && (
+        <section className="card">
+          <h3 className="section-title">After the run: the photos</h3>
+          <p className="hint" style={{ marginTop: 0 }}>
+            Upload as they come in — from you, the photographer, anyone. Nothing is
+            visible to members until you press publish, and publishing tells everyone
+            who checked in that the photos are up.
+          </p>
+          <GalleryManager
+            runId={run.id}
+            photosPublishedAt={run.photos_published_at}
+            onPublished={reload}
           />
         </section>
       )}

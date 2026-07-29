@@ -266,6 +266,19 @@ export default function RunDetail() {
         </View>
       )}
 
+      {/* Same rule as the route: nothing until the organiser publishes. */}
+      {run.photos_published_at && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>The photos</Text>
+          <Button
+            label="See the photos"
+            variant="secondary"
+            onPress={() => router.push(`/photos/${run.id}`)}
+            accessibilityHint="Opens this run's photo gallery"
+          />
+        </View>
+      )}
+
       <View style={styles.social}>
         {capacityStatus && <Text style={styles.spots}>{capacityStatus}</Text>}
         <Text style={styles.yourStatus}>

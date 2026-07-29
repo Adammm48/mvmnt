@@ -486,6 +486,29 @@ Removes a check-in **and its location evidence** — retaining a location claim
 for a check-in an organiser has just declared invalid serves no purpose and
 fails data minimisation.
 
+### `admin_set_route(p_run_id uuid, p_route jsonb) → void`
+
+Stores the drawn route as an array of `[lng, lat]` pairs — GeoJSON order.
+Every point is validated server-side; a latitude beyond ±90 is the signature
+of a transposed pair and is refused rather than stored. Null or an empty
+array clears the route. Saving a route notifies nobody.
+
+### `admin_publish_route(p_run_id uuid) → uuid`
+
+The separate act that tells people: stamps `route_published_at` and enqueues
+`route_published` to everyone signed up, once — re-publishing a corrected
+route hits the same dedupe key and does not ping the club again. Refuses a
+run that is still a draft or has no route.
+
+### `admin_publish_gallery(p_run_id uuid) → uuid`
+
+Same shape for photos: stamps `photos_published_at` and enqueues
+`photos_ready` to everyone who **checked in**, once. Before this, members can
+see neither the photo rows nor the bytes. Uploading itself is direct — the
+console writes to the `gallery-media` bucket and inserts `run_photos` rows
+under the organiser-only policies; registering an upload is not a state
+machine that needs an RPC.
+
 ---
 
 ## Service-role only
@@ -697,13 +720,17 @@ either feature into the attendance log the club asked to hide.
 | Bucket | Read | Write |
 |---|---|---|
 | `run-media` | Public | Organisers only |
+| `gallery-media` | Signed-in members, **only for published galleries** | Organisers only |
 
-Club promotional imagery only — cover photos and clips. Public read is
-deliberate and safe *because nothing personal goes in it*.
+`run-media` is club promotional imagery only — cover photos and clips. Public
+read is deliberate and safe *because nothing personal goes in it*.
 
-**Phase 4's member photo galleries need a separate, non-public bucket.** A
-gallery of identifiable members is personal data, and a public bucket would be
-exactly the wrong default (Principles §4).
+`gallery-media` is the opposite on purpose: run photos are pictures of
+identifiable people at a known place and time, which is personal data, so the
+bucket is private and every read is a short-lived signed URL minted for a
+member's session (Principles §4). The read policy checks the `run_photos`
+row, not the object path — an object that never got a row is invisible, and
+nothing is readable until the run's `photos_published_at` is set.
 
 ---
 
@@ -719,16 +746,20 @@ exactly the wrong default (Principles §4).
 | `waitlist_promoted` | The promoted member | `withdraw_from_run` |
 | `friend_poke` | The nudged friend | `poke_friend` |
 | `badge_earned` | The member who earned it | `award_badges`, via the check-in trigger |
+| `gift_received` | The recipient | `dev_mark_paid` (a paid gift; the real gateway will sit here) |
+| `sponsor_shoutout` | All members | `admin_send_sponsor_shoutout` — always organiser-composed, never automatic |
+| `route_published` | Signed-up attendees | `admin_publish_route` |
+| `photos_ready` | **Checked-in** attendees | `admin_publish_gallery` — they are the ones in the photos |
 
 **Copy is rendered in SQL at enqueue time** and stored on the event row, so it
 exists in exactly one place and the delivery worker does no formatting
 (Principles §2). Times render in the club's timezone via
 `app_private.club_timezone()`.
 
-Six of the eight types are fully described by their run. The Phase 2 pair are
-not — a poke needs the sender's name and a badge has no run at all — so
-`render_notification` takes a `jsonb` context rather than growing a parameter
-per type, and `enqueue_notification` accepts a null run when the notification is
+Most types are fully described by their run. The exceptions — a poke needs the
+sender's name, a badge has no run at all, a gift names a product — pass a
+`jsonb` context to `render_notification` rather than growing a parameter per
+type, and `enqueue_notification` accepts a null run when the notification is
 addressed to a single member. Existing dedupe keys are byte-for-byte unchanged:
 a changed key looks like a new event, and every already-sent notification would
 send again.

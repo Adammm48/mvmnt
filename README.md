@@ -51,9 +51,11 @@ WhatsApp, Instagram and word of mouth. This replaces that.
 |---|---|
 | <img src="docs/screenshots/app-chest.png" width="330" alt="A chest opening to reveal the Competitor badge and its reward"> | <img src="docs/screenshots/app-profile.png" width="330" alt="Profile showing points, tier, streak and the badge grid"> |
 
-| The shop | The club's side of it |
+| The shop | The photos |
 |---|---|
-| <img src="docs/screenshots/app-shop.png" width="330" alt="Shop showing points to spend and the club catalogue"> | <img src="docs/screenshots/admin-merch.png" width="330" alt="Merch manager with the order queue above the catalogue"> |
+| <img src="docs/screenshots/app-shop.png" width="330" alt="Shop showing points to spend and the club catalogue"> | <img src="docs/screenshots/app-gallery.png" width="330" alt="A run's photo gallery with the club's folder structure as tabs"> |
+
+<p align="center"><em>Run photos keep the club's existing Drive folders — pre-run, the run, after, camera — but live in a private bucket: photos of identifiable people at a known place and time are personal data, so every image is a short-lived signed URL for a signed-in member, and nothing is visible until the organiser publishes. Publishing notifies exactly the people who checked in.</em></p>
 
 <p align="center"><em>Points buy a discount and can be sent as a gift, but only to somebody added by scanning their code in person. No payment gateway is wired in — Stripe does not serve Egypt-based businesses — so an order reserves stock and the club takes payment in person.</em></p>
 
@@ -70,6 +72,8 @@ WhatsApp, Instagram and word of mouth. This replaces that.
 <img src="docs/screenshots/admin-runs.png" width="820" alt="Run list with attendance counts">
 
 <img src="docs/screenshots/admin-members.png" width="820" alt="Members directory with points, tiers and last run">
+
+<img src="docs/screenshots/admin-merch.png" width="820" alt="Merch manager with the order queue above the catalogue">
 
 <p align="center"><em>The one screen in MVMNT that lists the whole membership — organiser-only, and a <code>SECURITY DEFINER</code> function rather than a relaxed policy. Members still read exactly one profile: their own.</em></p>
 
