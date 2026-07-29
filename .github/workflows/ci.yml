@@ -32,7 +32,12 @@ jobs:
 
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          # Pinned to the version the repo is developed against, and so the
+          # action skips the "resolve latest" GitHub API call that rate-limits
+          # on busy runners.
+          version: 2.110.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Start Supabase
         run: supabase start
@@ -98,7 +103,12 @@ jobs:
 
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          # Pinned to the version the repo is developed against, and so the
+          # action skips the "resolve latest" GitHub API call that rate-limits
+          # on busy runners.
+          version: 2.110.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - run: supabase start
 
