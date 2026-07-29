@@ -67,16 +67,15 @@ function RootNavigator() {
         contentStyle: { backgroundColor: colors.base },
       }}
     >
-      <Stack.Screen name="index" options={{ title: 'MVMNT' }} />
+      {/* The five main rooms live inside the tab bar; everything else is a
+          screen pushed over it. */}
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="sign-in" options={{ headerShown: false }} />
       <Stack.Screen name="run/[id]" options={{ title: 'Run' }} />
-      <Stack.Screen name="profile" options={{ title: 'Profile' }} />
-      <Stack.Screen name="leaderboard" options={{ title: 'The board' }} />
       <Stack.Screen name="friends/index" options={{ title: 'Friends' }} />
       <Stack.Screen name="friends/code" options={{ title: 'Your code' }} />
       <Stack.Screen name="friends/scan" options={{ title: 'Scan a code' }} />
       <Stack.Screen name="about" options={{ title: 'About' }} />
-      <Stack.Screen name="shop/index" options={{ title: 'Shop' }} />
       <Stack.Screen name="shop/[id]" options={{ title: '' }} />
       <Stack.Screen name="orders" options={{ title: 'Your orders' }} />
       <Stack.Screen name="photos/[runId]" options={{ title: 'Photos' }} />

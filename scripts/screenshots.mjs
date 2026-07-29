@@ -68,6 +68,23 @@ async function seedSession(page, origin, session) {
   }, session);
 }
 
+
+/** First-open dialogs, in order: the consent gate (must be answered), then the
+ * welcome modal (can be dismissed). Every fresh context sees both. */
+async function clearFirstOpen(page) {
+  if (await page.getByText('Before you start').isVisible().catch(() => false)) {
+    await page.getByText('I am 18 or over').click();
+    await page.waitForTimeout(300);
+    await page.getByRole('button', { name: 'Agree and continue' }).click();
+    await page.waitForTimeout(1500);
+  }
+  const welcome = page.getByRole('button', { name: 'Let\u2019s go' });
+  if (await welcome.isVisible().catch(() => false)) {
+    await welcome.click();
+    await page.waitForTimeout(800);
+  }
+}
+
 async function shoot(page, path, name) {
   await page.goto(path, { waitUntil: 'networkidle' });
   await page.waitForTimeout(1200); // let images and the map settle
@@ -93,11 +110,7 @@ try {
   // picture of a dialog. Dismiss it before anything is captured.
   await phonePage.goto(MOBILE, { waitUntil: 'networkidle' });
   await phonePage.waitForTimeout(1500);
-  const welcomeModal = phonePage.getByRole('button', { name: 'Let\u2019s go' });
-  if (await welcomeModal.isVisible().catch(() => false)) {
-    await welcomeModal.click();
-    await phonePage.waitForTimeout(800);
-  }
+  await clearFirstOpen(phonePage);
 
   await shoot(phonePage, MOBILE, 'app-home');
 
@@ -154,12 +167,10 @@ try {
   await chestPage.goto(MOBILE, { waitUntil: 'networkidle' });
   await chestPage.waitForTimeout(2500);
 
-  // The welcome modal shows once on a fresh profile and would cover the chest.
-  const welcome = chestPage.getByRole('button', { name: 'Let’s go' });
-  if (await welcome.isVisible().catch(() => false)) {
-    await welcome.click();
-    await chestPage.waitForTimeout(700);
-  }
+  // The consent gate and welcome modal both precede the chest on a fresh
+  // profile; the chest waits its turn behind them.
+  await clearFirstOpen(chestPage);
+  await chestPage.waitForTimeout(700);
   if (await chestPage.getByText('Tap to open').isVisible().catch(() => false)) {
     await chestPage.getByText('🎁').click();
     await chestPage.waitForTimeout(1100);

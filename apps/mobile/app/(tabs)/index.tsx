@@ -116,14 +116,8 @@ export default function Home() {
                 </Text>
                 <Text style={styles.subGreeting}>{encouragement(items.length)}</Text>
               </View>
-              <Pressable
-                onPress={() => router.push('/profile')}
-                accessibilityRole="button"
-                accessibilityLabel="Profile and settings"
-                hitSlop={12}
-              >
-                <Text style={styles.profileLink}>Profile</Text>
-              </Pressable>
+              {/* The Profile link that lived here moved into the tab bar —
+                  two doors to the same room an inch apart. */}
             </View>
             {/* One line a day, chosen for this member. It does not reshuffle
                 while they look at it — see voice.ts. */}
@@ -166,29 +160,10 @@ export default function Home() {
               being demanded — this shows what they have, and never what they
               have missed.
             */}
+            {/* The board and the shop moved into the tab bar; duplicating
+                them here would be two doors to the same room an inch apart.
+                Friends and stats keep their chips — they are not tabs. */}
             <View style={styles.chips}>
-              <Pressable
-                style={styles.chip}
-                onPress={() => router.push('/leaderboard')}
-                accessibilityRole="button"
-                accessibilityLabel="The board"
-              >
-                <Text style={styles.chipTitle}>The board</Text>
-                {standing ? (
-                  <Text style={styles.chipValue}>
-                    {standing.points.toLocaleString()}
-                    <Text style={styles.chipUnit}> pts</Text>
-                  </Text>
-                ) : (
-                  <Text style={styles.chipUnit}>Where you stand</Text>
-                )}
-                {standing && (
-                  <Text style={[styles.chipTier, { color: TIER_COLOR[standing.tier] }]}>
-                    {TIER_LABEL[standing.tier].toUpperCase()}
-                  </Text>
-                )}
-              </Pressable>
-
               <Pressable
                 style={styles.chip}
                 onPress={() => router.push('/friends')}
@@ -201,12 +176,12 @@ export default function Home() {
 
               <Pressable
                 style={styles.chip}
-                onPress={() => router.push('/shop')}
+                onPress={() => router.push('/stats')}
                 accessibilityRole="button"
-                accessibilityLabel="Shop"
+                accessibilityLabel="Your stats"
               >
-                <Text style={styles.chipTitle}>Shop</Text>
-                <Text style={styles.chipUnit}>Spend your points</Text>
+                <Text style={styles.chipTitle}>Your stats</Text>
+                <Text style={styles.chipUnit}>The whole story</Text>
               </Pressable>
             </View>
 
