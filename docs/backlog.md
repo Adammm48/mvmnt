@@ -113,6 +113,10 @@ since the geofence radius is measured from these coordinates.
 
 ## Waiting on the owner
 
+> Run `npm run check:placeholders` for the live list — it reads the source, so
+> it cannot drift from what is actually still open. Reasoning for each is in
+> [open-items.md](open-items.md).
+
 - **The tier rewards are placeholders.** 2026-07-29: *"I will tell you what the
   reward for each tier is later — remind me."* All five are seeded with
   plausible copy and flagged `is_placeholder`, so members currently see them

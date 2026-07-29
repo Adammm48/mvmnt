@@ -68,6 +68,14 @@ jobs:
       - name: Typecheck every workspace
         run: npm run typecheck --workspaces --if-present
 
+      # Reports, never blocks. These are questions for people rather than
+      # defects in the code, and failing the build on them would only teach
+      # everybody to ignore a red tick.
+      - name: List outstanding placeholders
+        if: always()
+        continue-on-error: true
+        run: npm run check:placeholders
+
       - name: Build the admin console
         run: npm run build --workspace @mvmnt/admin
 

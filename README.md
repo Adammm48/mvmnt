@@ -253,6 +253,7 @@ check-in without standing at the meeting point. Ignored in release builds.
 | `npm run db:types` | Regenerate the shared types — run after any migration |
 | `npm run docs:screenshots` | Recapture the README stills from the running apps |
 | `npm run docs:gif` | Recapture the check-in animation |
+| `npm run check:placeholders` | List everything still waiting on a real answer |
 
 ---
 
@@ -283,6 +284,16 @@ organiser appearing from nowhere is indistinguishable from a compromise.
 ---
 
 ## Before it goes live
+
+```bash
+npm run check:placeholders
+```
+
+Lists every placeholder still waiting on a real answer — who can answer it, and
+what breaks if it ships as-is. It reads the source rather than a hand-kept list,
+because a list of "fix later" goes stale the first time somebody fixes one and
+forgets to cross it off. Reasoning behind each is in
+[docs/open-items.md](docs/open-items.md).
 
 1. **Apple Developer Program**, enrolled to MVMNT. Organisation enrolment needs a
    D-U-N-S number, which takes 1–2 weeks to verify. Gates Sign in with Apple,

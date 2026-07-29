@@ -22,7 +22,8 @@
     "test": "npm run db:test",
     "seed:media": "bash scripts/seed-media.sh",
     "docs:screenshots": "node scripts/screenshots.mjs",
-    "docs:gif": "node scripts/capture-checkin-gif.mjs && python3 scripts/frames-to-gif.py"
+    "docs:gif": "node scripts/capture-checkin-gif.mjs && python3 scripts/frames-to-gif.py",
+    "check:placeholders": "node scripts/check-placeholders.mjs"
   },
   "devDependencies": {
     "playwright": "^1.62.0",
