@@ -175,19 +175,10 @@ export function describeGapToNextRank(points: number | null): string | null {
  * Returned as a string so the row renders one element either way rather than
  * branching on layout.
  */
-export function rankBadge(rank: number, shared = false): string {
-  // A tie is marked, not just repeated. Six rows each showing a bare "1" reads
-  // as a broken screen; "=1" is the ordinary way a results board says joint
-  // first, and it tells the member the number is deliberate.
-  if (shared) return `=${rank}`;
+export function rankBadge(rank: number): string {
+  // Every rank is unique since migration 0057 — ties break by who reached the
+  // total first — so the =N tie marker this once carried is gone with them.
   return rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `${rank}`;
-}
-
-/** Ranks held by more than one member, for rankBadge's `shared` argument. */
-export function sharedRanks(rows: readonly { rank: number }[]): Set<number> {
-  const seen = new Map<number, number>();
-  for (const row of rows) seen.set(row.rank, (seen.get(row.rank) ?? 0) + 1);
-  return new Set([...seen].filter(([, count]) => count > 1).map(([rank]) => rank));
 }
 
 /**

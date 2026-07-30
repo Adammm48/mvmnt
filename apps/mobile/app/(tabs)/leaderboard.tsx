@@ -15,7 +15,6 @@ import {
   typography,
   adamSays,
   rankBadge,
-  sharedRanks,
   toMemberMessage,
   TIER_COLOR,
   type LeaderboardRow,
@@ -94,7 +93,6 @@ export default function LeaderboardScreen() {
 
   if (loading) return <Loading label="Loading the board" />;
 
-  const tied = sharedRanks(rows);
 
   return (
     <>
@@ -158,7 +156,7 @@ export default function LeaderboardScreen() {
             )}
           </View>
         }
-        renderItem={({ item }) => <Row row={item} shared={tied.has(item.rank)} />}
+        renderItem={({ item }) => <Row row={item} />}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         ListFooterComponent={
           standing ? (
@@ -212,20 +210,18 @@ function Segment({
   );
 }
 
-function Row({ row, shared }: { row: LeaderboardRow; shared: boolean }) {
-  const medal = !shared && row.rank <= 3;
+function Row({ row }: { row: LeaderboardRow }) {
+  const medal = row.rank <= 3;
 
   return (
     <View
       style={[styles.row, row.is_me && styles.rowMe]}
       accessibilityRole="text"
       accessibilityLabel={
-        shared
-          ? `Joint number ${row.rank}, ${row.display_name}, ${row.points} points`
-          : `Number ${row.rank}, ${row.display_name}, ${row.points} points`
+        `Number ${row.rank}, ${row.display_name}, ${row.points} points`
       }
     >
-      <Text style={[styles.rank, medal && styles.rankMedal]}>{rankBadge(row.rank, shared)}</Text>
+      <Text style={[styles.rank, medal && styles.rankMedal]}>{rankBadge(row.rank)}</Text>
 
       {avatarUri(row.avatar_url) ? (
         <Image source={{ uri: avatarUri(row.avatar_url)! }} style={styles.avatar} />

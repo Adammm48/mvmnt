@@ -440,6 +440,58 @@ begin
   perform tests.act_as_system();
 
   -- ---------------------------------------------------------------------
+  -- Ties break by who got there first (migration 0057).
+  --
+  -- Owner decision: no shared places. Two members on the same points cannot
+  -- both be "=5" — the one who reached the total first stays ahead, the way
+  -- race results settle a dead heat on the earlier finisher. The board and
+  -- the member's own card must agree on the resulting order, because they
+  -- compute it separately and this project has already met that bug.
+  -- ---------------------------------------------------------------------
+  declare
+    v_first uuid; v_second uuid;
+    v_rank_first integer; v_rank_second integer; v_gap integer;
+  begin
+    perform tests.act_as_system();
+    v_first := tests.make_member('tortoise');
+    v_second := tests.make_member('hare');
+
+    -- Same total, reached at different moments: the tortoise got there
+    -- yesterday, the hare only just arrived.
+    insert into public.point_events (user_id, kind, points, source, note, awarded_at)
+    values (v_first, 'adjustment', 70, 'live', 'reached 70 yesterday', now() - interval '1 day');
+    insert into public.point_events (user_id, kind, points, source, note)
+    values (v_second, 'adjustment', 70, 'live', 'reached 70 just now');
+
+    perform tests.act_as(v_first);
+    select l.rank into v_rank_first from public.leaderboard() l where l.is_me;
+    perform tests.act_as(v_second);
+    select l.rank into v_rank_second from public.leaderboard() l where l.is_me;
+
+    perform tests.assert(
+      v_rank_first < v_rank_second,
+      'equal points: whoever reached the total first ranks higher');
+    perform tests.assert_eq(
+      v_rank_second - v_rank_first, 1,
+      'and the places are consecutive — no shared =N, no gap');
+
+    -- The member's own card agrees with the board about the rank…
+    perform tests.act_as(v_second);
+    perform tests.assert_eq(
+      (select ms.rank from public.my_standing() ms), v_rank_second,
+      'my_standing computes the same unique rank as the board');
+
+    -- …and tells the tied-but-below member the honest cost of passing:
+    -- one point, because matching a total only ties it and a fresh earner
+    -- loses the tie on time.
+    select ms.points_to_next_rank into v_gap from public.my_standing() ms;
+    perform tests.assert_eq(
+      v_gap, 1,
+      'level on points, behind on time: one point takes the place');
+  end;
+  perform tests.act_as_system();
+
+  -- ---------------------------------------------------------------------
   -- The hidden badges.
   --
   -- Awarded silently and absent from the catalogue until earned — my_badges()
