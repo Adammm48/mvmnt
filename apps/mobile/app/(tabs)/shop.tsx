@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth';
 import { CoverFallback } from '@/components/CoverFallback';
 import { EmptyState, Loading, Notice } from '@/components/Feedback';
+import { mediaUri } from '@/lib/media';
 import {
   adamSays,
   colors,
@@ -129,8 +130,8 @@ function ProductCard({ product, onPress }: { product: Product; onPress: () => vo
       accessibilityLabel={`${product.name}, ${formatMoney(product.price_minor, product.currency)}${stock ? `, ${stock}` : ''}`}
     >
       <View style={styles.image}>
-        {product.image_url ? (
-          <Image source={{ uri: product.image_url }} style={StyleSheet.absoluteFill} />
+        {mediaUri(product.image_url) ? (
+          <Image source={{ uri: mediaUri(product.image_url)! }} style={StyleSheet.absoluteFill} />
         ) : (
           <CoverFallback seed={product.id} />
         )}

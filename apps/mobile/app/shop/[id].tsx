@@ -7,6 +7,7 @@ import { loadFriends } from '@/lib/friends';
 import { Button } from '@/components/Button';
 import { CoverFallback } from '@/components/CoverFallback';
 import { Loading, Notice } from '@/components/Feedback';
+import { mediaUri } from '@/lib/media';
 import {
   colors,
   radius,
@@ -132,8 +133,8 @@ export default function ProductScreen() {
       {error && <Notice tone="error" message={error} />}
 
       <View style={styles.hero}>
-        {product.image_url ? (
-          <Image source={{ uri: product.image_url }} style={StyleSheet.absoluteFill} />
+        {mediaUri(product.image_url) ? (
+          <Image source={{ uri: mediaUri(product.image_url)! }} style={StyleSheet.absoluteFill} />
         ) : (
           <CoverFallback seed={product.id} />
         )}

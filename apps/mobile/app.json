@@ -9,7 +9,7 @@
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.mvmnt.app",
+      "bundleIdentifier": "com.adamelbasiony.mvmnt",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "MVMNT uses your location only while you are at a run's meeting point, to check you in. It is never tracked in the background and never shared with other members.",
         "NSCameraUsageDescription": "MVMNT uses the camera to scan a friend's code when you are standing together, and \u2014 only if you choose to \u2014 to take one selfie that helps find you in the club's run photos. The selfie is uploaded and you can delete it at any time; code scanning records nothing.",
@@ -19,7 +19,7 @@
       "buildNumber": "1"
     },
     "android": {
-      "package": "com.mvmnt.app",
+      "package": "com.adamelbasiony.mvmnt",
       "adaptiveIcon": {
         "backgroundColor": "#1B1F2A",
         "foregroundImage": "./assets/android-icon-foreground.png",

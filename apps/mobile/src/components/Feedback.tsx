@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useState , useEffect, useRef } from 'react';
+import { Animated, ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { adamSays, colors, radius, spacing, type VoiceSlot } from '@mvmnt/shared';
 
 /**
@@ -63,9 +63,35 @@ export function Notice({
   message: string;
   onDismiss?: () => void;
 }) {
+  /**
+   * A soft entrance instead of an abrupt pop. Feedback appearing in one frame
+   * reads as a glitch (the owner's words: the save output should be smoother);
+   * 220ms of fade-and-settle reads as the app responding. Native driver, so
+   * it stays smooth even while the JS thread is busy with the save itself.
+   */
+  const entrance = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    entrance.setValue(0);
+    Animated.timing(entrance, {
+      toValue: 1,
+      duration: 220,
+      useNativeDriver: true,
+    }).start();
+    // Re-run when the message changes so a NEW notice also eases in.
+  }, [message, tone, entrance]);
+
   return (
-    <View
-      style={[styles.notice, styles[`${tone}Notice`]]}
+    <Animated.View
+      style={[
+        styles.notice,
+        styles[`${tone}Notice`],
+        {
+          opacity: entrance,
+          transform: [
+            { translateY: entrance.interpolate({ inputRange: [0, 1], outputRange: [-6, 0] }) },
+          ],
+        },
+      ]}
       accessibilityRole="alert"
       accessibilityLiveRegion="polite"
     >
@@ -83,7 +109,7 @@ export function Notice({
           <Text style={styles.noticeCloseText}>×</Text>
         </Pressable>
       )}
-    </View>
+    </Animated.View>
   );
 }
 

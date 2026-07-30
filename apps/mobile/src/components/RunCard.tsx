@@ -1,5 +1,6 @@
 import { ImageBackground, Pressable, StyleSheet, Text, View } from 'react-native';
 import { CoverFallback } from './CoverFallback';
+import { mediaUri } from '@/lib/media';
 import {
   colors,
   radius,
@@ -99,9 +100,9 @@ export function RunCard({ run, counts, myState, onPress }: Props) {
       accessibilityHint="Opens the run details"
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}
     >
-      {run.cover_image_url ? (
+      {mediaUri(run.cover_image_url) ? (
         <ImageBackground
-          source={{ uri: run.cover_image_url }}
+          source={{ uri: mediaUri(run.cover_image_url)! }}
           style={styles.media}
           imageStyle={styles.mediaImage}
         >

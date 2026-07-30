@@ -3,6 +3,7 @@ import { ImageBackground, StyleSheet, Text, View } from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { colors, formatRunDate, formatRunTime, spacing, type Run } from '@mvmnt/shared';
 import { CoverFallback } from './CoverFallback';
+import { mediaUri } from '@/lib/media';
 
 /**
  * The run detail hero.
@@ -21,13 +22,13 @@ export function RunHero({ run }: { run: Run }) {
   // element to play, and nothing retries it — the clip decodes perfectly
   // (readyState 4, no error) but sits frozen on frame 0 forever. Calling
   // play() from an effect instead guarantees the view exists first.
-  const player = useVideoPlayer(run.cover_video_url ?? null, (p) => {
+  const player = useVideoPlayer(mediaUri(run.cover_video_url), (p) => {
     p.loop = true;
     p.muted = true;
   });
 
   useEffect(() => {
-    if (run.cover_video_url) player.play();
+    if (mediaUri(run.cover_video_url)) player.play();
   }, [player, run.cover_video_url]);
 
   const overlay = (
@@ -44,7 +45,7 @@ export function RunHero({ run }: { run: Run }) {
     </>
   );
 
-  if (run.cover_video_url) {
+  if (mediaUri(run.cover_video_url)) {
     return (
       <View style={styles.hero} accessible accessibilityLabel={`${run.title} preview clip`}>
         <VideoView
@@ -65,9 +66,9 @@ export function RunHero({ run }: { run: Run }) {
     );
   }
 
-  if (run.cover_image_url) {
+  if (mediaUri(run.cover_image_url)) {
     return (
-      <ImageBackground source={{ uri: run.cover_image_url }} style={styles.hero}>
+      <ImageBackground source={{ uri: mediaUri(run.cover_image_url)! }} style={styles.hero}>
         {overlay}
       </ImageBackground>
     );
