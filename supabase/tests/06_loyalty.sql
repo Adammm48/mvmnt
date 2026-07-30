@@ -381,8 +381,15 @@ begin
   -- The measurement survives the removal: the club can still see who has
   -- drifted, which is the raw material for a welcome-back nudge rather than
   -- a fine. It counts the club's schedule, not weeks.
-  perform tests.assert_eq(
-    public.consecutive_missed_runs(v_dec, v_now), 3,
+  -- At LEAST the three we created, never exactly three: consecutive_missed_runs
+  -- counts every completed club run, and the seeded calendar keeps moving —
+  -- the demo run that starts twenty minutes from a reset has completed by the
+  -- time anyone runs this suite an hour later, making it a fourth miss. Same
+  -- family as "never assert a global count": the number belongs to the whole
+  -- database, not to this fixture. What the test is actually for is that the
+  -- drift is MEASURABLE and uncharged.
+  perform tests.assert(
+    public.consecutive_missed_runs(v_dec, v_now) >= 3,
     'the club can still measure a drift without charging for it');
 
   -- An organiser adjustment stays the ONLY way a total goes down, and that one

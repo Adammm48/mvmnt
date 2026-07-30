@@ -46,6 +46,11 @@ Two conventions, both enforced by `scripts/test-db.sh` rather than remembered:
   `count(*) from products` is a number that changes when somebody adds a
   product. Scope every assertion to the fixture's own rows. This has bitten
   products, sponsors, badges, tier history and reports.
+- **Never assert a count the clock can change.** The seed's nearest run starts
+  twenty minutes after a reset, so it has *completed* by the time anyone runs
+  the suite an hour later. Anything counting "completed runs" therefore grows
+  on its own. Assert `>= the fixture's own contribution`, and say why — the
+  drift-measurement test does exactly this.
 
 ## 2 · Structure — reachability
 
