@@ -66,6 +66,12 @@ function RootNavigator() {
         headerTintColor: colors.textOnDark,
         headerTitleStyle: { fontWeight: '700' },
         contentStyle: { backgroundColor: colors.base },
+        // Without this, iOS labels the back button with the previous route's
+        // name — which for anything pushed from the tab bar is the router's
+        // own group, so members saw a button that said "(tabs)". Found on the
+        // simulator; the web build renders no back button at all, so no
+        // browser check could ever have caught it.
+        headerBackTitle: 'Back',
       }}
     >
       {/* The five main rooms live inside the tab bar; everything else is a

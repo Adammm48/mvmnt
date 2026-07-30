@@ -100,7 +100,11 @@ export function StandingCard({
 function Stat({ value, label }: { value: string; label: string }) {
   return (
     <View style={styles.stat}>
-      <Text style={styles.statValue} numberOfLines={1}>
+      {/* Shrinks rather than truncates: with the distance stat present these
+          are four columns on a 390pt screen, and "#30 of 30" was rendering as
+          "#30 of…" — a number cut in half is worse than a slightly smaller
+          one. */}
+      <Text style={styles.statValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
         {value}
       </Text>
       <Text style={styles.statLabel}>{label}</Text>
