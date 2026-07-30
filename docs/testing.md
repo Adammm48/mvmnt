@@ -119,6 +119,24 @@ fetches its JavaScript from Metro at launch — so `expo start --web` is not
 enough, because it serves the web bundle and 404s the iOS one, and the app
 opens on a connection error that looks like a broken app.
 
+### Build Release before believing anything about speed or config
+
+    bash scripts/run-ios.sh                 # Debug: JS streams from Metro
+    # Release, for comparison — see the script's header for the flags
+
+A Debug build fetches every line of JavaScript from a laptop over HTTP on each
+launch, with no minification and every development assertion live. It is the
+slowest the app will ever be and says nothing about how it performs on a
+member's phone; Release compiles a single 5MB bundle into the app.
+
+More importantly, Release is a different program in ways that hide bugs. Two
+were found the first time it was built, neither reproducible in Debug or in a
+browser: the shipping bundle contained no Supabase URL at all, because Xcode's
+bundling phase does not load `.env` (config now goes through
+`app.config.js` → `extra`); and the failure was invisible because session
+restoration had no error path, so the app sat on a spinner for ever. **Build
+Release at least once before trusting anything about configuration.**
+
 ## What is deliberately not tested
 
 - **Anything the simulator cannot fake**: real GPS at a meeting point, a
