@@ -119,6 +119,28 @@ fetches its JavaScript from Metro at launch — so `expo start --web` is not
 enough, because it serves the web bundle and 404s the iOS one, and the app
 opens on a connection error that looks like a broken app.
 
+### On a real iPhone
+
+    npm run ios:phone
+
+**Also needs no paid Apple account.** A free Apple ID signs an app onto your
+own device; it expires after 7 days and is renewed by running the command
+again. The paid membership is for the App Store and non-expiring builds.
+
+One trap the script exists for: the app is configured to reach the database at
+`127.0.0.1`, which on a real phone means THE PHONE ITSELF. The app installs,
+opens, and cannot sign in, with nothing on screen explaining why. The script
+builds against the Mac's Wi-Fi address instead, and refuses to start unless
+the database actually answers on it.
+
+Signing is the one step that cannot be automated — it needs an Apple ID
+selected once in Xcode, and the script prints the exact clicks.
+
+This is where the things the simulator cannot fake finally get tested: real
+GPS at a meeting point, a camera scanning a code in daylight, and behaviour on
+mobile data. Until the hosted project exists the phone loses the database off
+Wi-Fi — which makes it the honest moment to watch the offline check-in queue.
+
 ### Build Release before believing anything about speed or config
 
     bash scripts/run-ios.sh                 # Debug: JS streams from Metro

@@ -38,9 +38,10 @@ everything that could be done today has been done (see
   is explicitly guarded on it and says so until then.
 
 ## 4 · The device build — gated on D5 (Apple) + Play Console
-*Partly unblocked: the app now builds, launches and renders on an iPhone
-simulator with no Apple account at all (`npm run ios:sim`). What still needs
-the account is a REAL device, push, and the stores.*
+*Largely unblocked without the paid account: `npm run ios:sim` runs it on a
+simulator, and `npm run ios:phone` puts it on a REAL iPhone via free Apple ID
+signing (7-day builds). What genuinely still needs the paid membership is
+push notifications, non-expiring builds, and the stores themselves.*
 - `eas.json`, bundle ids, signing; app icon and splash from the real mark
   (E1); build the dev client and then release candidates.
 - First run on physical iPhone and Android: real GPS at a real pin (B2),
