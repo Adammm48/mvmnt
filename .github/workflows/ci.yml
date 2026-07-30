@@ -134,6 +134,17 @@ jobs:
       # servers that had already been killed. Starting them here keeps them in
       # this shell's lifetime, and the trap cleans them up whatever happens.
       - name: Assert every action reports its outcome
+        # The dev servers read these from .env locally, and .env is (correctly)
+        # not committed — so on CI they started with no Supabase configured at
+        # all, which is why the console never signed in. These are the local
+        # stack's fixed values: the demo anon key is published in Supabase's own
+        # docs, identical on every machine, and safe only because RLS is on
+        # every table. Never a production credential.
+        env:
+          VITE_SUPABASE_URL: http://127.0.0.1:54321
+          VITE_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
+          EXPO_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
         run: |
           set -uo pipefail
           # Both through their own workspace scripts. `npx expo` from a

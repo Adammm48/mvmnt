@@ -201,6 +201,25 @@ export function record(pass, description) {
   results.push({ pass, description });
 }
 
+/**
+ * Run one block, and record a failure rather than aborting the suite.
+ *
+ * A click timeout in block 7 once threw and took the remaining assertions with
+ * it, so a single broken selector hid everything after it — the same
+ * "one failure obscures the truth" problem the suite exists to fight.
+ */
+export async function block(description, fn) {
+  try {
+    await fn();
+  } catch (error) {
+    results.push({
+      pass: false,
+      description: `${description} — threw`,
+      context: String(error).split('\n').slice(0, 3).join('\n'),
+    });
+  }
+}
+
 export function report(suiteName) {
   const failed = results.filter((r) => !r.pass);
   for (const r of results) {
