@@ -8,6 +8,7 @@ import { Notice } from '@/components/Feedback';
 import { StandingCard } from '@/components/StandingCard';
 import { pushStatus, registerForPush } from '@/lib/push';
 import * as ImagePicker from 'expo-image-picker';
+import { uploadImage } from '@/lib/imageUpload';
 import { avatarUri } from '@/lib/avatar';
 import { pendingCount } from '@/lib/checkInQueue';
 import { confirmDestructive } from '@/lib/confirm';
@@ -164,29 +165,38 @@ export default function ProfileScreen() {
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.7,
+      // The bytes, not just a URI. `fetch(file://…).blob()` reads as empty on
+      // iOS, which uploaded a zero-byte avatar that then never appeared — see
+      // lib/imageUpload.ts.
+      base64: true,
     });
-    if (picked.canceled || !picked.assets?.[0]?.uri || !session) return;
+    if (picked.canceled || !picked.assets?.[0] || !session) return;
 
     setBusy(true);
     setError(null);
-    try {
-      const body = await (await fetch(picked.assets[0].uri)).blob();
-      const path = `${session.user.id}/${Date.now()}.jpg`;
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(path, body, { contentType: 'image/jpeg', upsert: true });
-      if (uploadError) throw uploadError;
-      const { error: rpcError } = await supabase.rpc('set_avatar', {
-        p_path: `avatars/${path}`,
-      });
-      if (rpcError) throw rpcError;
-      await refreshProfile();
-      setSuccess('Looking good.');
-    } catch (e) {
-      setError(toMemberMessage(e));
-    } finally {
+
+    const path = `${session.user.id}/${Date.now()}.jpg`;
+    const uploaded = await uploadImage({
+      bucket: 'avatars',
+      path,
+      base64: picked.assets[0].base64,
+    });
+    if (!uploaded.ok) {
       setBusy(false);
+      setError(uploaded.message);
+      return;
     }
+
+    const { error: rpcError } = await supabase.rpc('set_avatar', {
+      p_path: `avatars/${path}`,
+    });
+    setBusy(false);
+    if (rpcError) {
+      setError(toMemberMessage(rpcError));
+      return;
+    }
+    await refreshProfile();
+    setSuccess('Looking good.')
   }
 
   async function enableNotifications() {

@@ -5,6 +5,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { colors, radius, spacing } from '@mvmnt/shared';
 import { adamSays, toMemberMessage } from '@mvmnt/shared';
 import { supabase } from '@/lib/supabase';
+import { uploadImage } from '@/lib/imageUpload';
 import { useAuth } from '@/lib/auth';
 import { Button } from '@/components/Button';
 import { Loading, Notice } from '@/components/Feedback';
@@ -49,7 +50,7 @@ export default function FindMe() {
     load();
   }, [load]);
 
-  async function enrolFrom(uri: string) {
+  async function enrolFrom(base64: string | null | undefined) {
     if (!session) return;
     setBusy(true);
     setError(null);
@@ -57,14 +58,12 @@ export default function FindMe() {
     try {
       // The bytes go to selfies/<own id> — the only path the storage policy
       // allows this member to write. Upsert, so replacing replaces.
-      const body = await (await fetch(uri)).blob();
-      const { error: uploadError } = await supabase.storage
-        .from('gallery-media')
-        .upload(`selfies/${session.user.id}`, body, {
-          contentType: 'image/jpeg',
-          upsert: true,
-        });
-      if (uploadError) throw uploadError;
+      const uploaded = await uploadImage({
+        bucket: 'gallery-media',
+        path: `selfies/${session.user.id}`,
+        base64,
+      });
+      if (!uploaded.ok) throw new Error(uploaded.message);
 
       const { error: rpcError } = await supabase.rpc('enable_photo_matching');
       if (rpcError) throw rpcError;
@@ -79,12 +78,14 @@ export default function FindMe() {
   }
 
   async function takeSelfie() {
-    const photo = await cameraRef.current?.takePictureAsync({ quality: 0.8 });
-    if (!photo?.uri) {
+    // base64, not just a uri: fetch() cannot read a file:// path on iOS, and
+    // the old version uploaded an empty selfie that failed matching silently.
+    const photo = await cameraRef.current?.takePictureAsync({ quality: 0.8, base64: true });
+    if (!photo?.base64) {
       setError('No photo captured — try again.');
       return;
     }
-    await enrolFrom(photo.uri);
+    await enrolFrom(photo.base64);
   }
 
   /**
@@ -101,9 +102,10 @@ export default function FindMe() {
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.8,
+      base64: true,
     });
-    if (picked.canceled || !picked.assets?.[0]?.uri) return;
-    await enrolFrom(picked.assets[0].uri);
+    if (picked.canceled || !picked.assets?.[0]) return;
+    await enrolFrom(picked.assets[0].base64);
   }
 
   async function optOut() {
