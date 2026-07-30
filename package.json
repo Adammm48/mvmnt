@@ -25,7 +25,8 @@
     "docs:gif": "node scripts/capture-checkin-gif.mjs && python3 scripts/frames-to-gif.py",
     "check:placeholders": "node scripts/check-placeholders.mjs",
     "test:e2e": "node tests/e2e/visible-outcomes.mjs",
-    "check:reachable": "node scripts/check-reachable.mjs"
+    "check:reachable": "node scripts/check-reachable.mjs",
+    "ios:sim": "bash scripts/run-ios.sh"
   },
   "devDependencies": {
     "playwright": "^1.62.0",

@@ -97,8 +97,34 @@ from the harness, then `seen(page, text, description)`. Prefer asserting the
 block reads whichever button is on screen and asserts that pressing it reports
 an outcome, rather than assuming the member has not joined yet.
 
+## Running it on a virtual iPhone
+
+    npm run ios:sim            # iPhone 17
+    bash scripts/run-ios.sh "iPhone 17 Pro Max"
+
+**This needs no Apple Developer account** — the simulator only needs Xcode,
+which is free. That is worth stating plainly because "never run on a phone"
+was assumed to be blocked behind the paid account for weeks; the paid account
+is for a real device and the App Store, not for this.
+
+The first run generates `ios/` from `app.json` (gitignored and disposable —
+`app.json` stays the source of truth for icons, permissions and bundle ids),
+installs native pods, builds, and launches. Later runs skip to the build.
+JavaScript reloads on its own; only native config changes need
+`rm -rf apps/mobile/ios` first.
+
+Two traps the script handles, both of which produce errors that name neither
+cause: CocoaPods refuses to run under a non-UTF-8 locale, and a Debug build
+fetches its JavaScript from Metro at launch — so `expo start --web` is not
+enough, because it serves the web bundle and 404s the iOS one, and the app
+opens on a connection error that looks like a broken app.
+
 ## What is deliberately not tested
 
+- **Anything the simulator cannot fake**: real GPS at a meeting point, a
+  camera scanning a code in daylight, a push notification arriving, a bad
+  mobile connection. The simulator proves the app builds, launches and renders
+  natively — which the browser could never prove — but not these.
 - **Anything needing a physical device**: real GPS at a meeting point, the
   camera scanning a code in sunlight, push permission prompts, a real
   notification arriving. The web build cannot exercise these, and pretending
