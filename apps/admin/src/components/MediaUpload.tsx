@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { toMemberMessage } from '@mvmnt/shared';
+import { mediaUrl, uploadMedia } from '../lib/media';
 
 type Props = {
   runId: string;
@@ -13,14 +14,18 @@ type Props = {
   onChanged: () => void;
 };
 
-const BUCKET = 'run-media';
-
 /**
  * Upload a cover photo or clip for a run.
  *
  * Goes straight from the browser to Storage with the organiser's own session —
  * the bucket's insert policy checks is_admin(), so authorisation is enforced by
  * the same rule as everything else rather than by this component being hidden.
+ *
+ * STORES A PATH, NOT A URL. This component used to write the full public URL
+ * (with a ?v= cache-buster) into the runs table, which is how 66 covers ended
+ * up bound to one machine's address and rendered blank on a real phone. The
+ * upload helper versions the filename instead — every replacement is a new
+ * URL, which is the cache-bust, and the stored value stays portable.
  */
 export function MediaUpload({ runId, label, hint, accept, currentUrl, column, onChanged }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -31,31 +36,20 @@ export function MediaUpload({ runId, label, hint, accept, currentUrl, column, on
     setBusy(true);
     setError(null);
 
-    // Keyed by run and column so re-uploading replaces rather than accumulating
-    // orphans, and the extension is preserved for content-type sniffing.
-    const extension = file.name.split('.').pop()?.toLowerCase() ?? 'bin';
-    const path = `runs/${runId}/${column}.${extension}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from(BUCKET)
-      .upload(path, file, { upsert: true, contentType: file.type });
-
-    if (uploadError) {
+    const uploaded = await uploadMedia(file, `runs/${runId}/${column}`);
+    if ('error' in uploaded) {
       setBusy(false);
-      setError(toMemberMessage(uploadError, 'Could not upload that file.'));
+      setError(uploaded.error);
       return;
     }
 
-    const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
-    // Cache-bust: the path is stable across replacements, so without this the
-    // organiser uploads a new photo and keeps seeing the old one.
-    const url = `${data.publicUrl}?v=${Date.now()}`;
-
     // Written as an explicit branch rather than a computed key: the generated
     // Update type rejects an index signature, and losing that type safety on
-    // the one place that writes a URL back would be a poor trade.
+    // the one place that writes a path back would be a poor trade.
     const patch =
-      column === 'cover_image_url' ? { cover_image_url: url } : { cover_video_url: url };
+      column === 'cover_image_url'
+        ? { cover_image_url: uploaded.path }
+        : { cover_video_url: uploaded.path };
 
     const { error: saveError } = await supabase.from('runs').update(patch).eq('id', runId);
 
@@ -86,17 +80,17 @@ export function MediaUpload({ runId, label, hint, accept, currentUrl, column, on
     <div className="field">
       <label>{label}</label>
 
-      {currentUrl && (
+      {mediaUrl(currentUrl) && (
         <div style={{ marginBottom: 10 }}>
           {column === 'cover_image_url' ? (
             <img
-              src={currentUrl}
+              src={mediaUrl(currentUrl)!}
               alt={`Current ${label.toLowerCase()}`}
               style={{ width: '100%', maxHeight: 180, objectFit: 'cover', borderRadius: 8 }}
             />
           ) : (
             <video
-              src={currentUrl}
+              src={mediaUrl(currentUrl)!}
               muted
               loop
               autoPlay

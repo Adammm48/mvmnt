@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { formatMoney, toMemberMessage, type Database } from '@mvmnt/shared';
 import { useToast } from '../components/Toast';
+import { mediaUrl, uploadMedia } from '../lib/media';
 import { useConfirm } from '../components/Confirm';
 
 type Product = Database['public']['Tables']['products']['Row'];
@@ -28,6 +29,7 @@ export function Merch() {
   const [busy, setBusy] = useState(false);
 
   const [name, setName] = useState('');
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [price, setPrice] = useState('');
   const [stock, setStock] = useState('');
   const [sizes, setSizes] = useState('');
@@ -61,8 +63,24 @@ export function Merch() {
     }
 
     setBusy(true);
+
+    // The image first, so a failed upload never leaves a product without the
+    // photo the organiser thought they attached. Stored as a PATH — the
+    // blank-shop-on-a-phone bug was absolute URLs in this column.
+    let imagePath: string | null = null;
+    if (imageFile) {
+      const uploaded = await uploadMedia(imageFile, `products/${crypto.randomUUID()}`);
+      if ('error' in uploaded) {
+        setBusy(false);
+        toast.error("Couldn't upload the photo", uploaded.error);
+        return;
+      }
+      imagePath = uploaded.path;
+    }
+
     const { error } = await supabase.from('products').insert({
       name: name.trim(),
+      image_url: imagePath,
       description: description.trim() || null,
       // Stored in piastres. Rounding here rather than letting a float through:
       // 450.1 * 100 is 45009.999… in binary floating point.
@@ -81,10 +99,29 @@ export function Merch() {
     }
     toast.success(`${name.trim()} added`, 'It is “coming soon” until you put it on sale.');
     setName('');
+    setImageFile(null);
     setPrice('');
     setStock('');
     setSizes('');
     setDescription('');
+    load();
+  }
+
+  async function changePhoto(product: Product, file: File) {
+    const uploaded = await uploadMedia(file, `products/${product.id}`);
+    if ('error' in uploaded) {
+      toast.error("Couldn't upload the photo", uploaded.error);
+      return;
+    }
+    const { error } = await supabase
+      .from('products')
+      .update({ image_url: uploaded.path })
+      .eq('id', product.id);
+    if (error) {
+      toast.error("Couldn't save the photo", toMemberMessage(error));
+      return;
+    }
+    toast.success(`${product.name} has a new photo`);
     load();
   }
 
@@ -287,12 +324,52 @@ export function Merch() {
                 {products.map((p) => (
                   <tr key={p.id}>
                     <td>
-                      {p.name}
-                      {p.sizes.length > 0 && (
-                        <div style={{ fontSize: 12, color: 'var(--muted)' }}>
-                          {p.sizes.join(' · ')}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        {/* The photo is editable here because "change the tee's
+                            picture" is a Tuesday-evening job, and a console
+                            that needs a developer for it fails its whole
+                            purpose. */}
+                        <label
+                          title={mediaUrl(p.image_url) ? 'Change photo' : 'Add photo'}
+                          style={{ cursor: 'pointer' }}
+                        >
+                          {mediaUrl(p.image_url) ? (
+                            <img
+                              src={mediaUrl(p.image_url)!}
+                              alt=""
+                              style={{ width: 44, height: 44, objectFit: 'cover', borderRadius: 8 }}
+                            />
+                          ) : (
+                            <span
+                              style={{
+                                width: 44, height: 44, borderRadius: 8,
+                                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                background: 'var(--sunken)', color: 'var(--muted)', fontSize: 11,
+                              }}
+                            >
+                              + photo
+                            </span>
+                          )}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            style={{ display: 'none' }}
+                            onChange={(e) => {
+                              const f = e.target.files?.[0];
+                              if (f) changePhoto(p, f);
+                              e.target.value = '';
+                            }}
+                          />
+                        </label>
+                        <div>
+                          {p.name}
+                          {p.sizes.length > 0 && (
+                            <div style={{ fontSize: 12, color: 'var(--muted)' }}>
+                              {p.sizes.join(' · ')}
+                            </div>
+                          )}
                         </div>
-                      )}
+                      </div>
                     </td>
                     <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
                       {formatMoney(p.price_minor, p.currency)}
@@ -375,6 +452,20 @@ export function Merch() {
               onChange={(e) => setSizes(e.target.value)}
               placeholder="S, M, L, XL — blank if not apparel"
             />
+          </div>
+        </div>
+        <div className="field">
+          <label htmlFor="p-image">Photo</label>
+          <input
+            id="p-image"
+            type="file"
+            accept="image/*"
+            onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
+            style={{ padding: 6 }}
+          />
+          <div className="hint">
+            The picture members see in the shop. Square-ish looks best; you can change it later
+            from the table above.
           </div>
         </div>
         <div className="field">

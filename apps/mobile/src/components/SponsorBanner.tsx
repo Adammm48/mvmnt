@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Image, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { supabase } from '@/lib/supabase';
 import { colors, radius, spacing, type Placement } from '@mvmnt/shared';
+import { mediaUri } from '@/lib/media';
 
 /**
  * The sponsor strip.
@@ -61,9 +62,9 @@ export function SponsorBanner({ runId }: { runId?: string }) {
     >
       <Text style={styles.label}>Supported by</Text>
       <View style={styles.body}>
-        {placement.logo_url ? (
+        {mediaUri(placement.logo_url) ? (
           <Image
-            source={{ uri: placement.logo_url }}
+            source={{ uri: mediaUri(placement.logo_url)! }}
             style={styles.logo}
             resizeMode="contain"
             accessibilityIgnoresInvertColors

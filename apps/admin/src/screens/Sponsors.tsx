@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { toMemberMessage, type Database, SIGNATURE, CONTACT_LINKS } from '@mvmnt/shared';
 import { useToast } from '../components/Toast';
+import { uploadMedia } from '../lib/media';
 import { useConfirm } from '../components/Confirm';
 
 type Sponsor = Database['public']['Tables']['sponsors']['Row'];
@@ -26,7 +27,7 @@ export function Sponsors() {
 
   const [name, setName] = useState('');
   const [url, setUrl] = useState('');
-  const [logoUrl, setLogoUrl] = useState('');
+  const [logoFile, setLogoFile] = useState<File | null>(null);
   const [activeTo, setActiveTo] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -54,10 +55,23 @@ export function Sponsors() {
       return;
     }
     setBusy(true);
+    // The logo first, as a stored PATH — a pasted URL was the old field, and
+    // an organiser does not have URLs, they have a file the sponsor emailed.
+    let logoPath: string | null = null;
+    if (logoFile) {
+      const uploaded = await uploadMedia(logoFile, `sponsors/${crypto.randomUUID()}`);
+      if ('error' in uploaded) {
+        setBusy(false);
+        toast.error("Couldn't upload the logo", uploaded.error);
+        return;
+      }
+      logoPath = uploaded.path;
+    }
+
     const { error } = await supabase.from('sponsors').insert({
       name: name.trim(),
       url: url.trim() || null,
-      logo_url: logoUrl.trim() || null,
+      logo_url: logoPath,
       active_to: activeTo || null,
     });
     setBusy(false);
@@ -68,7 +82,7 @@ export function Sponsors() {
     toast.success(`${name.trim()} added`, 'Add a placement to start showing them.');
     setName('');
     setUrl('');
-    setLogoUrl('');
+    setLogoFile(null);
     setActiveTo('');
     load();
   }
@@ -221,13 +235,15 @@ export function Sponsors() {
             />
           </div>
           <div className="field">
-            <label htmlFor="sponsor-logo">Logo URL</label>
+            <label htmlFor="sponsor-logo">Logo</label>
             <input
               id="sponsor-logo"
-              value={logoUrl}
-              onChange={(e) => setLogoUrl(e.target.value)}
-              placeholder="Optional — their name is shown if blank"
+              type="file"
+              accept="image/*"
+              onChange={(e) => setLogoFile(e.target.files?.[0] ?? null)}
+              style={{ padding: 6 }}
             />
+            <div className="hint">Optional — their name is shown if there is no logo.</div>
           </div>
           <div className="field">
             <label htmlFor="sponsor-to">Paid until</label>

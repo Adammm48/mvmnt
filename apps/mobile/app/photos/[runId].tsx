@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useRef } from 'react';
 import {
   Dimensions,
   FlatList,
@@ -112,6 +112,15 @@ export default function RunPhotos() {
     load();
   }, [load]);
 
+  // A stable callback ref: FlatList refuses onViewableItemsChanged changing
+  // between renders.
+  const onViewablePhoto = useRef(
+    ({ viewableItems }: { viewableItems: { item: Photo; isViewable: boolean }[] }) => {
+      const visible = viewableItems.find((v) => v.isViewable)?.item;
+      if (visible) setViewing((prev) => (prev && prev.id !== visible.id ? visible : prev));
+    },
+  ).current;
+
   if (loading) return <Loading />;
 
   const matching = (c: PhotoCategory | 'you') =>
@@ -210,24 +219,67 @@ export default function RunPhotos() {
       </Pressable>
 
       {/*
-        The viewer is a plain modal rather than a pager: tap to look, tap to
-        leave. Swiping between photos can come with the face-matching phase if
-        the gallery grows past what a grid handles.
+        The viewer pages horizontally through the open category (owner ask:
+        swipe left and right between photos). One FlatList with paging rather
+        than a gesture library — momentum, edge bounce and the wide-image case
+        all come from the platform, and there is no new dependency to justify.
+        Tapping the photo closes, as before.
       */}
       <Modal visible={viewing !== null} transparent animationType="fade">
-        <Pressable
-          style={styles.viewer}
-          onPress={() => setViewing(null)}
-          accessibilityRole="button"
-          accessibilityLabel="Close photo"
-        >
-          {viewing && (
-            <Image source={{ uri: viewing.url }} style={styles.full} resizeMode="contain" />
-          )}
-          {/* Reporting, on the photo itself — the store guideline (Apple 1.2,
-              Play UGC) and plain decency both want the flag where the problem
-              is, not buried in a settings page. */}
-          {viewing && (
+        {viewing && (
+          <View style={styles.viewer}>
+            <FlatList
+              data={inCategory}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              keyExtractor={(p) => p.id}
+              // Every page is exactly one screen wide, so layouts are knowable
+              // without measuring — required for initialScrollIndex to work.
+              getItemLayout={(_, index) => ({
+                length: SCREEN_WIDTH,
+                offset: SCREEN_WIDTH * index,
+                index,
+              })}
+              initialScrollIndex={Math.max(
+                inCategory.findIndex((p) => p.id === viewing.id),
+                0,
+              )}
+              // Viewability, not momentum: onMomentumScrollEnd never fires on
+              // web, so the counter froze at 1/N there while working on
+              // phones. "Which photo is mostly on screen" is also simply the
+              // truer question.
+              onViewableItemsChanged={onViewablePhoto}
+              viewabilityConfig={{ itemVisiblePercentThreshold: 60 }}
+              // A plain page, not a tap-to-close one. Tap-anywhere-to-close
+              // fought the swipe — any touch the list did not claim closed the
+              // viewer mid-gesture. With paging, closing is the ✕'s job.
+              renderItem={({ item }) => (
+                <View style={{ width: SCREEN_WIDTH, height: '100%', justifyContent: 'center' }}>
+                  <Image source={{ uri: item.url }} style={styles.full} resizeMode="contain" />
+                </View>
+              )}
+            />
+
+            <Pressable
+              onPress={() => setViewing(null)}
+              style={styles.closeBtn}
+              accessibilityRole="button"
+              accessibilityLabel="Close photos"
+              hitSlop={12}
+            >
+              <Text style={styles.closeText}>✕</Text>
+            </Pressable>
+
+            {/* Where you are in the roll. */}
+            <Text style={styles.pagePosition}>
+              {Math.max(inCategory.findIndex((p) => p.id === viewing.id), 0) + 1} /{' '}
+              {inCategory.length}
+            </Text>
+
+            {/* Reporting, on the photo itself — the store guideline (Apple 1.2,
+                Play UGC) and plain decency both want the flag where the problem
+                is, not buried in a settings page. */}
             <Pressable
               onPress={() => setReporting(viewing.id)}
               style={styles.reportBtn}
@@ -237,8 +289,8 @@ export default function RunPhotos() {
             >
               <Text style={styles.reportText}>Report this photo</Text>
             </Pressable>
-          )}
-        </Pressable>
+          </View>
+        )}
       </Modal>
 
       {reporting && (
@@ -260,7 +312,34 @@ const GAP = 3;
 const COLUMNS = 3;
 const CELL = (Dimensions.get('window').width - GAP * (COLUMNS - 1)) / COLUMNS;
 
+const SCREEN_WIDTH = Dimensions.get('window').width;
+
 const styles = StyleSheet.create({
+  closeBtn: {
+    position: 'absolute',
+    top: 58,
+    right: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  closeText: { color: '#fff', fontSize: 17, fontWeight: '700' },
+  pagePosition: {
+    position: 'absolute',
+    top: 64,
+    alignSelf: 'center',
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '700',
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    overflow: 'hidden',
+  },
   reportBtn: {
     position: 'absolute',
     bottom: 44,
