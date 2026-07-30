@@ -153,8 +153,12 @@ jobs:
           up=0
           for i in $(seq 1 60); do
             admin=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:5173 || true)
-            app=$(curl -s -o /dev/null -w '%{http_code}' \
-              'http://127.0.0.1:8081/node_modules/expo/AppEntry.bundle?platform=web&dev=true' || true)
+            # The app ROOT, the way a browser asks for it. The previous check
+            # requested /node_modules/expo/AppEntry.bundle — an internal path
+            # that FORCES Metro to bundle that entry instead of this package's
+            # expo-router one, so the health check was manufacturing the 500 it
+            # then reported. Playwright waits for the bundle itself.
+            app=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8081/ || true)
             if [ "$admin" = "200" ] && [ "$app" = "200" ]; then up=1; break; fi
             sleep 10
           done
