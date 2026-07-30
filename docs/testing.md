@@ -23,7 +23,10 @@ So the layers are organised around **who is asking**.
 | Structure | Can this even be reached or seen? | `scripts/check-*.mjs` | `npm run check:reachable` |
 | Visible outcome | Does the member learn what happened? | `tests/e2e/*.mjs` | `npm run test:e2e` |
 
-All three run in CI.
+All three run in CI, including the browser suite — it needs the Supabase
+stack, both dev servers and their env vars, which took four attempts to get
+right on a runner. Notes in the workflow explain each, because every one of
+those failures was a CI-only problem that could not be reproduced locally.
 
 ## 1 · Database — the rules
 
