@@ -417,7 +417,7 @@ export default function ProfileScreen() {
         <Text style={styles.hint}>
           {photosOk
             ? 'Photos from runs go in the app, visible to members only. Turn this off and organisers will see that you would rather not appear.'
-            : 'Organisers can see that you would rather not appear. At a run of three hundred people nobody can promise you are in no one’s background — but ask an organiser and any photo of you comes down.'}
+            : 'Organisers can see that you would rather not appear. At a run of three hundred people nobody can promise you are in no one’s background.'}
         </Text>
       </View>
 

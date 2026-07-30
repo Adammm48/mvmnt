@@ -103,7 +103,7 @@ export function ConsentGate() {
               checked={photosOk}
               onToggle={() => setPhotosOk((v) => !v)}
               title="The club can share photos of me from runs"
-              body="Photos go in the app, visible to members only. You can change this any time in your profile, and you can always ask an organiser to take a photo down."
+              body="Photos go in the app, visible to members only. You can change this any time in your profile."
             />
 
             {/* Said plainly rather than buried, because it is the part a
@@ -111,8 +111,7 @@ export function ConsentGate() {
             {!photosOk && (
               <Text style={styles.caveat}>
                 Noted — organisers will see this. At a run of three hundred people nobody can
-                promise you are in no one&rsquo;s background, but your photos come down whenever you
-                ask.
+                promise you are in no one&rsquo;s background.
               </Text>
             )}
 
