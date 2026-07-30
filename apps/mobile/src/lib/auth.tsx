@@ -33,18 +33,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let active = true;
 
-    supabase.auth.getSession().then(async ({ data }) => {
-      if (!active) return;
-      setSession(data.session);
-      await loadProfile(data.session?.user.id);
-      setLoading(false);
-    });
-
-    const { data: subscription } = supabase.auth.onAuthStateChange(async (_event, next) => {
+    /**
+     * Restoring the session must ALWAYS finish, successfully or not.
+     *
+     * This had no error path, and `loading` starts true — so any rejection
+     * here (a storage read that throws, an unreachable backend, a malformed
+     * stored session) left the app on its spinner for ever, saying nothing.
+     * Found on a release build that hung at launch with no log line to explain
+     * it, which is precisely the silent-failure shape this project keeps
+     * meeting: the code ran, and nobody was told.
+     *
+     * A failure is treated as signed-out. That is the only safe reading — an
+     * app that cannot confirm who you are must not assume it knows — and the
+     * member lands on sign-in, which is a screen they can act on rather than
+     * a spinner they cannot.
+     */
+    const settle = async (next: Session | null) => {
       if (!active) return;
       setSession(next);
-      await loadProfile(next?.user.id);
+      try {
+        await loadProfile(next?.user.id);
+      } catch (error) {
+        // A missing profile must not block the app either: the member is
+        // signed in, and every screen already handles a null profile.
+        console.warn('could not load the profile', error);
+      }
       setLoading(false);
+    };
+
+    supabase.auth
+      .getSession()
+      .then(({ data }) => settle(data.session))
+      .catch((error) => {
+        console.warn('could not restore the session', error);
+        settle(null);
+      });
+
+    const { data: subscription } = supabase.auth.onAuthStateChange((_event, next) => {
+      void settle(next);
     });
 
     return () => {

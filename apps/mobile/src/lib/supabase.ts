@@ -2,14 +2,28 @@ import 'react-native-url-polyfill/auto';
 import { createClient } from '@supabase/supabase-js';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 import type { Database } from '@mvmnt/shared';
 
-const url = process.env.EXPO_PUBLIC_SUPABASE_URL;
-const anonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+/**
+ * Config comes through app.config.js `extra`, not straight from process.env.
+ *
+ * process.env.EXPO_PUBLIC_* is inlined by Metro and works in development —
+ * and is EMPTY in a release build, because Xcode's bundling phase never loads
+ * `.env`. That produced a shipping app whose bundle held no backend URL: it
+ * launched, spun for ever, and never reached sign-in. app.config.js is
+ * evaluated by Expo CLI, which does load `.env`, so the value travels with the
+ * bundle in every configuration. process.env stays as a fallback so nothing
+ * breaks for anyone running an older local setup.
+ */
+const extra = Constants.expoConfig?.extra ?? {};
+const url = (extra.supabaseUrl as string | undefined) ?? process.env.EXPO_PUBLIC_SUPABASE_URL;
+const anonKey =
+  (extra.supabaseAnonKey as string | undefined) ?? process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
 if (!url || !anonKey) {
   throw new Error(
-    'Missing EXPO_PUBLIC_SUPABASE_URL / EXPO_PUBLIC_SUPABASE_ANON_KEY. Copy .env.example to .env.',
+    'Missing Supabase config. Copy .env.example to .env, then rebuild — a release build reads these through app.config.js.',
   );
 }
 
