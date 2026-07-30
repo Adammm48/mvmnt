@@ -60,7 +60,8 @@ EOF
   exit 1
 fi
 echo "==> Found: $DEVICE_LINE"
-DEVICE_ID="$(echo "$DEVICE_LINE" | grep -oE '[0-9A-F]{8}-[0-9A-F]{16}|[0-9a-f]{40}' | head -1)"
+# devicectl prints a standard UUID; older tooling printed a 40-char UDID.
+DEVICE_ID="$(echo "$DEVICE_LINE" | grep -oE '[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}|[0-9a-f]{40}' | head -1)"
 
 # ---------------------------------------------------------------------------
 # 3. Signing. The one step that cannot be automated.
