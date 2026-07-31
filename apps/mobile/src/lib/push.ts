@@ -49,6 +49,22 @@ export async function pushStatus(): Promise<'granted' | 'denied' | 'undetermined
   }
 }
 
+/**
+ * Whether the club could actually reach this phone, if it tried.
+ *
+ * Distinct from pushStatus(), and the distinction is the point. Permission is
+ * what the PHONE allows; this is whether the CLUB can send at all. Without an
+ * EAS project there is no push token, so a member can grant permission, see
+ * "Notifications are on", and never receive anything — which is how a run was
+ * published to a phone that stayed silent, with the app insisting it was
+ * switched on. Two different facts had been rendered as one.
+ *
+ * Synchronous and local: it reads config, asks nothing and prompts nothing.
+ */
+export function clubCanSendPush(): boolean {
+  return Boolean(Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId);
+}
+
 export async function registerForPush(): Promise<PushRegistration> {
   if (!Device.isDevice) {
     return {

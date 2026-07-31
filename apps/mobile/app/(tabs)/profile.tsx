@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/Button';
 import { Notice } from '@/components/Feedback';
 import { StandingCard } from '@/components/StandingCard';
-import { pushStatus, registerForPush } from '@/lib/push';
+import { clubCanSendPush, pushStatus, registerForPush } from '@/lib/push';
 import * as ImagePicker from 'expo-image-picker';
 import { uploadImage } from '@/lib/imageUpload';
 import { avatarUri } from '@/lib/avatar';
@@ -367,7 +367,19 @@ export default function ProfileScreen() {
             always-tappable "Turn on notifications" above the words
             "Notifications are on" was the audit's politest finding. */}
         {pushState === 'Notifications are on.' || pushGranted ? (
-          <Text style={styles.hint}>Notifications are on.</Text>
+          // Permission granted says the PHONE would allow a notification. It
+          // does not say the club can send one — without the club's app
+          // accounts there is no push token, and "Notifications are on" was
+          // being shown to a phone that could not receive anything. A run was
+          // published and stayed silent while this line insisted otherwise.
+          clubCanSendPush() ? (
+            <Text style={styles.hint}>Notifications are on.</Text>
+          ) : (
+            <Text style={styles.hint}>
+              Your phone will allow notifications. The club cannot send them yet — that switches on
+              with the club&rsquo;s app accounts, and nothing is needed from you.
+            </Text>
+          )
         ) : (
           <>
             <Button label="Turn on notifications" variant="secondary" onPress={enableNotifications} />
