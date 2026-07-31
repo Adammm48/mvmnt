@@ -222,6 +222,38 @@ begin
                 where a.run_id = v_run and a.user_id = v_f),
     'removing a check-in discards the location data that supported it');
 
+
+  -- ---------------------------------------------------------------------
+  -- The directions link never moves the geofence.
+  --
+  -- maps_url exists so an organiser can send members to a named gate rather
+  -- than a bare coordinate. It is navigation only, and this is the assertion
+  -- that keeps it that way: point the link at another country, and check-in
+  -- still measures from the pin. If this ever fails, somebody has taught
+  -- check_in() to read it, and a pasted link can now strand people.
+  -- ---------------------------------------------------------------------
+  perform tests.act_as_system();
+  update public.runs
+     set maps_url = 'https://maps.app.goo.gl/somewhere-else-entirely'
+   where id = v_run;
+
+  perform tests.assert(
+    (select maps_url is not null from public.runs where id = v_run),
+    'the run carries a pasted directions link');
+
+  v_f := tests.make_member('faris');
+  perform tests.act_as(v_f);
+  perform public.check_in(v_run, v_near_lat, v_lng, 10);
+  perform tests.assert(
+    (select checked_in_at is not null from public.run_attendance
+      where run_id = v_run and user_id = v_f),
+    'someone at the pin still checks in, whatever the directions link says');
+
+  perform tests.act_as_system();
+  perform tests.assert_rejects(
+    format('update public.runs set maps_url = %L where id = %L', 'not a link', v_run),
+    'a directions link that is not an https address is refused');
+
   raise notice 'PASS 02_check_in';
 end $$;
 

@@ -165,6 +165,23 @@ on the phone:
   instead of the network. The generated manifest is patched for local builds
   only; `android/` is gitignored and regenerated, and production is https.
 
+**The script deletes the JavaScript bundle before every build, deliberately.**
+Gradle's bundle task watches the app directory, but half this app lives in
+`packages/shared` — theme, voice, and every run and loyalty helper. Change one
+of those and Gradle sees no input change, skips bundling, and packages the
+*previous* JavaScript: the build succeeds, installs, launches, and does not
+contain your change. It cost an hour once, debugging a feature that was
+correct in the database, correct in the console, correct in the tests, and
+absent on the phone. Forty seconds of rebundling buys the whole category.
+
+If a change ever seems not to be on the phone, check the bundle's timestamp
+before you doubt the code:
+
+    ls -l apps/mobile/android/app/build/generated/assets/react/release/index.android.bundle
+
+(Grepping it proves nothing — release bundles are Hermes bytecode, so the
+strings are not readable text.)
+
 Lint is skipped (`-x lintVitalRelease`): it exhausts its own class loader and
 fails the build with an OutOfMemoryError *after* the app has compiled
 perfectly. Lint belongs to the store pipeline, not to a device install.

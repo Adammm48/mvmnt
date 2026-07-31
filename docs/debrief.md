@@ -190,31 +190,58 @@ testing would have surfaced.
   A cancelled order also still read "−280 pts" when the points had already
   been refunded; the ledger was right and the screen was lying about it.
 
+And a fifth, found later and worse than the other four because it makes the
+build itself lie: **Gradle shipped a stale JavaScript bundle.** Its bundle
+task watches `apps/mobile`, but half this app lives in `packages/shared`.
+Change a helper there and Gradle sees no input change, skips bundling, and
+packages the *previous* JavaScript — so the build succeeds, installs,
+launches, and does not contain the change. It presented as a feature that was
+correct in the database, correct in the console, correct in every test, and
+absent on the phone; the tell was the bundle's timestamp, 45 minutes older
+than the build. `run-android.sh` now deletes the bundle first, which costs
+about forty seconds and removes the whole category. Worth remembering as the
+build-tooling cousin of the app's own recurring bug: something ran, reported
+success, and quietly did nothing.
+
 Two things a desk cannot test and a run can: GPS check-in at a real meeting
 point, and the camera scanning a friend's code in daylight.
 
 Android is also the platform that matters commercially in Egypt — most club
 members are on it — so a demo now runs on both.
 
-## Meeting points: the link is derived, not stored
+## Meeting points: derived by default, overridable on purpose
 
-The obvious way to give members directions is a column the organiser pastes a
-Google Maps link into. It was rejected, and the reasoning generalises.
+Members get **Get directions →** on a run, which opens the Google Maps app at
+the meeting point. Two things decide where that goes, and the split between
+them is the interesting part.
 
-The meeting point **already exists** as coordinates: `not null`, placed by
-dragging a pin on a Leaflet map in the console, and — the deciding fact —
-**the check-in geofence is measured from them**. A pasted link is a second
-address for the same place, free to disagree with the first. When it does,
-members navigate to where the link says and then cannot check in, because the
-circle is somewhere else. That is the two-copies pattern with a worse
-failure mode than usual, since it strands people at the wrong corner.
+**By default it is derived from the pin.** The meeting point already exists
+as coordinates — `not null`, placed by dragging a pin on a Leaflet map in the
+console — so `meetingPointMapsUrl(run)` builds Google's documented
+cross-platform URL from them. No API key, no SDK, no per-platform branch, and
+every run that already existed got directions the day this shipped, with no
+organiser work at all.
 
-So `meetingPointMapsUrl(run)` in `packages/shared/src/runs.ts` builds
-Google's documented cross-platform URL from the run's own coordinates. It
-opens the Google Maps app on both platforms, needs no API key, no SDK and no
-per-platform branch — and every run that already exists got directions with
-no organiser work at all. The console shows the organiser the same link
-beside the pin, so "check the pin" and "see what members get" are one action.
+**`maps_url` overrides it when the organiser has something better** — a
+Google Maps *place*, which names the destination and can point at a specific
+gate rather than a bare coordinate. That is a real gap in what a pin can say,
+and the owner asked for it.
+
+The reason it is safe to have both is worth keeping. Normally two stored
+values for one fact is this codebase's oldest trap, and the fear here was
+concrete: send members somewhere the geofence is not, and they stand at the
+wrong corner unable to check in. That does not happen, because **the override
+is navigation only** — `check_in()` measures from `meeting_point_lat/lng` and
+never reads `maps_url`. The two values are *permitted* to disagree because
+only one of them decides anything. A test in `02_check_in.sql` points the
+link at another country and asserts someone at the pin still checks in; if
+that ever fails, the asymmetry has been broken and the trap is real again.
+
+The rest is guardrails: a `maps_url_is_https` check constraint, the same rule
+stated in the console as a sentence before Save (a constraint violation is a
+correct rejection and a terrible explanation), and the console showing the
+pin's own link beside the map so "is the pin right" stays answerable
+separately from "where do members get sent".
 
 ---
 

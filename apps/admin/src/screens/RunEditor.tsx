@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { CLUB_TIMEZONE, toMemberMessage, type Run } from '@mvmnt/shared';
+import { CLUB_TIMEZONE, mapsUrlProblem, toMemberMessage, type Run } from '@mvmnt/shared';
 import { MediaUpload } from '../components/MediaUpload';
 import { MeetingPointPicker } from '../components/MeetingPointPicker';
 import { RouteDrawer } from '../components/RouteDrawer';
@@ -44,6 +44,7 @@ export function RunEditor({ runId, onDone }: Props) {
   const [lat, setLat] = useState(DEFAULT_LAT);
   const [lng, setLng] = useState(DEFAULT_LNG);
   const [radius, setRadius] = useState(250);
+  const [mapsUrl, setMapsUrl] = useState('');
   const [route, setRoute] = useState<[number, number][]>([]);
   const [routePublishedAt, setRoutePublishedAt] = useState<string | null>(null);
   const [routeDirty, setRouteDirty] = useState(false);
@@ -79,6 +80,7 @@ export function RunEditor({ runId, onDone }: Props) {
     setRoutePublishedAt(data.route_published_at);
     setRouteDirty(false);
     setRadius(data.check_in_radius_m);
+    setMapsUrl(data.maps_url ?? '');
     setDistance(data.distance_meters ? String(data.distance_meters) : '');
     setCapacity(data.capacity ? String(data.capacity) : '');
     setPaceGroups(data.pace_groups.join(', '));
@@ -112,6 +114,11 @@ export function RunEditor({ runId, onDone }: Props) {
   if (!meetingPoint.trim()) problems.push('Name the meeting point.');
   if (startsInPast) problems.push('That date and time have already passed — pick a future one.');
 
+  // The database has the same rule as a check constraint. Saying it here means
+  // the organiser reads a sentence instead of a Postgres violation.
+  const mapsUrlIssue = mapsUrlProblem(mapsUrl);
+  if (mapsUrlIssue) problems.push(mapsUrlIssue);
+
   const canSave = problems.length === 0;
 
   async function save() {
@@ -127,6 +134,7 @@ export function RunEditor({ runId, onDone }: Props) {
       meeting_point_lat: lat,
       meeting_point_lng: lng,
       check_in_radius_m: radius,
+      maps_url: mapsUrl.trim() || null,
       distance_meters: distance ? Number(distance) : null,
       capacity: capacity ? Number(capacity) : null,
       pace_groups: paceGroups.split(',').map((p) => p.trim()).filter(Boolean),
@@ -380,6 +388,35 @@ export function RunEditor({ runId, onDone }: Props) {
             setLng(nextLng);
           }}
         />
+
+        {/*
+          Optional, and deliberately placed AFTER the map: the pin is the
+          normal way to do this and already gives members directions. This is
+          for the case the pin cannot express — a Google Maps place that names
+          a specific gate or entrance.
+        */}
+        <div className="field">
+          <label htmlFor="maps-url">Directions link (optional)</label>
+          <input
+            id="maps-url"
+            value={mapsUrl}
+            onChange={(e) => setMapsUrl(e.target.value)}
+            placeholder="https://maps.app.goo.gl/…"
+          />
+          <div className="hint">
+            Leave this empty and members get directions to the pin above — which is
+            usually right. Paste a Google Maps link only if you have a better one,
+            such as a named gate. <strong>It changes where members are sent, not
+            where they can check in</strong> — check-in is always measured from the
+            pin, so a link somewhere else will not stop anyone being checked in.
+          </div>
+          {mapsUrlIssue && <div className="notice error">{mapsUrlIssue}</div>}
+          {!mapsUrlIssue && mapsUrl.trim() !== '' && (
+            <a href={mapsUrl.trim()} target="_blank" rel="noreferrer" className="hint">
+              Open what members will get ↗
+            </a>
+          )}
+        </div>
 
         <RouteDrawer
           lat={lat}

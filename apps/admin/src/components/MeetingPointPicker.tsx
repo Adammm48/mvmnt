@@ -144,11 +144,9 @@ export function MeetingPointPicker({ lat, lng, radiusM, onChange }: Props) {
         <span className="hint" style={{ margin: 0 }}>
           {lat.toFixed(5)}, {lng.toFixed(5)}
         </span>
-        {/*
-          The same link members tap on their run screen, from the same
-          coordinates — so "check the pin" and "what members will see" are one
-          action rather than two things that can drift apart.
-        */}
+        {/* Opens the pin itself, which is how you check it is where you think
+            it is. What members are sent to can differ, if a directions link
+            has been pasted below — that field says so. */}
         <a
           href={meetingPointMapsUrl({ meeting_point_lat: lat, meeting_point_lng: lng })}
           target="_blank"
@@ -160,8 +158,8 @@ export function MeetingPointPicker({ lat, lng, radiusM, onChange }: Props) {
         </a>
       </div>
       <div className="hint" style={{ marginTop: 4 }}>
-        That link is what members get as “Get directions” — worth opening once
-        before you publish.
+        Worth opening once before you publish: this is the spot check-in is
+        measured from, and by default it is where “Get directions” sends members.
       </div>
       {note && <div className="hint">{note}</div>}
     </div>

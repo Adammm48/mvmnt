@@ -38,7 +38,13 @@ try {
   await block('attendance reports its outcome', async () => {
       const { context, page, session } = await openApp(browser, 'runner12@mvmnt.test');
       const runs = await rest(
-        'runs?select=id,title&status=eq.published&order=starts_at.asc&limit=1',
+        // A run that has not started yet. "The next published run" drifts into
+        // the past as the seeded database ages — an hour after a reset the
+        // nearest one is under way, offers no attendance action at all, and
+        // this block fails for a reason that has nothing to do with the app.
+        // Same family as the count-the-clock-can-change rule in docs/testing.md.
+        `runs?select=id,title&status=eq.published&starts_at=gt.${new Date().toISOString()}` +
+          '&order=starts_at.asc&limit=1',
         session,
       );
       await page.goto(`${MOBILE}/run/${runs[0].id}`, { waitUntil: 'networkidle' });

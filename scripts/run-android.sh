@@ -126,6 +126,21 @@ fi
 # perfectly. Lint checks Android API misuse and belongs to the store pipeline
 # (dev-todo step 5, where EAS runs the real release build); blocking a phone
 # install on it trades a genuine test for a check that is not even running.
+# THE BUNDLE IS DELETED FIRST, AND THIS IS NOT PARANOIA.
+#
+# Gradle's bundle task tracks the app directory. This is a monorepo: half the
+# app lives in packages/shared (the theme, the voice lines, every run and
+# loyalty helper). Change one of those and Gradle sees no input change, skips
+# bundling, and cheerfully packages THE PREVIOUS JAVASCRIPT — so the build
+# succeeds, installs, launches, and simply does not contain your change.
+#
+# It cost an hour the first time, debugging a feature that was correct in the
+# database, correct in the console, correct in the tests, and absent on the
+# phone. Deleting the generated bundle costs ~40 seconds of rebundling and
+# removes an entire category of "but I just built it".
+rm -rf "$APP_DIR/android/app/build/generated/assets/react" \
+       "$APP_DIR/android/app/build/generated/res/react" 2>/dev/null || true
+
 (cd "$APP_DIR/android" && ./gradlew assembleRelease -x lintVitalAnalyzeRelease -x lintVitalReportRelease -x lintVitalRelease) || exit 1
 
 APK="$(find "$APP_DIR/android/app/build/outputs/apk/release" -name '*.apk' | head -1)"

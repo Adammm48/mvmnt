@@ -1216,6 +1216,7 @@ export type Database = {
           distance_meters: number | null
           ends_at: string | null
           id: string
+          maps_url: string | null
           meeting_point_lat: number
           meeting_point_lng: number
           meeting_point_name: string
@@ -1242,6 +1243,7 @@ export type Database = {
           distance_meters?: number | null
           ends_at?: string | null
           id?: string
+          maps_url?: string | null
           meeting_point_lat: number
           meeting_point_lng: number
           meeting_point_name: string
@@ -1268,6 +1270,7 @@ export type Database = {
           distance_meters?: number | null
           ends_at?: string | null
           id?: string
+          maps_url?: string | null
           meeting_point_lat?: number
           meeting_point_lng?: number
           meeting_point_name?: string

@@ -23,26 +23,49 @@ export const CHECK_IN_OPENS_MINUTES_BEFORE = 60;
 /**
  * Where the run meets, as a link any maps app will open.
  *
- * DERIVED FROM THE PIN, NOT STORED. The obvious alternative is a column the
- * organiser pastes a Google Maps link into, and it is the wrong shape: the
- * meeting point already exists as coordinates, they are `not null`, and the
- * check-in geofence is measured from them. A pasted link is a second address
- * for the same place, free to disagree — and when it does, members navigate
- * to where the link says and cannot check in where the circle is. This project
- * has paid for "two copies that must agree" enough times.
+ * DERIVED FROM THE PIN BY DEFAULT. The meeting point already exists as
+ * coordinates — `not null`, dropped on a map in the console — so every run
+ * ever created has directions with no organiser work, and the link cannot
+ * drift from the pin because it *is* the pin.
  *
- * Deriving also means every run ever created already has one, and the
- * organiser does no extra work.
+ * `maps_url` overrides it when the organiser has something the pin cannot
+ * say: a Google Maps place, which names the destination and can point at a
+ * specific gate rather than a bare coordinate.
  *
- * Google's documented cross-platform URL: it opens the Google Maps app when
- * it is installed, Apple Maps or the browser when it is not, on both
- * platforms — so it needs no API key, no SDK and no per-platform branch.
+ * THE OVERRIDE IS NAVIGATION ONLY, and that is what makes it safe. `check_in`
+ * measures from meeting_point_lat/lng and never reads this. So the two values
+ * are allowed to disagree — one sends members somewhere, the other decides
+ * what counts — which is the opposite of the two-copies-that-must-agree trap:
+ * these two are not required to agree, because only one of them rules.
+ *
+ * The derived form is Google's documented cross-platform URL: it opens the
+ * Google Maps app when installed, the browser when not, on both platforms —
+ * no API key, no SDK, no per-platform branch.
  */
 export function meetingPointMapsUrl(run: {
   meeting_point_lat: number;
   meeting_point_lng: number;
+  maps_url?: string | null;
 }): string {
+  const pasted = run.maps_url?.trim();
+  if (pasted) return pasted;
   return `https://www.google.com/maps/search/?api=1&query=${run.meeting_point_lat},${run.meeting_point_lng}`;
+}
+
+/**
+ * Why a pasted link would be refused, or null when it is fine.
+ *
+ * Same rule as the database's `maps_url_is_https` constraint, said in the
+ * console before the organiser hits Save — a check constraint firing as a
+ * red Postgres error is a correct rejection and a terrible explanation.
+ */
+export function mapsUrlProblem(value: string): string | null {
+  const url = value.trim();
+  if (url === '') return null;
+  if (!/^https:\/\/[^ ]+$/.test(url)) {
+    return 'That does not look like a link. Copy the whole address from Google Maps — it starts with https://';
+  }
+  return null;
 }
 
 export function formatRunTime(startsAt: string): string {
