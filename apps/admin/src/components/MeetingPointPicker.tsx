@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { meetingPointMapsUrl } from '@mvmnt/shared';
 
 type Props = {
   lat: number;
@@ -143,6 +144,24 @@ export function MeetingPointPicker({ lat, lng, radiusM, onChange }: Props) {
         <span className="hint" style={{ margin: 0 }}>
           {lat.toFixed(5)}, {lng.toFixed(5)}
         </span>
+        {/*
+          The same link members tap on their run screen, from the same
+          coordinates — so "check the pin" and "what members will see" are one
+          action rather than two things that can drift apart.
+        */}
+        <a
+          href={meetingPointMapsUrl({ meeting_point_lat: lat, meeting_point_lng: lng })}
+          target="_blank"
+          rel="noreferrer"
+          className="hint"
+          style={{ margin: 0 }}
+        >
+          Open in Google Maps ↗
+        </a>
+      </div>
+      <div className="hint" style={{ marginTop: 4 }}>
+        That link is what members get as “Get directions” — worth opening once
+        before you publish.
       </div>
       {note && <div className="hint">{note}</div>}
     </div>

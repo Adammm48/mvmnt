@@ -69,6 +69,24 @@ try {
       await context.close();
   });
 
+  // A meeting point a member can actually navigate to. The link is derived
+  // from the run's coordinates rather than stored, so what this really guards
+  // is that the derivation is still WIRED UP — a helper nothing renders is the
+  // same as no helper, and that is a bug this suite exists to catch.
+  // -------------------------------------------------------------------------
+  await block('the meeting point can be navigated to', async () => {
+      const { context, page, session } = await openApp(browser, 'runner12@mvmnt.test');
+      const runs = await rest(
+        'runs?select=id,meeting_point_lat,meeting_point_lng&status=eq.published&order=starts_at.asc&limit=1',
+        session,
+      );
+      await page.goto(`${MOBILE}/run/${runs[0].id}`, { waitUntil: 'networkidle' });
+      await page.waitForTimeout(1500);
+
+      await seen(page, /Get directions/i, 'the run screen offers directions to the meeting point');
+      await context.close();
+  });
+
   // 2. Every published gallery is reachable WITHOUT a notification.
   //    This is the exact bug: published, permitted, and unreachable, because
   //    the only route in was a push notification that cannot be sent yet.

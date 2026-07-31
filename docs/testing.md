@@ -141,6 +141,38 @@ GPS at a meeting point, a camera scanning a code in daylight, and behaviour on
 mobile data. Until the hosted project exists the phone loses the database off
 Wi-Fi — which makes it the honest moment to watch the offline check-in queue.
 
+### On a real Android phone
+
+    npm run android:phone
+
+**Simpler than iOS in every way that matters**: no Apple ID, no signing step,
+and **no 7-day expiry** — the build stays until it is uninstalled. It needs
+`adb` and an SDK platform, both free (`brew install --cask
+android-commandlinetools`, then `sdkmanager platform-tools platforms;android-35`).
+
+On the phone: tap *Build number* seven times to unlock Developer options, turn
+on **USB debugging**, plug in, and set *Use USB for* to **File transfer** —
+charge-only mode hides the phone from the Mac entirely, and the resulting
+"no device" looks exactly like a broken cable.
+
+Two traps the script handles, both producing identical unexplained symptoms
+on the phone:
+
+- `127.0.0.1` is THE PHONE, as on iOS. It builds against the Mac's Wi-Fi
+  address after checking the stack answers there.
+- **Android blocks plain `http://` in release builds.** The local stack is
+  http, so a correctly addressed app is refused by the operating system
+  instead of the network. The generated manifest is patched for local builds
+  only; `android/` is gitignored and regenerated, and production is https.
+
+Lint is skipped (`-x lintVitalRelease`): it exhausts its own class loader and
+fails the build with an OutOfMemoryError *after* the app has compiled
+perfectly. Lint belongs to the store pipeline, not to a device install.
+
+Android is worth running even after iOS passes — it found four defects the
+iPhone structurally could not (see the debrief's Android section), and it is
+the platform most Egyptian club members actually use.
+
 ### Build Release before believing anything about speed or config
 
     bash scripts/run-ios.sh                 # Debug: JS streams from Metro

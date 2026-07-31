@@ -152,6 +152,70 @@ that happened to be equal, written as if they were the same thing — both
 instances only surfaced when something changed. The README documents both
 patterns so they stay found.
 
+Both patterns recurred on Android months later, which is the useful part:
+they are not bugs that were fixed, they are shapes the codebase is prone to.
+See below.
+
+---
+
+## Android, and what a second platform found
+
+The app had only ever been built for iPhone. Putting it on a Samsung Galaxy
+S23 Ultra (`npm run android:phone`, no paid account, no expiry) took an
+afternoon and found four defects, none of which any amount of further iPhone
+testing would have surfaced.
+
+- **A missing package.** `expo-router` imports `@expo/ui/jetpack-compose` for
+  its Android toolbar. It was not installed, and iOS takes a different code
+  path — so every native library compiled and the JavaScript bundle then
+  failed to resolve. Installed; the iOS scripts now also reinstall pods when
+  a dependency has been added, because otherwise adding it would have broken
+  the iPhone build with a missing-symbol link error naming nothing useful.
+- **Edge-to-edge.** Android draws apps *under* the navigation bar. The last
+  line of every pushed screen was unreachable — the stats screen ended
+  mid-sentence, and the gallery's "find me in photos" link could not be read
+  or tapped. Fixed once in the root stack's `contentStyle`; the tab bar and
+  sign-in opt out explicitly because they already inset themselves. The first
+  attempt padded them twice and left a white band under the tabs — worth
+  knowing, because the fix looks right until you see the tab bar.
+- **Two copies again.** `orders.tsx` carried two `cancel()` functions: a dead
+  one holding the only success message, and a live one that reloaded the list
+  in silence. So cancelling an order left the checkout banner — "It's yours.
+  Pay at the run" — sitting above an order marked *Cancelled*. The dead copy
+  is gone and the row's actions now take an `onDone(message)` that cannot be
+  omitted: reporting the outcome is the prop's type, not a convention.
+- **The blank-image bug's last survivor.** The order row handed a stored
+  *path* straight to `<Image>`, so every order thumbnail was a blank square —
+  the same defect as the blank shop, in the one screen that fix had missed.
+  A cancelled order also still read "−280 pts" when the points had already
+  been refunded; the ledger was right and the screen was lying about it.
+
+Two things a desk cannot test and a run can: GPS check-in at a real meeting
+point, and the camera scanning a friend's code in daylight.
+
+Android is also the platform that matters commercially in Egypt — most club
+members are on it — so a demo now runs on both.
+
+## Meeting points: the link is derived, not stored
+
+The obvious way to give members directions is a column the organiser pastes a
+Google Maps link into. It was rejected, and the reasoning generalises.
+
+The meeting point **already exists** as coordinates: `not null`, placed by
+dragging a pin on a Leaflet map in the console, and — the deciding fact —
+**the check-in geofence is measured from them**. A pasted link is a second
+address for the same place, free to disagree with the first. When it does,
+members navigate to where the link says and then cannot check in, because the
+circle is somewhere else. That is the two-copies pattern with a worse
+failure mode than usual, since it strands people at the wrong corner.
+
+So `meetingPointMapsUrl(run)` in `packages/shared/src/runs.ts` builds
+Google's documented cross-platform URL from the run's own coordinates. It
+opens the Google Maps app on both platforms, needs no API key, no SDK and no
+per-platform branch — and every run that already exists got directions with
+no organiser work at all. The console shows the organiser the same link
+beside the pin, so "check the pin" and "see what members get" are one action.
+
 ---
 
 ## The two lists that remain

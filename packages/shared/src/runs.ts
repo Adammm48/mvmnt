@@ -20,6 +20,31 @@ export type Profile = Database['public']['Tables']['profiles']['Row'];
 /** How long before a run starts that check-in opens. Mirrors public.check_in(). */
 export const CHECK_IN_OPENS_MINUTES_BEFORE = 60;
 
+/**
+ * Where the run meets, as a link any maps app will open.
+ *
+ * DERIVED FROM THE PIN, NOT STORED. The obvious alternative is a column the
+ * organiser pastes a Google Maps link into, and it is the wrong shape: the
+ * meeting point already exists as coordinates, they are `not null`, and the
+ * check-in geofence is measured from them. A pasted link is a second address
+ * for the same place, free to disagree — and when it does, members navigate
+ * to where the link says and cannot check in where the circle is. This project
+ * has paid for "two copies that must agree" enough times.
+ *
+ * Deriving also means every run ever created already has one, and the
+ * organiser does no extra work.
+ *
+ * Google's documented cross-platform URL: it opens the Google Maps app when
+ * it is installed, Apple Maps or the browser when it is not, on both
+ * platforms — so it needs no API key, no SDK and no per-platform branch.
+ */
+export function meetingPointMapsUrl(run: {
+  meeting_point_lat: number;
+  meeting_point_lng: number;
+}): string {
+  return `https://www.google.com/maps/search/?api=1&query=${run.meeting_point_lat},${run.meeting_point_lng}`;
+}
+
 export function formatRunTime(startsAt: string): string {
   return new Date(startsAt).toLocaleTimeString('en-GB', {
     hour: '2-digit',

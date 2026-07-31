@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth';
@@ -21,6 +21,7 @@ import {
   formatDistance,
   formatCapacityStatus,
   describeAttendanceState,
+  meetingPointMapsUrl,
   isCheckInWindowOpen,
   isJoinable,
   toMemberMessage,
@@ -264,6 +265,32 @@ export default function RunDetail() {
         {distance && <Fact label="Distance" value={distance} />}
       </View>
 
+      {/*
+        A meeting point's name only helps somebody who already knows the city.
+        This hands the exact pin to whatever maps app the member has, which is
+        the difference between "Al-Azhar Park" and walking directions from
+        wherever they are standing. The link is derived from the same
+        coordinates the check-in circle is measured from, so it cannot send
+        anyone somewhere they then fail to check in.
+      */}
+      <Pressable
+        onPress={async () => {
+          const url = meetingPointMapsUrl(run);
+          // openURL rejects when nothing can handle it. Unguarded, that is a
+          // button that silently does nothing — the bug this app keeps finding.
+          const opened = await Linking.openURL(url).then(
+            () => true,
+            () => false,
+          );
+          if (!opened) setError(`Could not open Maps. The meeting point is ${run.meeting_point_name}.`);
+        }}
+        style={styles.directions}
+        accessibilityRole="link"
+        accessibilityLabel={`Open ${run.meeting_point_name} in Maps`}
+      >
+        <Text style={styles.directionsText}>Get directions →</Text>
+      </Pressable>
+
       {run.pace_groups.length > 0 && (
         <Fact label="Pace groups" value={run.pace_groups.join(' · ')} />
       )}
@@ -419,6 +446,8 @@ const styles = StyleSheet.create({
   section: { gap: spacing.sm },
   sectionTitle: { fontSize: 18, fontWeight: '700', color: colors.textOnDark },
   factRow: { flexDirection: 'row', gap: spacing.md },
+  directions: { paddingVertical: spacing.xs },
+  directionsText: { color: colors.action, fontSize: 14, fontWeight: '700' },
   fact: {
     flex: 1,
     backgroundColor: colors.baseElevated,
