@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppState } from 'react-native';
 import { AuthProvider, useAuth } from '@/lib/auth';
 import { Loading } from '@/components/Feedback';
@@ -16,6 +16,7 @@ function RootNavigator() {
   const { session, loading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     if (loading) return;
@@ -65,7 +66,13 @@ function RootNavigator() {
         headerStyle: { backgroundColor: colors.base },
         headerTintColor: colors.textOnDark,
         headerTitleStyle: { fontWeight: '700' },
-        contentStyle: { backgroundColor: colors.base },
+        // Android draws apps edge-to-edge, so a pushed screen's last line sits
+        // UNDER the navigation bar and cannot be scrolled into view — the
+        // stats screen ended mid-sentence on a Samsung, and the gallery's
+        // "find me in photos" link was unreadable. The tab bar handles its own
+        // inset, which is why only pushed screens were affected. One place,
+        // because the alternative is remembering it on every new screen.
+        contentStyle: { backgroundColor: colors.base, paddingBottom: insets.bottom },
         // Without this, iOS labels the back button with the previous route's
         // name — which for anything pushed from the tab bar is the router's
         // own group, so members saw a button that said "(tabs)". Found on the
@@ -75,9 +82,19 @@ function RootNavigator() {
       }}
     >
       {/* The five main rooms live inside the tab bar; everything else is a
-          screen pushed over it. */}
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="sign-in" options={{ headerShown: false }} />
+          screen pushed over it.
+
+          These two opt OUT of the bottom inset above, because they already
+          handle it: the tab bar insets itself (padding it again leaves a white
+          band under the tabs) and sign-in is wrapped in a SafeAreaView. */}
+      <Stack.Screen
+        name="(tabs)"
+        options={{ headerShown: false, contentStyle: { backgroundColor: colors.base } }}
+      />
+      <Stack.Screen
+        name="sign-in"
+        options={{ headerShown: false, contentStyle: { backgroundColor: colors.base } }}
+      />
       <Stack.Screen name="run/[id]" options={{ title: 'Run' }} />
       <Stack.Screen name="friends/index" options={{ title: 'Friends' }} />
       <Stack.Screen name="friends/code" options={{ title: 'Your code' }} />

@@ -6,6 +6,7 @@ import { ReportSheet } from '@/components/ReportSheet';
 import { Button } from '@/components/Button';
 import { EmptyState, Loading, Notice } from '@/components/Feedback';
 import { confirmDestructive } from '@/lib/confirm';
+import { mediaUri } from '@/lib/media';
 import {
   adamSays,
   colors,
@@ -80,23 +81,14 @@ export default function OrdersScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [highlight, orders]);
 
-  async function cancel(order: MyOrder) {
-    const confirmed = await confirmDestructive({
-      title: `Cancel ${order.product_name}?`,
-      message:
-        order.points_spent > 0
-          ? `The ${order.points_spent.toLocaleString()} points you spent come straight back, and the item returns to the shop.`
-          : 'The item returns to the shop for someone else.',
-      confirmLabel: 'Cancel it',
-    });
-    if (!confirmed) return;
-
-    const { error: rpcError } = await supabase.rpc('cancel_order', { p_order_id: order.id });
-    if (rpcError) {
-      setError(toMemberMessage(rpcError));
-      return;
-    }
-    setNote('Cancelled. Any points you used are back in your balance.');
+  // Every successful row action lands here, and has to arrive with a sentence.
+  // A second copy of cancel() used to live on this screen — dead, but carrying
+  // the only message the member ever saw, while the live one in the card
+  // reloaded the list in silence and left the checkout banner sitting above a
+  // cancelled order saying "It's yours."
+  function done(message: string) {
+    setError(null);
+    setNote(message);
     load();
   }
 
@@ -126,7 +118,7 @@ export default function OrdersScreen() {
           order={item}
           sizes={sizes[item.product_name] ?? []}
           highlighted={item.id === highlight}
-          onChanged={load}
+          onDone={done}
           onError={setError}
         />
       )}
@@ -145,13 +137,15 @@ function OrderCard({
   order,
   sizes,
   highlighted,
-  onChanged,
+  onDone,
   onError,
 }: {
   order: MyOrder;
   sizes: string[];
   highlighted: boolean;
-  onChanged: () => void;
+  /** Reports what happened, in words the member reads. Not optional: an action
+   *  that succeeds silently is the bug this screen already shipped once. */
+  onDone: (message: string) => void;
   onError: (message: string) => void;
 }) {
   const received = order.direction === 'received';
@@ -176,7 +170,7 @@ function OrderCard({
       onError(toMemberMessage(error));
       return;
     }
-    onChanged();
+    onDone('Confirmed. The club has it ready for you at the next run.');
   }
 
   async function cancel() {
@@ -184,8 +178,8 @@ function OrderCard({
       title: `Cancel ${order.product_name}?`,
       message:
         order.points_spent > 0
-          ? `The ${order.points_spent.toLocaleString()} points you spent come straight back.`
-          : 'The item returns to the shop.',
+          ? `The ${order.points_spent.toLocaleString()} points you spent come straight back, and the item returns to the shop.`
+          : 'The item returns to the shop for someone else.',
       confirmLabel: 'Cancel it',
     });
     if (!confirmed) return;
@@ -196,14 +190,22 @@ function OrderCard({
       onError(toMemberMessage(error));
       return;
     }
-    onChanged();
+    onDone(
+      order.points_spent > 0
+        ? 'Cancelled. Your points are back in your balance.'
+        : 'Cancelled. The item is back in the shop.',
+    );
   }
 
   return (
     <View style={[styles.card, highlighted && styles.cardNew]}>
       <View style={styles.cardTop}>
-        {order.image_url ? (
-          <Image source={{ uri: order.image_url }} style={styles.thumb} />
+        {/* Through mediaUri, like every other product image. Products store a
+            PATH now, so handing image_url straight to <Image> renders nothing —
+            the order row was the one place still doing that, and it showed a
+            blank square on a phone while the shop beside it was correct. */}
+        {mediaUri(order.image_url) ? (
+          <Image source={{ uri: mediaUri(order.image_url)! }} style={styles.thumb} />
         ) : (
           <View style={[styles.thumb, styles.thumbFallback]}>
             <Text style={styles.thumbInitial}>{order.product_name.charAt(0)}</Text>
@@ -227,8 +229,16 @@ function OrderCard({
 
         <View style={styles.priceCol}>
           <Text style={styles.price}>{formatMoney(order.total_minor, order.currency)}</Text>
+          {/* A cancelled order gave its points back, so "−280 pts" would be a
+              lie about the member's balance. The number is still worth showing
+              — it is what the order was worth — but it has to say which way it
+              went. */}
           {order.points_spent > 0 && (
-            <Text style={styles.pointsUsed}>−{order.points_spent.toLocaleString()} pts</Text>
+            <Text style={styles.pointsUsed}>
+              {order.status === 'cancelled'
+                ? `${order.points_spent.toLocaleString()} pts back`
+                : `−${order.points_spent.toLocaleString()} pts`}
+            </Text>
           )}
         </View>
       </View>
