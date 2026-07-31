@@ -7,6 +7,14 @@ node_modules/
 .env.*
 !.env.example
 
+# Firebase, for Android push. Identifies the club's project; belongs beside
+# the .env, not in a public repo. app.config.js wires it in when it is there
+# and skips it when it is not, so a missing file breaks nothing.
+google-services.json
+# The FCM service-account key, if it is ever downloaded to this machine —
+# this one is a private key and must never be committed anywhere.
+*-firebase-adminsdk-*.json
+
 # Supabase local stack
 supabase/.branches/
 supabase/.temp/

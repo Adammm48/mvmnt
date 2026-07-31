@@ -102,8 +102,29 @@ export EXPO_PUBLIC_SUPABASE_URL="http://$LAN_IP:54321"
 export EXPO_PUBLIC_SUPABASE_ANON_KEY="$ANON_KEY"
 echo "==> Building against $EXPO_PUBLIC_SUPABASE_URL"
 
+# google-services.json arriving (or changing) alters the NATIVE project, and
+# prebuild only writes android/ when it is missing — so dropping the file in
+# would otherwise have no effect until someone deleted the folder by hand, and
+# push would keep not working for a reason nothing on screen could explain.
+GS="$APP_DIR/google-services.json"
+GS_STAMP="$APP_DIR/android/.google-services.sha"
+if [ -f "$GS" ]; then
+  NOW="$(shasum "$GS" | cut -d' ' -f1)"
+  if [ ! -f "$GS_STAMP" ] || [ "$NOW" != "$(cat "$GS_STAMP" 2>/dev/null)" ]; then
+    echo "==> Firebase config is new or changed — regenerating the native project"
+    rm -rf "$APP_DIR/android"
+  fi
+fi
+
 if [ ! -d "$APP_DIR/android" ]; then
   (cd "$APP_DIR" && npx expo prebuild --platform android --no-install) || exit 1
+fi
+[ -f "$GS" ] && shasum "$GS" | cut -d' ' -f1 > "$GS_STAMP"
+
+if [ ! -f "$GS" ]; then
+  echo "==> No google-services.json — the app builds, but push stays off."
+  echo "    (Firebase > Project settings > Your apps > Android > google-services.json,"
+  echo "     saved to apps/mobile/. Gitignored on purpose.)"
 fi
 
 # Trap 2. Release builds refuse plain http, and the local stack is plain http.

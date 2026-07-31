@@ -48,6 +48,32 @@ push notifications, non-expiring builds, and the stores themselves.*
   camera QR scan, permission prompts, offline check-in queue on mobile data.
 - Configure APNs/FCM; flip the `push_delivery` flag; verify a real push
   arrives and deep-links (the pipeline is built and logged, never yet sent).
+
+### 4a · Android push, in the order it actually unblocks
+
+Four things stand between a published run and a phone buzzing. Firebase is
+one of them, and on its own it changes nothing — worth stating, because
+"Firebase is ready" feels like the finish line and is the first step.
+
+1. **Firebase project** with an Android app registered under the exact
+   package id `com.adamelbasiony.mvmnt`. A mismatch here fails silently.
+2. **`google-services.json`** → saved to `apps/mobile/`. Gitignored;
+   `app.config.js` wires it in when present and skips it when not, and
+   `run-android.sh` regenerates the native project when it appears or
+   changes (otherwise the file sits there doing nothing).
+3. **An Expo account and `npx eas init`** — free, and the piece most easily
+   missed. Delivery goes through Expo's push service, and
+   `getExpoPushTokenAsync` needs an EAS `projectId`. Without it NO token is
+   ever minted, so the club cannot reach the phone no matter what Firebase
+   says. This is why zero rows sat in `push_tokens`.
+4. **The FCM V1 service-account key** (Firebase → Project settings →
+   Service accounts → Generate new private key) uploaded to Expo with
+   `eas credentials`, so Expo's servers may deliver to FCM on the club's
+   behalf. A private key: never commit it, and prefer uploading it straight
+   from the download rather than leaving copies around.
+
+Then flip `push_delivery` and publish a test run. iOS needs the paid Apple
+account for APNs and is otherwise the same shape.
 - Store listings: screenshots, descriptions, age rating (18+ per D7),
   privacy questionnaires on both stores; submit for review. Google's data
   safety form declares: email, name/avatar, precise location (check-in and

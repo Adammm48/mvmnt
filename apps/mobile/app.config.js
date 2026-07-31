@@ -24,10 +24,34 @@
  * committed file (see docs/dev-todo.md step 1).
  */
 
+const fs = require('fs');
+const path = require('path');
+
 const appJson = require('./app.json');
+
+/**
+ * Firebase's Android config, wired in only once it is actually present.
+ *
+ * Android push goes through FCM, which needs this file compiled into the app.
+ * It is NOT committed: it identifies the club's Firebase project, so it lives
+ * beside the .env as a local secret and arrives on EAS as a file-type secret.
+ *
+ * Declaring it unconditionally in app.json would be the obvious move and the
+ * wrong one — prebuild fails outright when the path does not resolve, so every
+ * developer without the file (and CI, and today's phone builds) would break on
+ * a file none of them need until push goes live. Present: wired. Absent:
+ * silently skipped, and push registration already explains itself to the
+ * member (lib/push.ts).
+ */
+const GOOGLE_SERVICES = path.join(__dirname, 'google-services.json');
+const googleServicesFile = fs.existsSync(GOOGLE_SERVICES) ? './google-services.json' : undefined;
 
 module.exports = () => ({
   ...appJson.expo,
+  android: {
+    ...appJson.expo.android,
+    ...(googleServicesFile ? { googleServicesFile } : {}),
+  },
   extra: {
     ...appJson.expo.extra,
     supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
