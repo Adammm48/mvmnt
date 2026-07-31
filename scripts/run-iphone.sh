@@ -104,7 +104,10 @@ echo "==> Building against $EXPO_PUBLIC_SUPABASE_URL"
 if [ ! -d "$APP_DIR/ios" ]; then
   (cd "$APP_DIR" && npx expo prebuild --platform ios --no-install)
 fi
-if [ ! -d "$APP_DIR/ios/Pods" ]; then
+# Reinstalled when a dependency has been added since they were last installed,
+# not only when the folder is missing — stale pods fail at link time with a
+# missing symbol, which does not point at the cause.
+if [ ! -d "$APP_DIR/ios/Pods" ] || [ "$APP_DIR/package.json" -nt "$APP_DIR/ios/Podfile.lock" ]; then
   (cd "$APP_DIR/ios" && pod install)
 fi
 

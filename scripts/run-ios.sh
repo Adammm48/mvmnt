@@ -50,7 +50,11 @@ if [ ! -d "$APP_DIR/ios" ]; then
   (cd "$APP_DIR" && npx expo prebuild --platform ios --no-install)
 fi
 
-if [ ! -d "$APP_DIR/ios/Pods" ]; then
+# Pods are reinstalled when a dependency has been added since they were last
+# installed, not only when the folder is missing. Adding a native module and
+# then building against stale pods produces a link error naming a symbol rather
+# than the missing module, which is a long way from "run pod install".
+if [ ! -d "$APP_DIR/ios/Pods" ] || [ "$APP_DIR/package.json" -nt "$APP_DIR/ios/Podfile.lock" ]; then
   echo "==> Installing native dependencies (slow, once)"
   (cd "$APP_DIR/ios" && pod install)
 fi

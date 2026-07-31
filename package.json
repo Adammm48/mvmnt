@@ -27,7 +27,8 @@
     "test:e2e": "node tests/e2e/visible-outcomes.mjs",
     "check:reachable": "node scripts/check-reachable.mjs",
     "ios:sim": "bash scripts/run-ios.sh",
-    "ios:phone": "bash scripts/run-iphone.sh"
+    "ios:phone": "bash scripts/run-iphone.sh",
+    "android:phone": "bash scripts/run-android.sh"
   },
   "devDependencies": {
     "playwright": "^1.62.0",
