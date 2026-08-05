@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { Image, LayoutAnimation, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
@@ -35,6 +35,7 @@ export default function ProfileScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [nameSaved, setNameSaved] = useState(false);
   const [queued, setQueued] = useState(0);
   const [pushState, setPushState] = useState<string | null>(null);
   const [pushGranted, setPushGranted] = useState(false);
@@ -148,7 +149,18 @@ export default function ProfileScreen() {
       setError(toMemberMessage(saveError));
       return;
     }
-    setSuccess('Saved.');
+    // The confirmation appears WHERE the button is, not at the top of the
+    // screen. The old "Saved." rendered above everything: mid-scroll it was
+    // off-screen entirely, so the press appeared to do nothing — and when it
+    // was visible, its arrival shoved the whole page down in a single frame
+    // (the owner's words: an unsmooth refresh). Layout changes in this render
+    // pass now ease instead of snapping, and the note excuses itself.
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setNameSaved(true);
+    setTimeout(() => {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      setNameSaved(false);
+    }, 2500);
     await refreshProfile();
   }
 
@@ -354,6 +366,7 @@ export default function ProfileScreen() {
           editable={!busy}
         />
         <Button label="Save" onPress={saveName} loading={busy} disabled={!name.trim()} />
+        {nameSaved && <Notice tone="success" message="Saved — that's you now." />}
       </View>
 
       <View style={styles.section}>

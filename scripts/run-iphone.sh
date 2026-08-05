@@ -126,17 +126,60 @@ fi
 
 # Release, so the JavaScript is embedded. A Debug build would also need Metro
 # reachable from the phone, which is a second thing to go wrong.
-(cd "$APP_DIR/ios" && xcodebuild \
+# The previous .app is removed first, so a failed build cannot leave one
+# behind for the install step to find. That is not hypothetical: a build that
+# died on "Unable to find a destination" left a half-written bundle from an
+# earlier run, and the install then failed with "not a valid bundle" — an
+# error about the wrong thing entirely, three steps from the real cause.
+rm -rf "$BUILD_DIR/Build/Products/Release-iphoneos/MVMNT.app"
+
+# CHECKED. `| tail -3` keeps the output short, and used to swallow the verdict
+# with it: xcodebuild failed, the script carried on, and the first thing the
+# person saw was a confusing error from a later step.
+if ! (cd "$APP_DIR/ios" && xcodebuild \
   -workspace MVMNT.xcworkspace -scheme MVMNT \
   -configuration Release -destination "id=$DEVICE_ID" \
   -derivedDataPath "$BUILD_DIR" \
-  -allowProvisioningUpdates build) | tail -3
+  -allowProvisioningUpdates build) | tail -3; then
+  cat >&2 <<'BUILDFAILED'
+
+The build failed.
+
+If it says "Unable to find a destination", the phone dropped off mid-build —
+it locked, slept, or the cable moved. Unlock it, keep the screen awake, and
+run this again.
+
+Otherwise the last lines above are the real error.
+BUILDFAILED
+  exit 1
+fi
 
 APP="$(find "$BUILD_DIR/Build/Products" -name 'MVMNT.app' -maxdepth 3 | head -1)"
 [ -n "$APP" ] || { echo "build produced no .app" >&2; exit 1; }
 
 echo "==> Installing to the phone"
-xcrun devicectl device install app --device "$DEVICE_ID" "$APP"
+# CHECKED, because it failed once and this script said "Installed." anyway.
+#
+# A phone that locks or sleeps during the build — which takes long enough for
+# both — drops off CoreDevice, and the install then fails with an ECID that
+# means nothing to anyone. The script printed its cheerful success message
+# underneath and exited 0. That is the same lie the app itself is written to
+# avoid: something ran, reported success, and had done nothing.
+if ! xcrun devicectl device install app --device "$DEVICE_ID" "$APP"; then
+  cat >&2 <<'FAILED'
+
+The build worked. Putting it on the phone did not.
+
+Almost always the phone locked or slept while the build was running, which
+drops it off the connection. Unlock it, keep the screen on, and run this
+again — the build is cached, so the retry takes seconds rather than minutes.
+
+Check what the Mac can see with:
+  xcrun devicectl list devices
+"connected" is usable; "unavailable" means locked, untrusted or asleep.
+FAILED
+  exit 1
+fi
 
 cat <<EOF
 

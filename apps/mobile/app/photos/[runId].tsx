@@ -289,21 +289,27 @@ export default function RunPhotos() {
             >
               <Text style={styles.reportText}>Report this photo</Text>
             </Pressable>
+
+            {/* INSIDE the viewer's Modal, not beside it. As a sibling this
+                worked on Android and froze the app on iOS: iOS will not
+                present a second modal while one is up, so the sheet never
+                appeared — but its invisible full-screen layer still swallowed
+                every touch. Nested, iOS presents it from the viewer itself,
+                which is also what it is: a sheet about this photo. */}
+            {reporting && (
+              <ReportSheet
+                kind="photo"
+                targetId={reporting}
+                what="this photo"
+                onClose={() => {
+                  setReporting(null);
+                  setViewing(null);
+                }}
+              />
+            )}
           </View>
         )}
       </Modal>
-
-      {reporting && (
-        <ReportSheet
-          kind="photo"
-          targetId={reporting}
-          what="this photo"
-          onClose={() => {
-            setReporting(null);
-            setViewing(null);
-          }}
-        />
-      )}
     </View>
   );
 }
