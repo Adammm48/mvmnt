@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/Button';
 import { Notice } from '@/components/Feedback';
 import { StandingCard } from '@/components/StandingCard';
+import { AvatarLightbox } from '@/components/AvatarLightbox';
 import { clubCanSendPush, pushStatus, registerForPush } from '@/lib/push';
 import * as ImagePicker from 'expo-image-picker';
 import { uploadImage } from '@/lib/imageUpload';
@@ -36,6 +37,7 @@ export default function ProfileScreen() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [nameSaved, setNameSaved] = useState(false);
+  const [zoomedAvatar, setZoomedAvatar] = useState<string | null>(null);
   const [queued, setQueued] = useState(0);
   const [pushState, setPushState] = useState<string | null>(null);
   const [pushGranted, setPushGranted] = useState(false);
@@ -331,8 +333,19 @@ export default function ProfileScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Your photo</Text>
         <View style={styles.avatarRow}>
+          {/* Tappable only when there is a photo — zooming the fallback
+              initial would enlarge a letter. */}
           {avatarUri(profile?.avatar_url) ? (
-            <Image source={{ uri: avatarUri(profile?.avatar_url)! }} style={styles.avatarPreview} />
+            <Pressable
+              onPress={() => setZoomedAvatar(avatarUri(profile?.avatar_url))}
+              accessibilityRole="imagebutton"
+              accessibilityLabel="View your photo full screen"
+            >
+              <Image
+                source={{ uri: avatarUri(profile?.avatar_url)! }}
+                style={styles.avatarPreview}
+              />
+            </Pressable>
           ) : (
             <View style={[styles.avatarPreview, styles.avatarEmpty]}>
               <Text style={styles.avatarInitial}>
@@ -460,6 +473,12 @@ export default function ProfileScreen() {
       </View>
 
       <View style={styles.footer}>
+        {/* WHICH account, in plain text. Two phones spent a morning signed
+            into a typo-born account while their owner renamed profiles and
+            swapped photos believing they were on another — and nothing on any
+            screen could have told them. The email is the only identifier a
+            member actually knows; the display name they can change is not it. */}
+        <Text style={styles.signedInAs}>Signed in as {session?.user.email}</Text>
         <Button label="Sign out" variant="secondary" onPress={signOut} />
         <Button label="Delete my account" variant="destructive" onPress={confirmDelete} />
       </View>
@@ -477,11 +496,14 @@ export default function ProfileScreen() {
       >
         <Text style={styles.madeByText}>{SIGNATURE.footer}</Text>
       </Pressable>
+
+      {zoomedAvatar && <AvatarLightbox uri={zoomedAvatar} onClose={() => setZoomedAvatar(null)} />}
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
+  signedInAs: { color: colors.textSecondary, fontSize: 13, textAlign: 'center' },
   avatarRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   avatarPreview: { width: 72, height: 72, borderRadius: 999 },
   avatarEmpty: {

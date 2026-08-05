@@ -9,8 +9,7 @@ import {
   SIGNATURE,
   TIER_COLOR,
   TIER_LABEL,
-  type Standing,
-} from '@mvmnt/shared';
+  type Standing, TAGLINE } from '@mvmnt/shared';
 import { TierBadge } from './TierBadge';
 
 /**
@@ -36,7 +35,7 @@ export const ShareCard = forwardRef<View, { standing: Standing; displayName: str
       <View ref={ref} collapsable={false} style={styles.card}>
         <View style={styles.header}>
           <Text style={styles.wordmark}>MVMNT</Text>
-          <Text style={styles.tagline}>Run together.</Text>
+          <Text style={styles.tagline}>{TAGLINE}</Text>
         </View>
 
         <View style={styles.body}>

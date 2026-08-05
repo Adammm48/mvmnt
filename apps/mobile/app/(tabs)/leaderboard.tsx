@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { FlatList, Image, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { supabase } from '@/lib/supabase';
 import { avatarUri } from '@/lib/avatar';
+import { AvatarLightbox } from '@/components/AvatarLightbox';
 import { StandingCard } from '@/components/StandingCard';
 import { TierLadder } from '@/components/TierLadder';
 import { ShareSheet } from '@/components/ShareSheet';
@@ -39,6 +40,7 @@ import {
 export default function LeaderboardScreen() {
   const { profile } = useAuth();
   const [sharing, setSharing] = useState(false);
+  const [zoomed, setZoomed] = useState<{ uri: string; name: string } | null>(null);
   const [window, setWindow] = useState<LeaderboardWindow>('all_time');
   const [rows, setRows] = useState<LeaderboardRow[]>([]);
   const [standing, setStanding] = useState<Standing | null>(null);
@@ -156,7 +158,7 @@ export default function LeaderboardScreen() {
             )}
           </View>
         }
-        renderItem={({ item }) => <Row row={item} />}
+        renderItem={({ item }) => <Row row={item} onZoomAvatar={setZoomed} />}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         ListFooterComponent={
           standing ? (
@@ -185,6 +187,11 @@ export default function LeaderboardScreen() {
           />
         }
       />
+
+      {/* Named, because on a board of faces the question is "who is that". */}
+      {zoomed && (
+        <AvatarLightbox uri={zoomed.uri} label={zoomed.name} onClose={() => setZoomed(null)} />
+      )}
     </>
   );
 }
@@ -210,7 +217,13 @@ function Segment({
   );
 }
 
-function Row({ row }: { row: LeaderboardRow }) {
+function Row({
+  row,
+  onZoomAvatar,
+}: {
+  row: LeaderboardRow;
+  onZoomAvatar: (zoom: { uri: string; name: string }) => void;
+}) {
   const medal = row.rank <= 3;
 
   return (
@@ -224,7 +237,13 @@ function Row({ row }: { row: LeaderboardRow }) {
       <Text style={[styles.rank, medal && styles.rankMedal]}>{rankBadge(row.rank)}</Text>
 
       {avatarUri(row.avatar_url) ? (
-        <Image source={{ uri: avatarUri(row.avatar_url)! }} style={styles.avatar} />
+        <Pressable
+          onPress={() => onZoomAvatar({ uri: avatarUri(row.avatar_url)!, name: row.display_name })}
+          accessibilityRole="imagebutton"
+          accessibilityLabel={`View ${row.display_name}'s photo`}
+        >
+          <Image source={{ uri: avatarUri(row.avatar_url)! }} style={styles.avatar} />
+        </Pressable>
       ) : (
         <View style={[styles.avatar, styles.avatarFallback]}>
           <Text style={styles.avatarInitial}>

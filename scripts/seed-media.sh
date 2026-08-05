@@ -104,6 +104,36 @@ done
 echo "  seeded product tiles"
 
 # ---------------------------------------------------------------------------
+# Avatars for a handful of seeded members. The board used to be thirty-one
+# initials, which hid the avatar feature entirely and made every demo look
+# unbuilt. Six is deliberate: a board that is ALL placeholder faces reads as
+# fake, a board with some faces and some initials reads as a real club.
+# Uploaded to the avatars bucket under each member's own folder, exactly the
+# path shape set_avatar() enforces for real members.
+# ---------------------------------------------------------------------------
+echo "  seeding avatars"
+AVATAR_MEMBERS=$(curl -s "$API/rest/v1/profiles?select=id,display_name&avatar_url=is.null&order=display_name.asc&limit=6" \
+  -H "Authorization: Bearer $SERVICE" -H "apikey: $SERVICE")
+
+i=0
+echo "$AVATAR_MEMBERS" | python3 -c "import sys,json; [print(r['id']) for r in json.load(sys.stdin)]" | while read -r uid; do
+  file="$MEDIA/avatar-$i.jpg"
+  [ -f "$file" ] || { i=$((i+1)); continue; }
+  object="$uid/seed.jpg"
+  curl -s -o /dev/null -X POST "$API/storage/v1/object/avatars/$object" \
+    -H "Authorization: Bearer $SERVICE" -H "apikey: $SERVICE" \
+    -H "Content-Type: image/jpeg" -H "x-upsert: true" \
+    --data-binary "@$file"
+  curl -s -o /dev/null -X PATCH "$API/rest/v1/profiles?id=eq.$uid" \
+    -H "Authorization: Bearer $SERVICE" -H "apikey: $SERVICE" \
+    -H "Content-Type: application/json" -H "Prefer: return=minimal" \
+    -d "{\"avatar_url\":\"avatars/$object\"}"
+  i=$((i+1))
+done
+echo "  seeded avatars on six members"
+
+
+# ---------------------------------------------------------------------------
 # A published gallery on the most recent finished run, so the member flow —
 # run detail → "See the photos" → the grid — works straight off a reset.
 #

@@ -75,6 +75,28 @@ try {
       await context.close();
   });
 
+  // A typo is not a membership. Sign-in used to create an account for ANY
+  // unknown email — mistype your own and you are silently inside a fresh,
+  // empty profile, which reads as "the club deleted my points". Two ghost
+  // accounts existed before this fork did. The refusal costs nothing to
+  // assert and the assert is what keeps joining deliberate.
+  // -------------------------------------------------------------------------
+  await block('an unknown email is said out loud, not signed up', async () => {
+      const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+      const page = await context.newPage();
+      await page.goto(MOBILE, { waitUntil: 'networkidle' });
+      // A cold context redirects to /sign-in only after the bundle mounts —
+      // wait for the screen itself, not a guessed number of milliseconds.
+      await page.getByPlaceholder('you@example.com').waitFor({ timeout: 20000 });
+
+      await page.getByPlaceholder('you@example.com').fill('nobody-here-2821@mvmnt.test');
+      await page.getByRole('button', { name: 'Send me a code' }).click();
+      await page.waitForTimeout(1500);
+
+      await seen(page, /No account uses|I'm new/i, 'an unknown email offers a choice instead of an account');
+      await context.close();
+  });
+
   // A meeting point a member can actually navigate to. The link is derived
   // from the run's coordinates rather than stored, so what this really guards
   // is that the derivation is still WIRED UP — a helper nothing renders is the

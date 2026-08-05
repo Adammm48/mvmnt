@@ -203,6 +203,17 @@ about forty seconds and removes the whole category. Worth remembering as the
 build-tooling cousin of the app's own recurring bug: something ran, reported
 success, and quietly did nothing.
 
+Two phones side by side found two more, both of the app's oldest families.
+A nudge was recorded, queued for push, skipped (no push credentials), and
+visible NOWHERE — the notification-only-surface bug again; my_pokes() plus a
+home-screen line is the fix, and the push, when it exists, becomes a tap on
+the shoulder pointing at it. And sign-in silently created an account for any
+unknown email, so a typo looked like the club wiping your record — two ghost
+accounts existed before the fork ("No account uses this email yet — I'm new")
+replaced silent creation. The profile now also says WHICH email you are,
+because two phones spent a morning on a typo-born account with no way to
+notice.
+
 Two things a desk cannot test and a run can: GPS check-in at a real meeting
 point, and the camera scanning a friend's code in daylight.
 

@@ -1815,6 +1815,15 @@ export type Database = {
           photo_id: string
         }[]
       }
+      my_pokes: {
+        Args: never
+        Returns: {
+          from_name: string
+          poked_at: string
+          run_id: string
+          run_title: string
+        }[]
+      }
       my_standing: {
         Args: { p_window?: string }
         Returns: {

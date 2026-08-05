@@ -307,6 +307,14 @@ export function greetingSlot(now = new Date()): VoiceSlot {
  * One string, used everywhere it appears, so changing how the author is
  * credited is one edit rather than a search.
  */
+/**
+ * The club's tagline, from the official logo the owner supplied (E2 answered;
+ * the file itself is assets/brand/mvmnt-logo.png). One constant because it
+ * used to be three identical string literals — sign-in, about, share card —
+ * which is how a rebrand becomes a hunt.
+ */
+export const TAGLINE = 'Live in the movement.';
+
 export const SIGNATURE = {
   name: 'Adam Elbasiony',
   role: 'Founder & Lead Developer',

@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Constants from 'expo-constants';
-import { adamSays, colors, radius, spacing, BUILD_FACTS, CONTACT_LINKS, SIGNATURE } from '@mvmnt/shared';
+import { adamSays, colors, radius, spacing, BUILD_FACTS, CONTACT_LINKS, SIGNATURE, TAGLINE } from '@mvmnt/shared';
 import { RELEASE_NOTES } from '@/lib/releaseNotes';
 
 /**
@@ -41,7 +41,7 @@ export default function AboutScreen() {
       <Pressable onPress={tapWordmark} accessibilityRole="header">
         <View style={styles.hero}>
           <Text style={styles.wordmark}>MVMNT</Text>
-          <Text style={styles.tagline}>Run together.</Text>
+          <Text style={styles.tagline}>{TAGLINE}</Text>
         </View>
       </Pressable>
 

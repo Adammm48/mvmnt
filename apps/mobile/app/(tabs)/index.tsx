@@ -8,6 +8,8 @@ import { supabase } from '@/lib/supabase';
 import { RunCard } from '@/components/RunCard';
 import { TierProgressBar } from '@/components/TierProgressBar';
 import { TierChest, type UnclaimedTier } from '@/components/TierChest';
+
+type Poke = Database['public']['Functions']['my_pokes']['Returns'][number];
 import { Welcome } from '@/components/Welcome';
 import { ConsentGate, useConsentNeeded } from '@/components/ConsentGate';
 import { SponsorBanner } from '@/components/SponsorBanner';
@@ -25,8 +27,7 @@ import {
   greetingSlot,
   TIER_COLOR,
   TIER_LABEL,
-  type Standing,
-} from '@mvmnt/shared';
+  type Standing, type Database } from '@mvmnt/shared';
 
 export default function Home() {
   const { session, profile } = useAuth();
@@ -34,6 +35,7 @@ export default function Home() {
   const { items, loading, refreshing, error, reload } = useRuns(session?.user.id);
   const [standing, setStanding] = useState<Standing | null>(null);
   const [chest, setChest] = useState<UnclaimedTier | null>(null);
+  const [pokes, setPokes] = useState<Poke[]>([]);
   const sync = useLastSync();
 
   // Clears itself after a beat. Good news does not need to be dismissed by
@@ -67,6 +69,10 @@ export default function Home() {
       supabase
         .rpc('my_unclaimed_tiers')
         .then(({ data }) => setChest((data ?? [])[0] ?? null));
+      // Nudges waiting for this member. Push would be a tap on the shoulder
+      // pointing here; until the club can send any, here is all there is —
+      // without this line a nudge was recorded, skipped, and never seen.
+      supabase.rpc('my_pokes').then(({ data }) => setPokes(data ?? []));
     }, [reload]),
   );
 
@@ -154,6 +160,24 @@ export default function Home() {
               />
             )}
 
+            {/* Who wants you there. Each line is a friend's nudge about an
+                upcoming run, tappable through to it. Renders only while the
+                run can still be joined — my_pokes() already refuses history. */}
+            {pokes.map((poke) => (
+              <Pressable
+                key={`${poke.run_id}-${poke.from_name}-${poke.poked_at}`}
+                onPress={() => router.push(`/run/${poke.run_id}`)}
+                style={styles.pokeLine}
+                accessibilityRole="button"
+                accessibilityLabel={`${poke.from_name} wants you at ${poke.run_title}`}
+              >
+                <Text style={styles.pokeText}>
+                  <Text style={styles.pokeName}>{poke.from_name}</Text> wants you at{' '}
+                  {poke.run_title} →
+                </Text>
+              </Pressable>
+            ))}
+
             {/*
               Three ways out of the home screen, and the member's own number on
               one of them. App Spec §2 asks for momentum to be visible without
@@ -225,6 +249,14 @@ function encouragement(count: number): string {
 }
 
 const styles = StyleSheet.create({
+  pokeLine: {
+    backgroundColor: colors.baseElevated,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  pokeText: { color: colors.textOnDark, fontSize: 14, lineHeight: 20 },
+  pokeName: { fontWeight: '800' },
   screen: { flex: 1, backgroundColor: colors.base },
   list: { padding: spacing.md, paddingBottom: spacing.xxl, flexGrow: 1 },
   header: { marginBottom: spacing.lg, gap: spacing.sm, paddingTop: spacing.xs },

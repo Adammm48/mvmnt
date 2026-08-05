@@ -3,6 +3,7 @@ import { FlatList, Image, Pressable, RefreshControl, StyleSheet, Text, View } fr
 import { useFocusEffect, useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { avatarUri } from '@/lib/avatar';
+import { AvatarLightbox } from '@/components/AvatarLightbox';
 import { loadFriends, nextRun } from '@/lib/friends';
 import { Button } from '@/components/Button';
 import { EmptyState, Loading, Notice } from '@/components/Feedback';
@@ -40,6 +41,7 @@ export default function FriendsScreen() {
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [zoomed, setZoomed] = useState<{ uri: string; name: string } | null>(null);
 
   const load = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
@@ -108,6 +110,7 @@ export default function FriendsScreen() {
   if (loading) return <Loading label="Loading friends" />;
 
   return (
+    <>
     <FlatList
       style={styles.screen}
       data={friends}
@@ -168,6 +171,7 @@ export default function FriendsScreen() {
           busy={busyId === item.friend_id}
           onNudge={() => nudge(item)}
           onRemove={() => remove(item)}
+          onZoomAvatar={setZoomed}
         />
       )}
       ItemSeparatorComponent={() => <View style={{ height: spacing.sm }} />}
@@ -179,6 +183,11 @@ export default function FriendsScreen() {
         />
       }
     />
+
+    {zoomed && (
+      <AvatarLightbox uri={zoomed.uri} label={zoomed.name} onClose={() => setZoomed(null)} />
+    )}
+    </>
   );
 }
 
@@ -188,19 +197,27 @@ function FriendCard({
   busy,
   onNudge,
   onRemove,
+  onZoomAvatar,
 }: {
   friend: FriendRow;
   canNudge: boolean;
   busy: boolean;
   onNudge: () => void;
   onRemove: () => void;
+  onZoomAvatar: (zoom: { uri: string; name: string }) => void;
 }) {
   const coming = friend.state === 'signed_up' || friend.state === 'checked_in';
 
   return (
     <View style={styles.card}>
       {avatarUri(friend.avatar_url) ? (
-        <Image source={{ uri: avatarUri(friend.avatar_url)! }} style={styles.avatar} />
+        <Pressable
+          onPress={() => onZoomAvatar({ uri: avatarUri(friend.avatar_url)!, name: friend.display_name })}
+          accessibilityRole="imagebutton"
+          accessibilityLabel={`View ${friend.display_name}'s photo`}
+        >
+          <Image source={{ uri: avatarUri(friend.avatar_url)! }} style={styles.avatar} />
+        </Pressable>
       ) : (
         <View style={[styles.avatar, styles.avatarFallback]}>
           <Text style={styles.avatarInitial}>

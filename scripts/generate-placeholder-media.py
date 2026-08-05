@@ -233,6 +233,52 @@ def build_product(name: str, colour: tuple[int, int, int]) -> pathlib.Path:
     return path
 
 
+# Member avatars. The seeded board used to be thirty-one letters, which hid
+# the fact that avatars exist at all and made every screenshot look unbuilt.
+# Abstract on purpose — a head-and-shoulders silhouette on a brand-palette
+# wash. Nobody mistakes it for a real member, and it is unmistakably a photo
+# slot rather than an initial.
+AVATAR_COLOURS = [
+    ((255, 90, 54), (255, 201, 60)),
+    ((38, 74, 106), (61, 220, 132)),
+    ((27, 31, 42), (255, 90, 54)),
+    ((61, 220, 132), (38, 74, 106)),
+    ((255, 201, 60), (255, 90, 54)),
+    ((94, 84, 142), (255, 201, 60)),
+]
+
+
+def build_avatar(index: int) -> pathlib.Path:
+    size = 512
+    top, bottom = AVATAR_COLOURS[index % len(AVATAR_COLOURS)]
+
+    image = Image.new("RGB", (size, size))
+    draw = ImageDraw.Draw(image)
+    for y in range(size):
+        t = y / size
+        draw.line(
+            [(0, y), (size, y)],
+            fill=tuple(int(top[i] + (bottom[i] - top[i]) * t) for i in range(3)),
+        )
+
+    # Head and shoulders, drawn as flat light shapes over the wash.
+    ink = (247, 245, 242)
+    head_r = size * 0.16
+    cx, cy = size / 2, size * 0.40
+    draw.ellipse([cx - head_r, cy - head_r, cx + head_r, cy + head_r], fill=ink)
+    body_w, body_h = size * 0.52, size * 0.40
+    draw.ellipse(
+        [cx - body_w / 2, cy + head_r * 0.5, cx + body_w / 2, cy + head_r * 0.5 + body_h * 2],
+        fill=ink,
+    )
+
+    image = image.filter(ImageFilter.GaussianBlur(0.6))
+    OUT.mkdir(parents=True, exist_ok=True)
+    path = OUT / f"avatar-{index}.jpg"
+    image.save(path, "JPEG", quality=85, optimize=True)
+    return path
+
+
 if __name__ == "__main__":
     for scene in SCENES:
         path = build(*scene)
@@ -244,6 +290,10 @@ if __name__ == "__main__":
 
     for name, colour in MERCH:
         path = build_product(name, colour)
+        print(f"{path.name}  {path.stat().st_size // 1024}KB")
+
+    for i in range(len(AVATAR_COLOURS)):
+        path = build_avatar(i)
         print(f"{path.name}  {path.stat().st_size // 1024}KB")
 
     # One clip is enough to prove the path works — the rest stay stills.

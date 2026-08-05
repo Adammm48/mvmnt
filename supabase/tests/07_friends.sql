@@ -146,6 +146,27 @@ begin
     format('select public.poke_friend(%L, %L)', v_b, v_run),
     'a friend can be nudged once per run and no more');
 
+  -- -------------------------------------------------------------------
+  -- The RECIPIENT can see the nudge in the app. Until the club has push
+  -- credentials this is the only place a nudge exists at all — without it,
+  -- poke_friend records a message nobody can ever read (found live, two
+  -- phones side by side: "i nudged and nothing happened").
+  -- -------------------------------------------------------------------
+  perform tests.act_as(v_b);
+  perform tests.assert(
+    exists (select 1 from public.my_pokes() where run_id = v_run),
+    'the nudged friend sees who wants them there, in the app');
+  perform tests.assert(
+    (select from_name from public.my_pokes() where run_id = v_run limit 1) is not null,
+    'the nudge carries the sender''s name — "a friend" is not who wants you there');
+
+  -- And someone the poke was not for sees nothing.
+  perform tests.act_as(v_a);
+  perform tests.assert(
+    not exists (select 1 from public.my_pokes() where run_id = v_run
+                  and from_name = (select display_name from public.profiles where id = v_a)),
+    'my_pokes is the pokes sent TO me, not a feed of everyone''s');
+
   perform tests.act_as_system();
   select display_name into v_name from public.profiles where id = v_a;
   select title into v_title

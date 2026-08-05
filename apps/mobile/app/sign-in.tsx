@@ -12,7 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/Button';
 import { Notice } from '@/components/Feedback';
-import { adamSays, colors, radius, spacing, toMemberMessage, MIN_TOUCH_TARGET, SIGNATURE } from '@mvmnt/shared';
+import { adamSays, colors, radius, spacing, toMemberMessage, MIN_TOUCH_TARGET, SIGNATURE, TAGLINE } from '@mvmnt/shared';
 
 type Step = 'email' | 'code';
 
@@ -31,6 +31,7 @@ export default function SignIn() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
+  const [newHere, setNewHere] = useState(false);
   const [oauthReady, setOauthReady] = useState(false);
 
   useEffect(() => {
@@ -42,7 +43,21 @@ export default function SignIn() {
       .then(({ data }) => setOauthReady(data?.enabled ?? false));
   }, []);
 
-  async function sendCode() {
+  /**
+   * Two deliberate steps instead of one silent one.
+   *
+   * This used to send shouldCreateUser: true for every address, which meant a
+   * TYPO became an account: mistype your own email and you are quietly signed
+   * into a fresh, empty profile with no points, no history and no hint of what
+   * happened — it looks exactly like the club wiped your record. Two ghost
+   * accounts existed within weeks, one of them the developer's own.
+   *
+   * Now an unknown email is said out loud: "No account yet — join?". A member
+   * who mistyped sees the typo in front of them; a genuinely new member taps
+   * once more and is in. Joining stays one tap — the club is open — it is
+   * only no longer an accident.
+   */
+  async function sendCode(createIfNew = false) {
     const trimmed = email.trim().toLowerCase();
     if (!trimmed.includes('@')) {
       setError('Enter a valid email address.');
@@ -51,13 +66,21 @@ export default function SignIn() {
 
     setBusy(true);
     setError(null);
+    setNewHere(false);
     const { error: sendError } = await supabase.auth.signInWithOtp({
       email: trimmed,
-      options: { shouldCreateUser: true },
+      options: { shouldCreateUser: createIfNew },
     });
     setBusy(false);
 
     if (sendError) {
+      // Supabase's "no such user" refusal, worded by the server as a signup
+      // restriction. Anything else is a real failure and reports as one.
+      if (/signup|not allowed|not found/i.test(sendError.message)) {
+        setEmail(trimmed);
+        setNewHere(true);
+        return;
+      }
       setError(toMemberMessage(sendError));
       return;
     }
@@ -97,7 +120,7 @@ export default function SignIn() {
         <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
           <View style={styles.brand}>
             <Text style={styles.wordmark}>MVMNT</Text>
-            <Text style={styles.tagline}>Run together.</Text>
+            <Text style={styles.tagline}>{TAGLINE}</Text>
           </View>
 
           {error && <Notice tone="error" message={error} />}
@@ -121,16 +144,34 @@ export default function SignIn() {
                 autoComplete="email"
                 accessibilityLabelledBy="email-label"
                 accessibilityLabel="Email address"
-                onSubmitEditing={sendCode}
+                onSubmitEditing={() => sendCode()}
                 returnKeyType="go"
                 editable={!busy}
               />
               <Button
                 label="Send me a code"
-                onPress={sendCode}
+                onPress={() => sendCode()}
                 loading={busy}
                 accessibilityHint="Sends a six digit sign-in code to your email"
               />
+
+              {/* The unknown-email fork, said in the open. One extra tap for a
+                  genuinely new member; a saved account for anyone who slipped
+                  a letter. */}
+              {newHere && (
+                <View style={styles.newHere}>
+                  <Text style={styles.newHereText}>
+                    No account uses {email} yet. If that is a typo, fix it above — if you are new,
+                    welcome.
+                  </Text>
+                  <Button
+                    label="I'm new — create my account"
+                    variant="secondary"
+                    onPress={() => sendCode(true)}
+                    loading={busy}
+                  />
+                </View>
+              )}
             </View>
           ) : (
             <View style={styles.form}>
@@ -201,6 +242,8 @@ export default function SignIn() {
 }
 
 const styles = StyleSheet.create({
+  newHere: { gap: spacing.sm, marginTop: spacing.xs },
+  newHereText: { color: colors.textOnDarkMuted, fontSize: 14, lineHeight: 20 },
   safe: { flex: 1, backgroundColor: colors.base },
   flex: { flex: 1 },
   container: { padding: spacing.lg, gap: spacing.lg, flexGrow: 1, justifyContent: 'center' },

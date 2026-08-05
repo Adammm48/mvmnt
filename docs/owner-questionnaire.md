@@ -80,10 +80,14 @@ chest should say after **"Adam the Great has gifted you…"**
 
 ## E · Brand and voice
 
-- **E1.** The app icon needs the actual logo file — the black-on-white mark
-  you showed, ideally as SVG or a large PNG (1024×1024+). Send it. ________
-- **E2.** The mark says **"LIVE IN THE MOVEMENT"**; the app's About page
-  currently says "Run together." Which tagline is the club's? __________
+- **E1.** ~~The app icon needs the actual logo file.~~ **Answered** — the
+  official mark is in the repo at `assets/brand/mvmnt-logo.png` (1080×1350
+  PNG). Still useful if it exists: the same mark as SVG or a square
+  1024×1024 export, for the crispest possible app icon.
+- **E2.** ~~Which tagline is the club's?~~ **Answered** — the logo says it:
+  **"Live in the movement."** Now a single constant (`TAGLINE` in
+  `packages/shared/src/voice.ts`) shown on sign-in, About and the share
+  card.
 - **E3.** Any Adam-voice lines to add, remove, or tone down before three
   hundred people read them? (The full catalogue is
   `packages/shared/src/voice.ts` — happy to print it for review.) __________
