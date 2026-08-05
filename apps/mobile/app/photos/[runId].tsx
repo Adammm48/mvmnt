@@ -295,16 +295,19 @@ export default function RunPhotos() {
                 present a second modal while one is up, so the sheet never
                 appeared — but its invisible full-screen layer still swallowed
                 every touch. Nested, iOS presents it from the viewer itself,
-                which is also what it is: a sheet about this photo. */}
+                which is also what it is: a sheet about this photo.
+
+                ON CLOSE, ONLY THE SHEET CLOSES. The first fix dismissed both
+                modals in one frame, and iOS froze again — tearing down a
+                nested modal and its presenter simultaneously wedges the
+                presentation stack. One dismissal at a time: the member lands
+                back on the photo, and the ✕ is right there. */}
             {reporting && (
               <ReportSheet
                 kind="photo"
                 targetId={reporting}
                 what="this photo"
-                onClose={() => {
-                  setReporting(null);
-                  setViewing(null);
-                }}
+                onClose={() => setReporting(null)}
               />
             )}
           </View>
