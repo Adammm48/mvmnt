@@ -74,6 +74,27 @@ one of them, and on its own it changes nothing — worth stating, because
 
 Then flip `push_delivery` and publish a test run. iOS needs the paid Apple
 account for APNs and is otherwise the same shape.
+
+### 4b · Face matching, in the order it actually unblocks
+
+The Rekognition integration is WRITTEN (supabase/functions/match-faces) —
+enrolment, group-photo matching via a throwaway collection, provider-side
+deletion on opt-out. What remains is the club's AWS account and one key:
+
+1. **AWS account** at aws.amazon.com, club-owned email. Free tier covers
+   5,000 images/month for 12 months; after that a 200-photo gallery costs
+   roughly $0.20–0.40 to match.
+2. **IAM user with Rekognition only** (IAM → Users → Create → attach
+   `AmazonRekognitionFullAccess`, nothing else; programmatic access). An
+   access key that leaks can then recognise faces and do nothing else.
+3. **Set the function secrets** (never the repo):
+   `supabase secrets set AWS_ACCESS_KEY_ID=… AWS_SECRET_ACCESS_KEY=…`
+   (optional: FACE_AWS_REGION, default eu-west-1; FACE_MATCH_THRESHOLD,
+   default 85).
+4. **Publish any gallery.** Enrolment and matching run on publish; members
+   who opted in grow their "You" tab. Unconfigured, the function still
+   refuses loudly instead of pretending.
+
 - Store listings: screenshots, descriptions, age rating (18+ per D7),
   privacy questionnaires on both stores; submit for review. Google's data
   safety form declares: email, name/avatar, precise location (check-in and

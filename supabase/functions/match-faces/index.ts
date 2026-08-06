@@ -1,31 +1,52 @@
 /**
- * Face matching — the seam where a managed recognition API plugs in.
+ * Face matching, live — AWS Rekognition behind the seam ADR 0005 drew.
  *
- * ADR 0005 §2: face-matching is BOUGHT, not built. This function is the whole
- * of the club's side of that purchase — everything else (opt-in, matches,
- * deletion, the gallery filter) is schema and RPCs that already work.
+ * Called with { run_id } when a gallery is published. One invocation does the
+ * whole job for that gallery:
  *
- * Called with { run_id } when a gallery is published. It should:
+ *   1. Sweeps pending opt-outs: audit entries carrying a provider_face_id not
+ *      yet stamped provider_deleted_at get their face deleted from the
+ *      provider, then the stamp. Idempotent — a crashed run retries here.
+ *   2. Enrols any face_optins with provider_face_id IS NULL: the selfie's
+ *      bytes go to IndexFaces (MaxFaces 1 — it is a selfie, the largest face
+ *      is the member), the returned face id is written back.
+ *   3. Matches the gallery: every photo's faces are indexed into a THROWAWAY
+ *      collection to get one face id per person in frame — the documented way
+ *      around SearchFacesByImage only ever matching the LARGEST face, which
+ *      on a 300-person run photo would find whoever stood closest and nobody
+ *      else. Each detected face is searched against the members collection;
+ *      hits land in photo_matches with the provider's confidence. The
+ *      throwaway collection is deleted before returning.
  *
- *   1. Enrol any face_optins rows with provider_face_id IS NULL, by signing a
- *      short-lived URL for selfies/<user_id> and sending it to the provider;
- *      write the returned face id back.
- *   2. For each photo in the run's gallery, ask the provider which enrolled
- *      faces appear; insert photo_matches rows with the confidence.
- *   3. On a disable_photo_matching audit entry, delete the provider-side face.
+ * The cost model this preserves (ADR 0005 §2): matching runs ONCE per
+ * published gallery — the provider bills per image, so the club pays per
+ * gallery, not per viewer. Matches are rows; viewing them is free.
  *
- * REPLACE ME: the provider call. It needs an account and a budget the club
- * has not chosen (AWS Rekognition or equivalent — docs/open-items.md). Until
- * both exist this function refuses loudly rather than pretending: the same
- * pattern as dev_mark_paid, because a stub that silently succeeds teaches
- * everyone the feature works when it does not.
+ * Credentials come from function secrets (never the repo):
+ *   AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY — an IAM user allowed
+ *   Rekognition and nothing else; FACE_AWS_REGION (default eu-west-1);
+ *   FACE_COLLECTION (default mvmnt-members); FACE_MATCH_THRESHOLD (default
+ *   85 — below that the UI would be labelling strangers).
  *
- * The cost model this preserves: matching runs ONCE per published gallery
- * (provider bills per image), and viewing matches afterwards is free — they
- * are rows.
+ * Unconfigured, it still refuses loudly rather than pretending — same
+ * pattern as before, because a stub that silently succeeds teaches everyone
+ * the feature works when it does not.
  */
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import {
+  CreateCollectionCommand,
+  DeleteCollectionCommand,
+  DeleteFacesCommand,
+  IndexFacesCommand,
+  RekognitionClient,
+  SearchFacesCommand,
+} from 'npm:@aws-sdk/client-rekognition@3';
+
+// Rekognition takes at most 5MB of image bytes inline. Run photos are
+// compressed on upload and sit well under this; anything over it is skipped
+// and REPORTED rather than silently missing from everyone's "You" tab.
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
 Deno.serve(async (req) => {
   const auth = req.headers.get('Authorization') ?? '';
@@ -34,31 +55,39 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ error: 'service role only' }), { status: 401 });
   }
 
-  const providerKey = Deno.env.get('FACE_PROVIDER_KEY');
-  if (!providerKey) {
-    // The honest state, said plainly and logged where an organiser's developer
-    // will find it. Nothing downstream breaks: galleries publish, members see
-    // every photo — "photos of you" simply stays empty, and the app says why.
+  const accessKeyId = Deno.env.get('AWS_ACCESS_KEY_ID');
+  const secretAccessKey = Deno.env.get('AWS_SECRET_ACCESS_KEY');
+  if (!accessKeyId || !secretAccessKey) {
     return new Response(
       JSON.stringify({
         matched: 0,
         skipped: true,
         reason:
-          'FACE_PROVIDER_KEY is not set. Face matching needs a recognition-service account (see docs/open-items.md) — everything else about the feature is built and waiting.',
+          'AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY are not set as function secrets. ' +
+          'Face matching needs the club’s AWS account (docs/dev-todo.md) — ' +
+          'everything else about the feature is built and waiting.',
       }),
       { status: 200, headers: { 'Content-Type': 'application/json' } },
     );
   }
 
-  const { run_id } = await req.json().catch(() => ({}));
-  if (!run_id) {
-    return new Response(JSON.stringify({ error: 'run_id required' }), { status: 400 });
-  }
+  const region = Deno.env.get('FACE_AWS_REGION') ?? 'eu-west-1';
+  const collection = Deno.env.get('FACE_COLLECTION') ?? 'mvmnt-members';
+  const threshold = Number(Deno.env.get('FACE_MATCH_THRESHOLD') ?? '85');
 
+  const rekognition = new RekognitionClient({
+    region,
+    credentials: { accessKeyId, secretAccessKey },
+  });
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
   );
+
+  const { run_id } = await req.json().catch(() => ({}));
+  if (!run_id) {
+    return new Response(JSON.stringify({ error: 'run_id required' }), { status: 400 });
+  }
 
   // Guard the cost model even when live: only published galleries, ever.
   const { data: run } = await supabase
@@ -70,15 +99,162 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ error: 'gallery is not published' }), { status: 409 });
   }
 
-  // REPLACE ME when the provider account exists: enrolment + per-photo search
-  // as described in the header. Left unimplemented rather than mocked — a mock
-  // here would write plausible-looking matches that are lies.
+  await ensureCollection(rekognition, collection);
+
+  // ---- 1. Pending opt-outs: the provider forgets before anything else runs.
+  const { data: pending } = await supabase
+    .from('audit_log')
+    .select('id, metadata')
+    .eq('action', 'disable_photo_matching')
+    .not('metadata->>provider_face_id', 'is', null)
+    .is('metadata->>provider_deleted_at', null);
+
+  let forgotten = 0;
+  for (const entry of pending ?? []) {
+    const faceId = entry.metadata.provider_face_id as string;
+    try {
+      await rekognition.send(
+        new DeleteFacesCommand({ CollectionId: collection, FaceIds: [faceId] }),
+      );
+    } catch (_e) {
+      // Already gone is the outcome we wanted; a real failure leaves the
+      // entry unstamped and the next invocation retries.
+      continue;
+    }
+    await supabase
+      .from('audit_log')
+      .update({
+        metadata: { ...entry.metadata, provider_deleted_at: new Date().toISOString() },
+      })
+      .eq('id', entry.id);
+    forgotten += 1;
+  }
+
+  // ---- 2. Enrolment: selfies that have never met the provider.
+  const { data: unenrolled } = await supabase
+    .from('face_optins')
+    .select('user_id, storage_path')
+    .is('provider_face_id', null);
+
+  let enrolled = 0;
+  const enrolmentProblems: string[] = [];
+  for (const optin of unenrolled ?? []) {
+    const bytes = await download(supabase, optin.storage_path);
+    if (!bytes || bytes.byteLength > MAX_IMAGE_BYTES) {
+      enrolmentProblems.push(`${optin.user_id}: selfie missing or too large`);
+      continue;
+    }
+    const indexed = await rekognition.send(
+      new IndexFacesCommand({
+        CollectionId: collection,
+        Image: { Bytes: new Uint8Array(bytes) },
+        ExternalImageId: optin.user_id,
+        MaxFaces: 1,
+        QualityFilter: 'AUTO',
+      }),
+    );
+    const faceId = indexed.FaceRecords?.[0]?.Face?.FaceId;
+    if (!faceId) {
+      // No face found in the selfie — leave provider_face_id null, which the
+      // app already renders honestly as "not enrolled yet".
+      enrolmentProblems.push(`${optin.user_id}: no face detected in selfie`);
+      continue;
+    }
+    await supabase
+      .from('face_optins')
+      .update({ provider_face_id: faceId })
+      .eq('user_id', optin.user_id);
+    enrolled += 1;
+  }
+
+  // ---- 3. The gallery, one throwaway collection for its crowd faces.
+  const { data: photos } = await supabase
+    .from('run_photos')
+    .select('id, storage_path')
+    .eq('run_id', run_id);
+
+  const scratch = `mvmnt-scratch-${run_id}`;
+  await ensureCollection(rekognition, scratch);
+
+  let matched = 0;
+  let skippedPhotos = 0;
+  try {
+    for (const photo of photos ?? []) {
+      const bytes = await download(supabase, photo.storage_path);
+      if (!bytes || bytes.byteLength > MAX_IMAGE_BYTES) {
+        skippedPhotos += 1;
+        continue;
+      }
+      // Index every face in the photo (the scratch collection is just a
+      // face-detector that hands back searchable ids)…
+      const inPhoto = await rekognition.send(
+        new IndexFacesCommand({
+          CollectionId: scratch,
+          Image: { Bytes: new Uint8Array(bytes) },
+          MaxFaces: 50,
+          QualityFilter: 'AUTO',
+        }),
+      );
+      // …then ask, for each, "is this an enrolled member?"
+      for (const record of inPhoto.FaceRecords ?? []) {
+        const faceId = record.Face?.FaceId;
+        if (!faceId) continue;
+        const hits = await rekognition.send(
+          new SearchFacesCommand({
+            CollectionId: collection,
+            FaceId: faceId,
+            FaceMatchThreshold: threshold,
+            MaxFaces: 1,
+          }),
+        );
+        const best = hits.FaceMatches?.[0];
+        const userId = best?.Face?.ExternalImageId;
+        if (!userId || !best?.Similarity) continue;
+        await supabase.from('photo_matches').upsert(
+          {
+            photo_id: photo.id,
+            user_id: userId,
+            confidence: Math.round(best.Similarity * 100) / 100,
+          },
+          { onConflict: 'photo_id,user_id' },
+        );
+        matched += 1;
+      }
+    }
+  } finally {
+    // The crowd's faces exist only for the duration of this matching pass.
+    // Deleting the scratch collection deletes every one of them — a member's
+    // face persists at the provider ONLY via their own opted-in selfie.
+    await rekognition
+      .send(new DeleteCollectionCommand({ CollectionId: scratch }))
+      .catch(() => {});
+  }
+
   return new Response(
     JSON.stringify({
-      matched: 0,
-      skipped: true,
-      reason: 'Provider integration not yet written — FACE_PROVIDER_KEY is set but no provider code exists. See ADR 0005 §2.',
+      matched,
+      enrolled,
+      forgotten,
+      skippedPhotos,
+      enrolmentProblems,
     }),
-    { status: 501, headers: { 'Content-Type': 'application/json' } },
+    { status: 200, headers: { 'Content-Type': 'application/json' } },
   );
 });
+
+async function ensureCollection(client: RekognitionClient, id: string) {
+  try {
+    await client.send(new CreateCollectionCommand({ CollectionId: id }));
+  } catch (e) {
+    if ((e as Error).name !== 'ResourceAlreadyExistsException') throw e;
+  }
+}
+
+async function download(
+  supabase: ReturnType<typeof createClient>,
+  path: string,
+): Promise<ArrayBuffer | null> {
+  const { data } = await supabase.storage.from('gallery-media').download(path);
+  if (!data) return null;
+  return await data.arrayBuffer();
+}

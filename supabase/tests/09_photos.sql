@@ -213,8 +213,24 @@ begin
     'and nobody can see who else has opted in — not even that they have');
 
   -- Opting out deletes the unit: opt-in row, matches, and the selfie bytes.
+  -- The member has been ENROLLED first — because the audit entry must carry
+  -- the provider's face id out of the dying row. The original wrote '{}',
+  -- which left the Edge Function nothing to delete provider-side: the club
+  -- forgot the face while the provider quietly kept it.
+  perform tests.act_as_system();
+  update public.face_optins set provider_face_id = 'prov-face-123'
+   where user_id = v_m;
+
   perform tests.act_as(v_m);
   perform public.disable_photo_matching();
+
+  perform tests.act_as_system();
+  perform tests.assert(
+    exists (select 1 from public.audit_log
+             where action = 'disable_photo_matching'
+               and entity_id = v_m::text
+               and metadata->>'provider_face_id' = 'prov-face-123'),
+    'the audit entry carries the provider face id, so the provider-side copy can be deleted too');
   perform tests.act_as_system();
   perform tests.assert(
     (select count(*) = 0 from public.face_optins where user_id = v_m)
