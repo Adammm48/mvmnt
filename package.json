@@ -25,6 +25,7 @@
     "docs:gif": "node scripts/capture-checkin-gif.mjs && python3 scripts/frames-to-gif.py",
     "check:placeholders": "node scripts/check-placeholders.mjs",
     "test:e2e": "node tests/e2e/visible-outcomes.mjs",
+    "check:functions": "cd supabase/functions && deno check match-faces/index.ts scheduler/index.ts",
     "check:reachable": "node scripts/check-reachable.mjs",
     "ios:sim": "bash scripts/run-ios.sh",
     "ios:phone": "bash scripts/run-iphone.sh",

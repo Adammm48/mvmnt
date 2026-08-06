@@ -88,6 +88,17 @@ jobs:
       - name: Every screen is reachable
         run: npm run check:reachable
 
+      # The Edge Functions are TypeScript nothing else typechecks — they run on
+      # Deno, outside the workspaces. The face matcher shipped two type errors
+      # and an unhandled provider throw that only surfaced when it was finally
+      # run; this is the gate that would have caught the first two.
+      - name: Edge Functions typecheck
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Check the Edge Functions
+        run: npm run check:functions
+
       - name: Build the admin console
         run: npm run build --workspace @mvmnt/admin
 

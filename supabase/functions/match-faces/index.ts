@@ -33,7 +33,7 @@
  * the feature works when it does not.
  */
 
-import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { createClient, type SupabaseClient } from 'jsr:@supabase/supabase-js@2';
 import {
   CreateCollectionCommand,
   DeleteCollectionCommand,
@@ -99,135 +99,163 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ error: 'gallery is not published' }), { status: 409 });
   }
 
-  await ensureCollection(rekognition, collection);
-
-  // ---- 1. Pending opt-outs: the provider forgets before anything else runs.
-  const { data: pending } = await supabase
-    .from('audit_log')
-    .select('id, metadata')
-    .eq('action', 'disable_photo_matching')
-    .not('metadata->>provider_face_id', 'is', null)
-    .is('metadata->>provider_deleted_at', null);
-
-  let forgotten = 0;
-  for (const entry of pending ?? []) {
-    const faceId = entry.metadata.provider_face_id as string;
-    try {
-      await rekognition.send(
-        new DeleteFacesCommand({ CollectionId: collection, FaceIds: [faceId] }),
-      );
-    } catch (_e) {
-      // Already gone is the outcome we wanted; a real failure leaves the
-      // entry unstamped and the next invocation retries.
-      continue;
-    }
-    await supabase
-      .from('audit_log')
-      .update({
-        metadata: { ...entry.metadata, provider_deleted_at: new Date().toISOString() },
-      })
-      .eq('id', entry.id);
-    forgotten += 1;
-  }
-
-  // ---- 2. Enrolment: selfies that have never met the provider.
-  const { data: unenrolled } = await supabase
-    .from('face_optins')
-    .select('user_id, storage_path')
-    .is('provider_face_id', null);
-
+  // Everything from here can talk to the provider, and the provider can be
+  // down, rate-limited or holding a rejected key. Unwrapped, any of those
+  // surfaced as a bare "Internal Server Error" — found by running this against
+  // AWS with a deliberately invalid key. An organiser publishing a gallery
+  // would have seen a 500 and had no way to tell whether matching had happened,
+  // half-happened, or never started. Partial progress is real and is reported.
   let enrolled = 0;
-  const enrolmentProblems: string[] = [];
-  for (const optin of unenrolled ?? []) {
-    const bytes = await download(supabase, optin.storage_path);
-    if (!bytes || bytes.byteLength > MAX_IMAGE_BYTES) {
-      enrolmentProblems.push(`${optin.user_id}: selfie missing or too large`);
-      continue;
-    }
-    const indexed = await rekognition.send(
-      new IndexFacesCommand({
-        CollectionId: collection,
-        Image: { Bytes: new Uint8Array(bytes) },
-        ExternalImageId: optin.user_id,
-        MaxFaces: 1,
-        QualityFilter: 'AUTO',
-      }),
-    );
-    const faceId = indexed.FaceRecords?.[0]?.Face?.FaceId;
-    if (!faceId) {
-      // No face found in the selfie — leave provider_face_id null, which the
-      // app already renders honestly as "not enrolled yet".
-      enrolmentProblems.push(`${optin.user_id}: no face detected in selfie`);
-      continue;
-    }
-    await supabase
-      .from('face_optins')
-      .update({ provider_face_id: faceId })
-      .eq('user_id', optin.user_id);
-    enrolled += 1;
-  }
-
-  // ---- 3. The gallery, one throwaway collection for its crowd faces.
-  const { data: photos } = await supabase
-    .from('run_photos')
-    .select('id, storage_path')
-    .eq('run_id', run_id);
-
-  const scratch = `mvmnt-scratch-${run_id}`;
-  await ensureCollection(rekognition, scratch);
-
   let matched = 0;
+  let forgotten = 0;
   let skippedPhotos = 0;
+  const enrolmentProblems: string[] = [];
+
   try {
-    for (const photo of photos ?? []) {
-      const bytes = await download(supabase, photo.storage_path);
-      if (!bytes || bytes.byteLength > MAX_IMAGE_BYTES) {
-        skippedPhotos += 1;
+    await ensureCollection(rekognition, collection);
+
+    // ---- 1. Pending opt-outs: the provider forgets before anything else runs.
+    const { data: pending } = await supabase
+      .from('audit_log')
+      .select('id, metadata')
+      .eq('action', 'disable_photo_matching')
+      .not('metadata->>provider_face_id', 'is', null)
+      .is('metadata->>provider_deleted_at', null);
+
+    for (const entry of pending ?? []) {
+      const faceId = entry.metadata.provider_face_id as string;
+      try {
+        await rekognition.send(
+          new DeleteFacesCommand({ CollectionId: collection, FaceIds: [faceId] }),
+        );
+      } catch (_e) {
+        // Already gone is the outcome we wanted; a real failure leaves the
+        // entry unstamped and the next invocation retries.
         continue;
       }
-      // Index every face in the photo (the scratch collection is just a
-      // face-detector that hands back searchable ids)…
-      const inPhoto = await rekognition.send(
+      await supabase
+        .from('audit_log')
+        .update({
+          metadata: { ...entry.metadata, provider_deleted_at: new Date().toISOString() },
+        })
+        .eq('id', entry.id);
+      forgotten += 1;
+    }
+
+    // ---- 2. Enrolment: selfies that have never met the provider.
+    const { data: unenrolled } = await supabase
+      .from('face_optins')
+      .select('user_id, storage_path')
+      .is('provider_face_id', null);
+
+    for (const optin of unenrolled ?? []) {
+      const bytes = await download(supabase.storage, optin.storage_path);
+      if (!bytes || bytes.byteLength > MAX_IMAGE_BYTES) {
+        enrolmentProblems.push(`${optin.user_id}: selfie missing or too large`);
+        continue;
+      }
+      const indexed = await rekognition.send(
         new IndexFacesCommand({
-          CollectionId: scratch,
+          CollectionId: collection,
           Image: { Bytes: new Uint8Array(bytes) },
-          MaxFaces: 50,
+          ExternalImageId: optin.user_id,
+          MaxFaces: 1,
           QualityFilter: 'AUTO',
         }),
       );
-      // …then ask, for each, "is this an enrolled member?"
-      for (const record of inPhoto.FaceRecords ?? []) {
-        const faceId = record.Face?.FaceId;
-        if (!faceId) continue;
-        const hits = await rekognition.send(
-          new SearchFacesCommand({
-            CollectionId: collection,
-            FaceId: faceId,
-            FaceMatchThreshold: threshold,
-            MaxFaces: 1,
+      const faceId = indexed.FaceRecords?.[0]?.Face?.FaceId;
+      if (!faceId) {
+        // No face found in the selfie — leave provider_face_id null, which the
+        // app already renders honestly as "not enrolled yet".
+        enrolmentProblems.push(`${optin.user_id}: no face detected in selfie`);
+        continue;
+      }
+      await supabase
+        .from('face_optins')
+        .update({ provider_face_id: faceId })
+        .eq('user_id', optin.user_id);
+      enrolled += 1;
+    }
+
+    // ---- 3. The gallery, one throwaway collection for its crowd faces.
+    const { data: photos } = await supabase
+      .from('run_photos')
+      .select('id, storage_path')
+      .eq('run_id', run_id);
+
+    const scratch = `mvmnt-scratch-${run_id}`;
+    await ensureCollection(rekognition, scratch);
+
+    try {
+      for (const photo of photos ?? []) {
+        const bytes = await download(supabase.storage, photo.storage_path);
+        if (!bytes || bytes.byteLength > MAX_IMAGE_BYTES) {
+          skippedPhotos += 1;
+          continue;
+        }
+        // Index every face in the photo (the scratch collection is just a
+        // face-detector that hands back searchable ids)…
+        const inPhoto = await rekognition.send(
+          new IndexFacesCommand({
+            CollectionId: scratch,
+            Image: { Bytes: new Uint8Array(bytes) },
+            MaxFaces: 50,
+            QualityFilter: 'AUTO',
           }),
         );
-        const best = hits.FaceMatches?.[0];
-        const userId = best?.Face?.ExternalImageId;
-        if (!userId || !best?.Similarity) continue;
-        await supabase.from('photo_matches').upsert(
-          {
-            photo_id: photo.id,
-            user_id: userId,
-            confidence: Math.round(best.Similarity * 100) / 100,
-          },
-          { onConflict: 'photo_id,user_id' },
-        );
-        matched += 1;
+        // …then ask, for each, "is this an enrolled member?"
+        for (const record of inPhoto.FaceRecords ?? []) {
+          const faceId = record.Face?.FaceId;
+          if (!faceId) continue;
+          const hits = await rekognition.send(
+            new SearchFacesCommand({
+              CollectionId: collection,
+              FaceId: faceId,
+              FaceMatchThreshold: threshold,
+              MaxFaces: 1,
+            }),
+          );
+          const best = hits.FaceMatches?.[0];
+          const userId = best?.Face?.ExternalImageId;
+          if (!userId || !best?.Similarity) continue;
+          await supabase.from('photo_matches').upsert(
+            {
+              photo_id: photo.id,
+              user_id: userId,
+              confidence: Math.round(best.Similarity * 100) / 100,
+            },
+            { onConflict: 'photo_id,user_id' },
+          );
+          matched += 1;
+        }
       }
+    } finally {
+      // The crowd's faces exist only for the duration of this matching pass.
+      // Deleting the scratch collection deletes every one of them — a member's
+      // face persists at the provider ONLY via their own opted-in selfie.
+      await rekognition
+        .send(new DeleteCollectionCommand({ CollectionId: scratch }))
+        .catch(() => {});
     }
-  } finally {
-    // The crowd's faces exist only for the duration of this matching pass.
-    // Deleting the scratch collection deletes every one of them — a member's
-    // face persists at the provider ONLY via their own opted-in selfie.
-    await rekognition
-      .send(new DeleteCollectionCommand({ CollectionId: scratch }))
-      .catch(() => {});
+
+  } catch (e) {
+    const problem = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
+    console.error('[match-faces] provider call failed', e);
+    return new Response(
+      JSON.stringify({
+        error: 'The recognition provider refused or failed.',
+        provider: problem,
+        // What did land before the failure. Enrolments and matches are
+        // written as they happen, so a retry resumes rather than repeats —
+        // and repeating would re-bill the gallery.
+        enrolled,
+        matched,
+        forgotten,
+        skippedPhotos,
+        enrolmentProblems,
+      }),
+      { status: 502, headers: { 'Content-Type': 'application/json' } },
+    );
   }
 
   return new Response(
@@ -250,11 +278,20 @@ async function ensureCollection(client: RekognitionClient, id: string) {
   }
 }
 
+/**
+ * Bytes for one object in the gallery bucket, or null if it is gone.
+ *
+ * Takes the storage client rather than the whole Supabase client: the
+ * generic parameters on `createClient`'s return type do not survive being
+ * named in a signature (`ReturnType<typeof createClient>` resolves the
+ * defaults, not this instance's), and the narrower dependency is what this
+ * helper actually uses anyway.
+ */
 async function download(
-  supabase: ReturnType<typeof createClient>,
+  storage: SupabaseClient['storage'],
   path: string,
 ): Promise<ArrayBuffer | null> {
-  const { data } = await supabase.storage.from('gallery-media').download(path);
+  const { data } = await storage.from('gallery-media').download(path);
   if (!data) return null;
   return await data.arrayBuffer();
 }

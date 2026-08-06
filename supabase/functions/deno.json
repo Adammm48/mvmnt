@@ -1,0 +1,8 @@
+{
+  "//": "Deno config for the Edge Functions. Exists so `deno check` can verify them locally — the face matcher is ~200 lines of provider integration that would otherwise ship having never been typechecked. nodeModulesDir 'auto' lets Deno resolve the npm: AWS SDK the same way the Supabase runtime does.",
+  "nodeModulesDir": "auto",
+  "imports": {
+    "@aws-sdk/client-rekognition": "npm:@aws-sdk/client-rekognition@3",
+    "@supabase/supabase-js": "jsr:@supabase/supabase-js@2"
+  }
+}
