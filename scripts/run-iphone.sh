@@ -45,7 +45,13 @@ echo "==> Database answers on the network"
 # ---------------------------------------------------------------------------
 # 2. A phone.
 # ---------------------------------------------------------------------------
-DEVICE_LINE="$(xcrun devicectl list devices 2>/dev/null | grep -iE 'iphone|ipad' | grep -vi 'simulator' | head -1)"
+# The CONNECTED one, not the first one. Three phones have been paired to this
+# Mac by now, and the list keeps every one of them forever — "head -1" started
+# building for whichever iPhone happened to sort first, plugged in or not.
+DEVICE_LINE="$(xcrun devicectl list devices 2>/dev/null | grep -iE 'iphone|ipad' | grep -vi 'simulator' | grep -E '\bconnected\b' | head -1)"
+if [ -z "$DEVICE_LINE" ]; then
+  DEVICE_LINE="$(xcrun devicectl list devices 2>/dev/null | grep -iE 'iphone|ipad' | grep -vi 'simulator' | grep -i 'available (paired)' | head -1)"
+fi
 if [ -z "$DEVICE_LINE" ]; then
   cat >&2 <<'EOF'
 No iPhone found. To connect one:

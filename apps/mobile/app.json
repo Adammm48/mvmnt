@@ -21,7 +21,7 @@
     "android": {
       "package": "com.adamelbasiony.mvmnt",
       "adaptiveIcon": {
-        "backgroundColor": "#1B1F2A",
+        "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
