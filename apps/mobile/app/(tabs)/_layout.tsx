@@ -36,6 +36,10 @@ export default function TabsLayout() {
         headerStyle: { backgroundColor: colors.base },
         headerTintColor: colors.textOnDark,
         headerTitleStyle: { fontWeight: '700' },
+        // Owner's call: titles sit centre, not left. iOS already centres;
+        // Android left-aligns unless told, so the two phones disagreed until
+        // this line.
+        headerTitleAlign: 'center',
         sceneStyle: { backgroundColor: colors.base },
         tabBarStyle: {
           backgroundColor: colors.baseElevated,

@@ -66,6 +66,10 @@ function RootNavigator() {
         headerStyle: { backgroundColor: colors.base },
         headerTintColor: colors.textOnDark,
         headerTitleStyle: { fontWeight: '700' },
+        // Centred, matching the tab headers — owner's call, and Android
+        // left-aligns unless told while iOS centres, so the platforms
+        // disagreed until this line.
+        headerTitleAlign: 'center',
         // Android draws apps edge-to-edge, so a pushed screen's last line sits
         // UNDER the navigation bar and cannot be scrolled into view — the
         // stats screen ended mid-sentence on a Samsung, and the gallery's
